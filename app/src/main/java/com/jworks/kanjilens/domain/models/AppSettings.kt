@@ -6,6 +6,6 @@ data class AppSettings(
     val strokeWidth: Float = 2f,
     val labelFontSize: Float = 14f,
     val labelBackgroundAlpha: Float = 0.7f,
-    val frameSkip: Int = 3,
+    val frameSkip: Int = 1,  // Process every frame for real-time feel
     val showDebugHud: Boolean = true
 )

@@ -69,25 +69,20 @@ fun TextOverlay(
                 val bounds = element.bounds ?: continue
                 if (bounds.isEmpty) continue
 
-                try {
-                    if (element.kanjiSegments.isNotEmpty()) {
-                        // Per-segment rendering: individual boxes + furigana per kanji word
-                        drawKanjiSegments(
-                            bounds, element.text.length, element.kanjiSegments,
-                            scale, cropOffsetX, cropOffsetY, kanjiColor, settings.strokeWidth,
-                            textMeasurer, furiganaStyle, labelBg
-                        )
-                    } else if (element.reading != null) {
-                        // Fallback: element-level rendering
-                        drawBoundingBox(bounds, scale, cropOffsetX, cropOffsetY, kanjiColor, settings.strokeWidth)
-                        drawFuriganaLabel(
-                            bounds, element.reading, scale, cropOffsetX, cropOffsetY,
-                            kanjiColor, textMeasurer, furiganaStyle, labelBg
-                        )
-                    }
-                } catch (e: IllegalArgumentException) {
-                    // Skip this element if drawing fails (edge case with invalid dimensions)
-                    android.util.Log.w("OverlayCanvas", "Skipped drawing element due to: ${e.message}")
+                if (element.kanjiSegments.isNotEmpty()) {
+                    // Per-segment rendering: individual boxes + furigana per kanji word
+                    drawKanjiSegments(
+                        bounds, element.text.length, element.kanjiSegments,
+                        scale, cropOffsetX, cropOffsetY, kanjiColor, settings.strokeWidth,
+                        textMeasurer, furiganaStyle, labelBg
+                    )
+                } else if (element.reading != null) {
+                    // Fallback: element-level rendering
+                    drawBoundingBox(bounds, scale, cropOffsetX, cropOffsetY, kanjiColor, settings.strokeWidth)
+                    drawFuriganaLabel(
+                        bounds, element.reading, scale, cropOffsetX, cropOffsetY,
+                        kanjiColor, textMeasurer, furiganaStyle, labelBg
+                    )
                 }
             }
         }
@@ -107,15 +102,17 @@ private fun DrawScope.drawBoundingBox(
     val width = bounds.width() * scale
     val height = bounds.height() * scale
 
-    // Skip if element is completely off-screen or has invalid dimensions
+    // Quick bounds check and coercion
     if (width <= 0 || height <= 0) return
-    if (left + width < 0 || top + height < 0) return  // Completely off left/top
-    if (left > size.width || top > size.height) return  // Completely off right/bottom
+    if (left + width < -50 || top > size.height + 50) return  // Off-screen
+
+    val safeWidth = width.coerceAtLeast(0.1f)
+    val safeHeight = height.coerceAtLeast(0.1f)
 
     drawRect(
         color = color,
         topLeft = Offset(left, top),
-        size = Size(width, height),
+        size = Size(safeWidth, safeHeight),
         style = Stroke(width = strokeWidth)
     )
 }
@@ -138,27 +135,26 @@ private fun DrawScope.drawKanjiSegments(
     val elemWidth = elementBounds.width() * scale
     val elemHeight = elementBounds.height() * scale
 
-    // Skip if element is completely off-screen or has invalid dimensions
-    if (elemWidth <= 0 || elemHeight <= 0) return
-    if (elemLeft + elemWidth < 0 || elemTop + elemHeight < 0) return  // Off left/top
-    if (elemLeft > size.width || elemTop > size.height) return  // Off right/bottom
-
-    if (textLength <= 0) return
+    // Quick bounds check
+    if (elemWidth <= 0 || elemHeight <= 0 || textLength <= 0) return
+    if (elemLeft + elemWidth < -50 || elemTop > size.height + 50) return  // Off-screen
     val charWidth = elemWidth / textLength.toFloat()
 
     for (segment in segments) {
         val segLeft = elemLeft + segment.startIndex * charWidth
         val segWidth = (segment.endIndex - segment.startIndex) * charWidth
 
-        // Skip segment if it's off-screen or has invalid dimensions
-        if (segWidth <= 0) continue
-        if (segLeft + segWidth < 0 || segLeft > size.width) continue
+        // Quick validation
+        if (segWidth <= 0 || segLeft + segWidth < -50 || segLeft > size.width + 50) continue
+
+        val safeSegWidth = segWidth.coerceAtLeast(0.1f)
+        val safeElemHeight = elemHeight.coerceAtLeast(0.1f)
 
         // Bounding box for this kanji segment
         drawRect(
             color = color,
             topLeft = Offset(segLeft, elemTop),
-            size = Size(segWidth, elemHeight),
+            size = Size(safeSegWidth, safeElemHeight),
             style = Stroke(width = strokeWidth)
         )
 
@@ -174,25 +170,24 @@ private fun DrawScope.drawKanjiSegments(
         val bgLeft = segLeft + (segWidth - bgWidth) / 2f
         val bgTop = (elemTop - bgHeight - 2f).coerceAtLeast(0f)
 
-        // Skip label if it would be invalid or off-screen
-        if (bgWidth <= 0 || bgHeight <= 0) continue
-        if (bgLeft.isNaN() || bgTop.isNaN()) continue
-        if (bgLeft + bgWidth < -100 || bgTop + bgHeight < -100) continue  // Far off-screen
+        // Quick validation and coercion
+        if (bgWidth <= 0 || bgHeight <= 0 || bgLeft.isNaN() || bgTop.isNaN()) continue
+        if (bgLeft + bgWidth < -50 || bgTop > size.height + 50) continue  // Off-screen
 
-        // Validate all dimensions are reasonable before drawing
-        if (bgWidth > 10000 || bgHeight > 10000) continue  // Unreasonably large
+        val safeBgWidth = bgWidth.coerceAtLeast(0.1f)
+        val safeBgHeight = bgHeight.coerceAtLeast(0.1f)
 
         drawRoundRect(
             color = labelBg,
             topLeft = Offset(bgLeft, bgTop),
-            size = Size(bgWidth, bgHeight),
+            size = Size(safeBgWidth, safeBgHeight),
             cornerRadius = CornerRadius(4f, 4f)
         )
 
         drawRoundRect(
             color = color,
             topLeft = Offset(bgLeft, bgTop),
-            size = Size(bgWidth, 2f),
+            size = Size(safeBgWidth, 2f),
             cornerRadius = CornerRadius(2f, 2f)
         )
 
@@ -221,10 +216,9 @@ private fun DrawScope.drawFuriganaLabel(
     val elemWidth = bounds.width() * scale
     val elemHeight = bounds.height() * scale
 
-    // Skip if element is completely off-screen or has invalid dimensions
+    // Quick bounds check
     if (elemWidth <= 0 || elemHeight <= 0) return
-    if (elemLeft + elemWidth < 0 || elemTop + elemHeight < 0) return  // Off left/top
-    if (elemLeft > size.width || elemTop > size.height) return  // Off right/bottom
+    if (elemLeft + elemWidth < -50 || elemTop > size.height + 50) return  // Off-screen
 
     val measured = textMeasurer.measure(reading, furiganaStyle)
     val furiganaWidth = measured.size.width.toFloat()
@@ -238,17 +232,18 @@ private fun DrawScope.drawFuriganaLabel(
     val bgLeft = elemLeft + (elemWidth - bgWidth) / 2f
     val bgTop = (elemTop - bgHeight - 2f).coerceAtLeast(0f)
 
-    // Skip if label would be off-screen or have invalid dimensions
-    if (bgWidth <= 0 || bgHeight <= 0) return
-    if (bgLeft.isNaN() || bgTop.isNaN()) return
-    if (bgLeft + bgWidth < -100 || bgTop + bgHeight < -100) return  // Far off-screen
-    if (bgWidth > 10000 || bgHeight > 10000) return  // Unreasonably large
+    // Quick validation and coercion
+    if (bgWidth <= 0 || bgHeight <= 0 || bgLeft.isNaN()) return
+    if (bgLeft + bgWidth < -50 || bgTop > size.height + 50) return  // Off-screen
+
+    val safeBgWidth = bgWidth.coerceAtLeast(0.1f)
+    val safeBgHeight = bgHeight.coerceAtLeast(0.1f)
 
     // Background pill
     drawRoundRect(
         color = labelBg,
         topLeft = Offset(bgLeft, bgTop),
-        size = Size(bgWidth, bgHeight),
+        size = Size(safeBgWidth, safeBgHeight),
         cornerRadius = CornerRadius(4f, 4f)
     )
 
@@ -256,7 +251,7 @@ private fun DrawScope.drawFuriganaLabel(
     drawRoundRect(
         color = color,
         topLeft = Offset(bgLeft, bgTop),
-        size = Size(bgWidth, 2f),
+        size = Size(safeBgWidth, 2f),
         cornerRadius = CornerRadius(2f, 2f)
     )
 
