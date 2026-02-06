@@ -28,7 +28,17 @@ class CameraViewModel @Inject constructor(
     private val _sourceImageSize = MutableStateFlow(Size(480, 640))
     val sourceImageSize: StateFlow<Size> = _sourceImageSize.asStateFlow()
 
+    private val _rotationDegrees = MutableStateFlow(0)
+    val rotationDegrees: StateFlow<Int> = _rotationDegrees.asStateFlow()
+
+    private val _isFlashOn = MutableStateFlow(false)
+    val isFlashOn: StateFlow<Boolean> = _isFlashOn.asStateFlow()
+
     private var frameCount = 0
+
+    fun toggleFlash() {
+        _isFlashOn.value = !_isFlashOn.value
+    }
 
     fun processFrame(imageProxy: ImageProxy) {
         frameCount++
@@ -44,11 +54,10 @@ class CameraViewModel @Inject constructor(
         }
 
         _isProcessing.value = true
+        val rotation = imageProxy.imageInfo.rotationDegrees
+        _rotationDegrees.value = rotation
 
-        val inputImage = InputImage.fromMediaImage(
-            mediaImage,
-            imageProxy.imageInfo.rotationDegrees
-        )
+        val inputImage = InputImage.fromMediaImage(mediaImage, rotation)
         val imageSize = Size(mediaImage.width, mediaImage.height)
 
         viewModelScope.launch {

@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import com.jworks.kanjilens.domain.models.DetectedText
 
@@ -16,69 +17,51 @@ fun TextOverlay(
     detectedTexts: List<DetectedText>,
     imageWidth: Int,
     imageHeight: Int,
+    rotationDegrees: Int,
     modifier: Modifier = Modifier
 ) {
     Canvas(modifier = modifier.fillMaxSize()) {
-        val scaleX = size.width / imageWidth
-        val scaleY = size.height / imageHeight
+        // For portrait mode (rotation 90 or 270), the image dimensions are swapped
+        // relative to the screen. ML Kit returns coordinates in the rotated frame,
+        // so we need to account for this when mapping to screen coordinates.
+        val isRotated = rotationDegrees == 90 || rotationDegrees == 270
+        val effectiveWidth = if (isRotated) imageHeight else imageWidth
+        val effectiveHeight = if (isRotated) imageWidth else imageHeight
+
+        val scaleX = size.width / effectiveWidth
+        val scaleY = size.height / effectiveHeight
 
         detectedTexts.forEach { detected ->
             val bounds = detected.bounds ?: return@forEach
-
-            val left = bounds.left * scaleX
-            val top = bounds.top * scaleY
-            val width = bounds.width() * scaleX
-            val height = bounds.height() * scaleY
-
-            // Bounding box
-            drawRect(
-                color = Color(0xFF4CAF50),
-                topLeft = Offset(left, top),
-                size = Size(width, height),
-                style = Stroke(width = 3f)
-            )
-
-            // Label background
-            drawRect(
-                color = Color.Black.copy(alpha = 0.6f),
-                topLeft = Offset(left, top - 40f),
-                size = Size(width.coerceAtLeast(80f), 36f)
-            )
+            drawBoundingBox(bounds, scaleX, scaleY)
         }
     }
 }
 
-fun mapToScreenCoordinates(
-    imageBounds: Rect,
-    imageWidth: Int,
-    imageHeight: Int,
-    screenWidth: Int,
-    screenHeight: Int,
-    rotation: Int
-): Rect {
-    val rotatedBounds = when (rotation) {
-        90 -> Rect(
-            imageBounds.top,
-            imageWidth - imageBounds.right,
-            imageBounds.bottom,
-            imageWidth - imageBounds.left
-        )
-        270 -> Rect(
-            imageHeight - imageBounds.bottom,
-            imageBounds.left,
-            imageHeight - imageBounds.top,
-            imageBounds.right
-        )
-        else -> imageBounds
-    }
+private fun DrawScope.drawBoundingBox(
+    bounds: Rect,
+    scaleX: Float,
+    scaleY: Float
+) {
+    val left = bounds.left * scaleX
+    val top = bounds.top * scaleY
+    val width = bounds.width() * scaleX
+    val height = bounds.height() * scaleY
 
-    val scaleX = screenWidth.toFloat() / imageWidth
-    val scaleY = screenHeight.toFloat() / imageHeight
+    // Bounding box outline
+    drawRect(
+        color = Color(0xFF4CAF50),
+        topLeft = Offset(left, top),
+        size = Size(width, height),
+        style = Stroke(width = 3f)
+    )
 
-    return Rect(
-        (rotatedBounds.left * scaleX).toInt(),
-        (rotatedBounds.top * scaleY).toInt(),
-        (rotatedBounds.right * scaleX).toInt(),
-        (rotatedBounds.bottom * scaleY).toInt()
+    // Semi-transparent label background above the box
+    val labelHeight = 36f
+    val labelTop = (top - labelHeight).coerceAtLeast(0f)
+    drawRect(
+        color = Color.Black.copy(alpha = 0.6f),
+        topLeft = Offset(left, labelTop),
+        size = Size(width.coerceAtLeast(80f), labelHeight)
     )
 }
