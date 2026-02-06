@@ -25,6 +25,7 @@ class SettingsDataStore(private val context: Context) {
         val LABEL_BG_ALPHA = floatPreferencesKey("label_bg_alpha")
         val FRAME_SKIP = intPreferencesKey("frame_skip")
         val SHOW_DEBUG_HUD = booleanPreferencesKey("show_debug_hud")
+        val SHOW_BOXES = booleanPreferencesKey("show_boxes")
     }
 
     private val defaults = AppSettings()
@@ -37,7 +38,8 @@ class SettingsDataStore(private val context: Context) {
             labelFontSize = prefs[Keys.LABEL_FONT_SIZE] ?: defaults.labelFontSize,
             labelBackgroundAlpha = prefs[Keys.LABEL_BG_ALPHA] ?: defaults.labelBackgroundAlpha,
             frameSkip = prefs[Keys.FRAME_SKIP] ?: defaults.frameSkip,
-            showDebugHud = prefs[Keys.SHOW_DEBUG_HUD] ?: defaults.showDebugHud
+            showDebugHud = prefs[Keys.SHOW_DEBUG_HUD] ?: defaults.showDebugHud,
+            showBoxes = prefs[Keys.SHOW_BOXES] ?: defaults.showBoxes
         )
     }
 
@@ -50,6 +52,7 @@ class SettingsDataStore(private val context: Context) {
             prefs[Keys.LABEL_BG_ALPHA] = settings.labelBackgroundAlpha
             prefs[Keys.FRAME_SKIP] = settings.frameSkip
             prefs[Keys.SHOW_DEBUG_HUD] = settings.showDebugHud
+            prefs[Keys.SHOW_BOXES] = settings.showBoxes
         }
     }
 }
