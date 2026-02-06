@@ -77,6 +77,7 @@ class CameraViewModel @Inject constructor(
 
     private var frameCount = 0
     private val recentTimings = ArrayDeque<Long>(STATS_WINDOW)
+    private var modeSwitchPauseFrames = 0  // Pause frames after mode switch
 
     fun toggleFlash() {
         _isFlashOn.value = !_isFlashOn.value
@@ -88,6 +89,13 @@ class CameraViewModel @Inject constructor(
 
     fun updatePartialModeBoundaryRatio(ratio: Float) {
         viewModelScope.launch {
+            // Clear detections when switching modes (fresh start)
+            _detectedTexts.value = emptyList()
+
+            // Pause processing for 15 frames (~0.5 seconds) to let UI settle
+            modeSwitchPauseFrames = 15
+
+            // Update settings
             val updated = settings.value.copy(partialModeBoundaryRatio = ratio)
             settingsRepository.updateSettings(updated)
         }
@@ -95,6 +103,14 @@ class CameraViewModel @Inject constructor(
 
     fun processFrame(imageProxy: ImageProxy) {
         frameCount++
+
+        // Skip frames during mode switch pause
+        if (modeSwitchPauseFrames > 0) {
+            modeSwitchPauseFrames--
+            imageProxy.close()
+            return
+        }
+
         val frameSkip = settings.value.frameSkip
         if (frameCount % frameSkip != 0 || _isProcessing.value) {
             imageProxy.close()

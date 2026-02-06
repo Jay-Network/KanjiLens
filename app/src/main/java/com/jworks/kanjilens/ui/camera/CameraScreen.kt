@@ -153,14 +153,26 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
             viewModel.updateCanvasSize(android.util.Size(maxWidthPx.toInt(), maxHeightPx.toInt()))
         }
 
-        // Initialize button positions (1/4 from top, right side, stacked vertically)
+        // Initialize button positions (top-right, always above white panel)
         if (!buttonsInitialized) {
-            val quarterHeightPx = maxHeightPx * 0.25f
-            settingsBtnOffset = Offset(maxWidthPx - btnSizePx - 16f, quarterHeightPx)
-            flashBtnOffset = Offset(maxWidthPx - btnSizePx - 16f, quarterHeightPx + btnSizePx + 12f)
-            modeBtnOffset = Offset(maxWidthPx - btnSizePx - 16f, quarterHeightPx + (btnSizePx + 12f) * 2)
+            val topMargin = 80f  // Below status bar
+            settingsBtnOffset = Offset(maxWidthPx - btnSizePx - 16f, topMargin)
+            flashBtnOffset = Offset(maxWidthPx - btnSizePx - 16f, topMargin + btnSizePx + 12f)
+            modeBtnOffset = Offset(maxWidthPx - btnSizePx - 16f, topMargin + (btnSizePx + 12f) * 2)
             buttonsInitialized = true
         }
+
+        // Constrain buttons to stay above white panel in partial mode
+        val maxButtonY = if (displayBoundary < 0.99f) {
+            (maxHeightPx * displayBoundary - btnSizePx - 16f).coerceAtLeast(80f)
+        } else {
+            maxHeightPx - btnSizePx
+        }
+
+        // Auto-adjust button positions if they're in the white panel area
+        if (settingsBtnOffset.y > maxButtonY) settingsBtnOffset = settingsBtnOffset.copy(y = maxButtonY)
+        if (flashBtnOffset.y > maxButtonY) flashBtnOffset = flashBtnOffset.copy(y = maxButtonY)
+        if (modeBtnOffset.y > maxButtonY) modeBtnOffset = modeBtnOffset.copy(y = maxButtonY)
 
         val boundaryYDp = with(density) { (maxHeightPx * displayBoundary).toDp() }
 
@@ -356,13 +368,20 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
             offset = modeBtnOffset,
             onOffsetChange = { modeBtnOffset = it },
             onClick = {
-                val newMode = if (displayBoundary > 0.6f) 0.25f else 1f
+                // Determine new mode based on current setting (not animation value)
+                val currentMode = settings.partialModeBoundaryRatio
+                val newMode = if (currentMode > 0.6f) 0.25f else 1f
+
+                // Pause and reset when switching modes
                 scope.launch {
+                    // Animate to new mode
                     boundaryAnim.animateTo(
                         newMode,
                         spring(dampingRatio = 0.7f, stiffness = 300f)
                     )
                 }
+
+                // Update settings (this will trigger filtering logic)
                 viewModel.updatePartialModeBoundaryRatio(newMode)
             },
             maxWidth = maxWidthPx,
@@ -370,7 +389,7 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
             btnSize = btnSizePx
         ) {
             Text(
-                if (displayBoundary > 0.6f) "25%" else "FULL",
+                if (settings.partialModeBoundaryRatio > 0.6f) "25%" else "FULL",
                 color = Color.White,
                 fontSize = 10.sp
             )
