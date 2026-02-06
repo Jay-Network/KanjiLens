@@ -119,7 +119,11 @@ fun SettingsScreen(
             SliderSetting(
                 label = "Frame skip",
                 value = settings.frameSkip.toFloat(),
-                valueLabel = "Every ${settings.frameSkip} frames",
+                valueLabel = when (settings.frameSkip) {
+                    1 -> "No skip (real-time)"
+                    2 -> "Skip 1 frame"
+                    else -> "Skip ${settings.frameSkip - 1} frames"
+                },
                 range = 1f..10f,
                 steps = 8,
                 onValueChange = { viewModel.updateFrameSkip(it.roundToInt()) }
