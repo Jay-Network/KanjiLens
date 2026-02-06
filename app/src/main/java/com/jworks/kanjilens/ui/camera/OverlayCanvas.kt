@@ -45,11 +45,13 @@ fun TextOverlay(
         if (imageWidth <= 0 || imageHeight <= 0) return@Canvas
 
         val isRotated = rotationDegrees == 90 || rotationDegrees == 270
-        val effectiveWidth = if (isRotated) imageHeight else imageWidth
-        val effectiveHeight = if (isRotated) imageWidth else imageHeight
+        val effectiveWidth = (if (isRotated) imageHeight else imageWidth).toFloat()
+        val effectiveHeight = (if (isRotated) imageWidth else imageHeight).toFloat()
 
-        val scaleX = size.width / effectiveWidth
-        val scaleY = size.height / effectiveHeight
+        // Match PreviewView.ScaleType.FILL_CENTER: uniform scale + centered crop
+        val scale = maxOf(size.width / effectiveWidth, size.height / effectiveHeight)
+        val offsetX = (effectiveWidth * scale - size.width) / 2f
+        val offsetY = (effectiveHeight * scale - size.height) / 2f
 
         // Only render kanji elements that have readings
         for (detected in detectedTexts) {
@@ -64,14 +66,14 @@ fun TextOverlay(
                     // Per-segment rendering: individual boxes + furigana per kanji word
                     drawKanjiSegments(
                         bounds, element.text.length, element.kanjiSegments,
-                        scaleX, scaleY, kanjiColor, settings.strokeWidth,
+                        scale, offsetX, offsetY, kanjiColor, settings.strokeWidth,
                         textMeasurer, furiganaStyle, labelBg
                     )
                 } else if (element.reading != null) {
                     // Fallback: element-level rendering
-                    drawBoundingBox(bounds, scaleX, scaleY, kanjiColor, settings.strokeWidth)
+                    drawBoundingBox(bounds, scale, offsetX, offsetY, kanjiColor, settings.strokeWidth)
                     drawFuriganaLabel(
-                        bounds, element.reading, scaleX, scaleY,
+                        bounds, element.reading, scale, offsetX, offsetY,
                         kanjiColor, textMeasurer, furiganaStyle, labelBg
                     )
                 }
@@ -82,15 +84,16 @@ fun TextOverlay(
 
 private fun DrawScope.drawBoundingBox(
     bounds: Rect,
-    scaleX: Float,
-    scaleY: Float,
+    scale: Float,
+    offsetX: Float,
+    offsetY: Float,
     color: Color,
     strokeWidth: Float
 ) {
-    val left = bounds.left * scaleX
-    val top = bounds.top * scaleY
-    val width = bounds.width() * scaleX
-    val height = bounds.height() * scaleY
+    val left = bounds.left * scale - offsetX
+    val top = bounds.top * scale - offsetY
+    val width = bounds.width() * scale
+    val height = bounds.height() * scale
 
     drawRect(
         color = color,
@@ -104,18 +107,19 @@ private fun DrawScope.drawKanjiSegments(
     elementBounds: Rect,
     textLength: Int,
     segments: List<KanjiSegment>,
-    scaleX: Float,
-    scaleY: Float,
+    scale: Float,
+    offsetX: Float,
+    offsetY: Float,
     color: Color,
     strokeWidth: Float,
     textMeasurer: TextMeasurer,
     furiganaStyle: TextStyle,
     labelBg: Color
 ) {
-    val elemLeft = elementBounds.left * scaleX
-    val elemTop = elementBounds.top * scaleY
-    val elemWidth = elementBounds.width() * scaleX
-    val elemHeight = elementBounds.height() * scaleY
+    val elemLeft = elementBounds.left * scale - offsetX
+    val elemTop = elementBounds.top * scale - offsetY
+    val elemWidth = elementBounds.width() * scale
+    val elemHeight = elementBounds.height() * scale
 
     if (textLength <= 0) return
     val charWidth = elemWidth / textLength.toFloat()
@@ -170,16 +174,17 @@ private fun DrawScope.drawKanjiSegments(
 private fun DrawScope.drawFuriganaLabel(
     bounds: Rect,
     reading: String,
-    scaleX: Float,
-    scaleY: Float,
+    scale: Float,
+    offsetX: Float,
+    offsetY: Float,
     color: Color,
     textMeasurer: TextMeasurer,
     furiganaStyle: TextStyle,
     labelBg: Color
 ) {
-    val elemLeft = bounds.left * scaleX
-    val elemTop = bounds.top * scaleY
-    val elemWidth = bounds.width() * scaleX
+    val elemLeft = bounds.left * scale - offsetX
+    val elemTop = bounds.top * scale - offsetY
+    val elemWidth = bounds.width() * scale
 
     val measured = textMeasurer.measure(reading, furiganaStyle)
     val furiganaWidth = measured.size.width.toFloat()
