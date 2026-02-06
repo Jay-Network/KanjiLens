@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -116,7 +117,7 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
     var camera by remember { mutableStateOf<Camera?>(null) }
 
     // Boundary animation: smooth transition between 0.25 (partial) and 1.0 (full screen)
-    val boundaryAnim = remember { Animatable(1f) }
+    val boundaryAnim = remember { Animatable(0.25f) }
     val displayBoundary = boundaryAnim.value
 
     // Sync with saved setting on first load only (not on every settings change)
@@ -130,6 +131,9 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
     var modeBtnOffset by remember { mutableStateOf(Offset.Zero) }
     var verticalBtnOffset by remember { mutableStateOf(Offset.Zero) }
     var buttonsInitialized by remember { mutableStateOf(false) }
+
+    // Bottom pad in vertical partial mode (ratio of screen height: 0.5 = pad covers bottom half)
+    val verticalPadTopRatio = 0.5f
 
     DisposableEffect(Unit) {
         onDispose {
@@ -154,28 +158,28 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
             viewModel.updateCanvasSize(android.util.Size(maxWidthPx.toInt(), maxHeightPx.toInt()))
         }
 
-        // Initialize button positions (top-right, always above white panel)
+        // Fixed split ratios: camera portion of screen
+        val isPartial = displayBoundary < 0.99f
+        val vertCameraRatio = 0.40f  // 40% width for camera in vertical partial
+        val horizCameraRatio = 0.25f // 25% height for camera in horizontal partial
+        val isVerticalPartial = isPartial && settings.verticalTextMode
+        val isHorizontalPartial = isPartial && !settings.verticalTextMode
+        val btnGap = 12f
+        val rightMargin = 16f
+        val bottomFooterPadding = 160f  // Space for phone's navigation bar
+
         if (!buttonsInitialized) {
-            val topMargin = 80f  // Below status bar
-            settingsBtnOffset = Offset(maxWidthPx - btnSizePx - 16f, topMargin)
-            flashBtnOffset = Offset(maxWidthPx - btnSizePx - 16f, topMargin + btnSizePx + 12f)
-            modeBtnOffset = Offset(maxWidthPx - btnSizePx - 16f, topMargin + (btnSizePx + 12f) * 2)
-            verticalBtnOffset = Offset(maxWidthPx - btnSizePx - 16f, topMargin + (btnSizePx + 12f) * 3)
+            // 2x2 grid: bottom-right corner
+            val col2 = maxWidthPx - btnSizePx - rightMargin
+            val col1 = col2 - btnSizePx - btnGap
+            val row2 = maxHeightPx - btnSizePx - bottomFooterPadding
+            val row1 = row2 - btnSizePx - btnGap
+            settingsBtnOffset = Offset(col1, row1)
+            flashBtnOffset = Offset(col2, row1)
+            modeBtnOffset = Offset(col1, row2)
+            verticalBtnOffset = Offset(col2, row2)
             buttonsInitialized = true
         }
-
-        // Constrain buttons to stay above white panel in partial mode
-        val maxButtonY = if (displayBoundary < 0.99f) {
-            (maxHeightPx * displayBoundary - btnSizePx - 16f).coerceAtLeast(80f)
-        } else {
-            maxHeightPx - btnSizePx
-        }
-
-        // Auto-adjust button positions if they're in the white panel area
-        if (settingsBtnOffset.y > maxButtonY) settingsBtnOffset = settingsBtnOffset.copy(y = maxButtonY)
-        if (flashBtnOffset.y > maxButtonY) flashBtnOffset = flashBtnOffset.copy(y = maxButtonY)
-        if (modeBtnOffset.y > maxButtonY) modeBtnOffset = modeBtnOffset.copy(y = maxButtonY)
-        if (verticalBtnOffset.y > maxButtonY) verticalBtnOffset = verticalBtnOffset.copy(y = maxButtonY)
 
         val boundaryYDp = with(density) { (maxHeightPx * displayBoundary).toDp() }
 
@@ -242,10 +246,10 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
             )
         }
 
-        // Layer 3: White area below boundary with jukugo list
+        // Layer 3: Panel area with jukugo list
+        // Vertical mode: LEFT 75% panel, RIGHT 25% camera
+        // Horizontal mode: TOP 25% camera, BOTTOM 75% panel
         if (displayBoundary < 0.99f) {
-            val whiteHeightDp = with(density) { (maxHeightPx * (1f - displayBoundary)).toDp() }
-
             // Jukugo collection state (5-second refresh)
             var jukugoList by remember { mutableStateOf<List<JukugoEntry>>(emptyList()) }
             var jukugoAccumulator by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
@@ -275,16 +279,28 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
                 }
             }
 
-            Box(
-                modifier = Modifier
+            val panelModifier = if (settings.verticalTextMode) {
+                // Vertical mode: panel on the LEFT (60% width)
+                val panelWidthDp = with(density) { (maxWidthPx * (1f - vertCameraRatio)).toDp() }
+                Modifier
+                    .width(panelWidthDp)
+                    .fillMaxHeight()
+                    .align(Alignment.CenterStart)
+                    .background(Color(0xFFF5E6D3))
+                    .border(width = 2.dp, color = Color(0xFFD4B896))
+            } else {
+                // Horizontal mode: panel on the BOTTOM (75% height)
+                val whiteHeightDp = with(density) { (maxHeightPx * (1f - horizCameraRatio)).toDp() }
+                Modifier
                     .fillMaxWidth()
                     .height(whiteHeightDp)
                     .align(Alignment.BottomCenter)
-                    .background(Color(0xFFF5E6D3))  // Pale brown
-                    .border(width = 2.dp, color = Color(0xFFD4B896))  // Darker brown border
-            ) {
+                    .background(Color(0xFFF5E6D3))
+                    .border(width = 2.dp, color = Color(0xFFD4B896))
+            }
+
+            Box(modifier = panelModifier) {
                 if (selectedJukugo == null) {
-                    // Show list of jukugo
                     DetectedJukugoList(
                         jukugo = jukugoList,
                         onJukugoClick = { entry ->
@@ -293,7 +309,6 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
                         modifier = Modifier.fillMaxSize()
                     )
                 } else {
-                    // Show dictionary view for selected jukugo
                     JukugoDictionaryView(
                         jukugo = selectedJukugo!!,
                         onBackClick = {
@@ -303,6 +318,26 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
                     )
                 }
             }
+        }
+
+        // Layer 3b: Draggable bottom pad in vertical partial mode
+        if (isVerticalPartial) {
+            val panelWidthPx = maxWidthPx * (1f - vertCameraRatio)
+            val padTopPx = maxHeightPx * verticalPadTopRatio
+            val padHeightDp = with(density) { (maxHeightPx - padTopPx).toDp() }
+            val panelWidthDp = with(density) { panelWidthPx.toDp() }
+
+            // Pad area
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(padHeightDp)
+                    .align(Alignment.BottomEnd)
+                    .padding(start = panelWidthDp)
+                    .background(Color(0xFFF5E6D3))
+                    .border(width = 1.dp, color = Color(0xFFD4B896))
+            )
+
         }
 
         // Layer 4: Processing indicator
@@ -320,13 +355,23 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
 
         // Layer 5: Debug HUD (in camera area)
         if (settings.showDebugHud && ocrStats.framesProcessed > 0) {
-            val hudY = with(density) { (maxHeightPx * displayBoundary - 80.dp.toPx()).coerceAtLeast(0f).toDp() }
-            DebugStatsHud(
-                stats = ocrStats,
-                modifier = Modifier
+            val hudModifier = if (isVerticalPartial) {
+                // Vertical partial: HUD in top-right camera area
+                val hudX = with(density) { (maxWidthPx * (1f - vertCameraRatio) + 12.dp.toPx()).toDp() }
+                Modifier
+                    .align(Alignment.TopStart)
+                    .offset(x = hudX)
+                    .padding(top = 12.dp)
+            } else {
+                val hudY = with(density) { (maxHeightPx * displayBoundary - 80.dp.toPx()).coerceAtLeast(0f).toDp() }
+                Modifier
                     .align(Alignment.TopStart)
                     .offset(y = hudY)
                     .padding(start = 12.dp)
+            }
+            DebugStatsHud(
+                stats = ocrStats,
+                modifier = hudModifier
             )
         }
 
@@ -372,20 +417,17 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
             offset = modeBtnOffset,
             onOffsetChange = { modeBtnOffset = it },
             onClick = {
-                // Determine new mode based on current setting (not animation value)
                 val currentMode = settings.partialModeBoundaryRatio
-                val newMode = if (currentMode > 0.6f) 0.25f else 1f
+                // Horizontal partial = 0.25, vertical partial = 0.40
+                val partialTarget = if (settings.verticalTextMode) 0.40f else 0.25f
+                val newMode = if (currentMode > 0.6f) partialTarget else 1f
 
-                // Pause and reset when switching modes
                 scope.launch {
-                    // Animate to new mode
                     boundaryAnim.animateTo(
                         newMode,
                         spring(dampingRatio = 0.7f, stiffness = 300f)
                     )
                 }
-
-                // Update settings (this will trigger filtering logic)
                 viewModel.updatePartialModeBoundaryRatio(newMode)
             },
             maxWidth = maxWidthPx,
@@ -403,7 +445,21 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
         DraggableFloatingButton(
             offset = verticalBtnOffset,
             onOffsetChange = { verticalBtnOffset = it },
-            onClick = { viewModel.updateVerticalTextMode(!settings.verticalTextMode) },
+            onClick = {
+                val goingVertical = !settings.verticalTextMode
+                viewModel.updateVerticalTextMode(goingVertical)
+                // Adjust partial ratio if already in partial mode
+                if (settings.partialModeBoundaryRatio < 0.99f) {
+                    val newRatio = if (goingVertical) 0.40f else 0.25f
+                    scope.launch {
+                        boundaryAnim.animateTo(
+                            newRatio,
+                            spring(dampingRatio = 0.7f, stiffness = 300f)
+                        )
+                    }
+                    viewModel.updatePartialModeBoundaryRatio(newRatio)
+                }
+            },
             maxWidth = maxWidthPx,
             maxHeight = maxHeightPx,
             btnSize = btnSizePx

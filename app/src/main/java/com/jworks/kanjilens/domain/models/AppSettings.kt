@@ -11,6 +11,6 @@ data class AppSettings(
     val showBoxes: Boolean = true,  // Show bounding boxes around text
     val furiganaIsBold: Boolean = false,  // Make furigana text bold
     val furiganaUseWhiteText: Boolean = false,  // White text (true) or black text (false)
-    val partialModeBoundaryRatio: Float = 1f,  // 1.0 = full screen, 0.25 = partial (25% camera, 75% features)
+    val partialModeBoundaryRatio: Float = 0.25f,  // 1.0 = full screen, 0.25 = horizontal partial, 0.40 = vertical partial
     val verticalTextMode: Boolean = false  // Vertical text rendering (縦書き)
 )

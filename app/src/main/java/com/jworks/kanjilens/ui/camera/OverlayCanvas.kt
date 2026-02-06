@@ -112,7 +112,8 @@ private fun DrawScope.drawBoundingBox(
 
     // Quick bounds check and coercion
     if (width <= 0 || height <= 0) return
-    if (left + width < -50 || top > size.height + 50) return  // Off-screen
+    if (left + width < -50 || left > size.width + 50) return  // Off-screen horizontally
+    if (top + height < -50 || top > size.height + 50) return  // Off-screen vertically
 
     val safeWidth = width.coerceAtLeast(0.1f)
     val safeHeight = height.coerceAtLeast(0.1f)
@@ -147,7 +148,8 @@ private fun DrawScope.drawKanjiSegments(
 
     // Quick bounds check
     if (elemWidth <= 0 || elemHeight <= 0 || textLength <= 0) return
-    if (elemLeft + elemWidth < -50 || elemTop > size.height + 50) return  // Off-screen
+    if (elemLeft + elemWidth < -50 || elemLeft > size.width + 50) return  // Off-screen horizontally
+    if (elemTop + elemHeight < -50 || elemTop > size.height + 50) return  // Off-screen vertically
 
     if (isVerticalMode) {
         // Vertical mode: characters stacked top-to-bottom, furigana to the RIGHT
@@ -173,45 +175,15 @@ private fun DrawScope.drawKanjiSegments(
                 )
             }
 
-            // Furigana pill to the RIGHT of this segment
-            val measured = textMeasurer.measure(segment.reading, furiganaStyle)
-            val furiganaWidth = measured.size.width.toFloat()
-            val furiganaHeight = measured.size.height.toFloat()
-
-            val padH = 6f
-            val padV = 3f
-            val bgWidth = furiganaWidth + padH * 2
-            val bgHeight = furiganaHeight + padV * 2
-            val bgLeft = (elemLeft + elemWidth + 2f).coerceAtMost(size.width - bgWidth)
-            val bgTop = (segTop + (segHeight - bgHeight) / 2f).coerceAtLeast(0f)
-
-            // Quick validation and coercion
-            if (bgWidth <= 0 || bgHeight <= 0 || bgLeft.isNaN() || bgTop.isNaN()) continue
-            if (bgLeft + bgWidth < -50 || bgTop > size.height + 50) continue
-
-            val safeBgWidth = bgWidth.coerceAtLeast(0.1f)
-            val safeBgHeight = bgHeight.coerceAtLeast(0.1f)
-
-            val textLeft = bgLeft + padH
-            val textTop = bgTop + padV
-            if (textLeft < 0 || textTop < 0) continue
-            if (textLeft >= size.width || textTop >= size.height) continue
-            val availableWidth = (size.width - textLeft).coerceAtLeast(0f)
-            val availableHeight = (size.height - textTop).coerceAtLeast(0f)
-            if (availableWidth < 10f || availableHeight < 10f) continue
-
-            drawRoundRect(
-                color = labelBg,
-                topLeft = Offset(bgLeft, bgTop),
-                size = Size(safeBgWidth, safeBgHeight),
-                cornerRadius = CornerRadius(4f, 4f)
-            )
-
-            drawText(
+            // Vertical furigana pill to the RIGHT of this segment
+            drawVerticalFurigana(
+                reading = segment.reading,
+                anchorLeft = elemLeft + elemWidth + 2f,
+                anchorTop = segTop,
+                anchorHeight = segHeight,
                 textMeasurer = textMeasurer,
-                text = segment.reading,
-                topLeft = Offset(textLeft, textTop),
-                style = furiganaStyle
+                furiganaStyle = furiganaStyle,
+                labelBg = labelBg
             )
         }
     } else {
@@ -303,8 +275,24 @@ private fun DrawScope.drawFuriganaLabel(
 
     // Quick bounds check
     if (elemWidth <= 0 || elemHeight <= 0) return
-    if (elemLeft + elemWidth < -50 || elemTop > size.height + 50) return  // Off-screen
+    if (elemLeft + elemWidth < -50 || elemLeft > size.width + 50) return  // Off-screen horizontally
+    if (elemTop + elemHeight < -50 || elemTop > size.height + 50) return  // Off-screen vertically
 
+    if (isVerticalMode) {
+        // Vertical mode: furigana drawn vertically to the RIGHT
+        drawVerticalFurigana(
+            reading = reading,
+            anchorLeft = elemLeft + elemWidth + 2f,
+            anchorTop = elemTop,
+            anchorHeight = elemHeight,
+            textMeasurer = textMeasurer,
+            furiganaStyle = furiganaStyle,
+            labelBg = labelBg
+        )
+        return
+    }
+
+    // Horizontal mode: furigana centered ABOVE element
     val measured = textMeasurer.measure(reading, furiganaStyle)
     val furiganaWidth = measured.size.width.toFloat()
     val furiganaHeight = measured.size.height.toFloat()
@@ -313,19 +301,8 @@ private fun DrawScope.drawFuriganaLabel(
     val padV = 3f
     val bgWidth = furiganaWidth + padH * 2
     val bgHeight = furiganaHeight + padV * 2
-
-    val bgLeft: Float
-    val bgTop: Float
-
-    if (isVerticalMode) {
-        // Vertical mode: furigana to the RIGHT of element, vertically centered
-        bgLeft = (elemLeft + elemWidth + 2f).coerceAtMost(size.width - bgWidth)
-        bgTop = (elemTop + (elemHeight - bgHeight) / 2f).coerceAtLeast(0f)
-    } else {
-        // Horizontal mode: furigana centered ABOVE element
-        bgLeft = elemLeft + (elemWidth - bgWidth) / 2f
-        bgTop = (elemTop - bgHeight - 2f).coerceAtLeast(0f)
-    }
+    val bgLeft = elemLeft + (elemWidth - bgWidth) / 2f
+    val bgTop = (elemTop - bgHeight - 2f).coerceAtLeast(0f)
 
     // Quick validation and coercion
     if (bgWidth <= 0 || bgHeight <= 0 || bgLeft.isNaN() || bgTop.isNaN()) return
@@ -359,4 +336,73 @@ private fun DrawScope.drawFuriganaLabel(
         topLeft = Offset(textLeft, textTop),
         style = furiganaStyle
     )
+}
+
+/**
+ * Draw furigana text vertically: each character stacked top-to-bottom in a tall narrow pill,
+ * positioned to the right of the kanji and vertically centered on the anchor region.
+ */
+private fun DrawScope.drawVerticalFurigana(
+    reading: String,
+    anchorLeft: Float,
+    anchorTop: Float,
+    anchorHeight: Float,
+    textMeasurer: TextMeasurer,
+    furiganaStyle: TextStyle,
+    labelBg: Color
+) {
+    if (reading.isEmpty()) return
+
+    // Measure a single character to get consistent dimensions
+    val sampleMeasured = textMeasurer.measure("あ", furiganaStyle)
+    val charW = sampleMeasured.size.width.toFloat()
+    val charH = sampleMeasured.size.height.toFloat()
+
+    val padH = 4f
+    val padV = 3f
+    val charCount = reading.length
+    val bgWidth = charW + padH * 2
+    val bgHeight = charH * charCount + padV * 2
+
+    val bgLeft = anchorLeft
+    val bgTop = (anchorTop + (anchorHeight - bgHeight) / 2f).coerceIn(0f, (size.height - bgHeight).coerceAtLeast(0f))
+
+    // Quick validation — skip if off-screen
+    if (bgWidth <= 0 || bgHeight <= 0 || bgLeft.isNaN() || bgTop.isNaN()) return
+    if (bgLeft + bgWidth < -50 || bgLeft > size.width + 50) return  // Off-screen horizontally
+    if (bgTop + bgHeight < -50 || bgTop > size.height + 50) return  // Off-screen vertically
+
+    val textLeft = bgLeft + padH
+    val textTopStart = bgTop + padV
+    if (textLeft < 0 || textTopStart < 0) return
+    if (textLeft >= size.width || textTopStart >= size.height) return
+    val availableWidth = (size.width - textLeft).coerceAtLeast(0f)
+    val availableHeight = (size.height - textTopStart).coerceAtLeast(0f)
+    if (availableWidth < 10f || availableHeight < 10f) return
+
+    // Background pill
+    drawRoundRect(
+        color = labelBg,
+        topLeft = Offset(bgLeft, bgTop),
+        size = Size(bgWidth.coerceAtLeast(0.1f), bgHeight.coerceAtLeast(0.1f)),
+        cornerRadius = CornerRadius(4f, 4f)
+    )
+
+    // Draw each character stacked vertically
+    for (i in reading.indices) {
+        val charTop = textTopStart + i * charH
+        if (charTop + charH > size.height) break
+
+        // Measure individual char for proper centering (varying widths)
+        val charMeasured = textMeasurer.measure(reading[i].toString(), furiganaStyle)
+        val actualCharW = charMeasured.size.width.toFloat()
+        val charLeft = textLeft + (charW - actualCharW) / 2f  // Center within column
+
+        drawText(
+            textMeasurer = textMeasurer,
+            text = reading[i].toString(),
+            topLeft = Offset(charLeft, charTop),
+            style = furiganaStyle
+        )
+    }
 }
