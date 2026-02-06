@@ -29,6 +29,7 @@ class SettingsDataStore(private val context: Context) {
         val FURIGANA_IS_BOLD = booleanPreferencesKey("furigana_is_bold")
         val FURIGANA_USE_WHITE_TEXT = booleanPreferencesKey("furigana_use_white_text")
         val PARTIAL_MODE_BOUNDARY_RATIO = floatPreferencesKey("partial_mode_boundary_ratio")
+        val VERTICAL_TEXT_MODE = booleanPreferencesKey("vertical_text_mode")
     }
 
     private val defaults = AppSettings()
@@ -45,7 +46,8 @@ class SettingsDataStore(private val context: Context) {
             showBoxes = prefs[Keys.SHOW_BOXES] ?: defaults.showBoxes,
             furiganaIsBold = prefs[Keys.FURIGANA_IS_BOLD] ?: defaults.furiganaIsBold,
             furiganaUseWhiteText = prefs[Keys.FURIGANA_USE_WHITE_TEXT] ?: defaults.furiganaUseWhiteText,
-            partialModeBoundaryRatio = prefs[Keys.PARTIAL_MODE_BOUNDARY_RATIO] ?: defaults.partialModeBoundaryRatio
+            partialModeBoundaryRatio = prefs[Keys.PARTIAL_MODE_BOUNDARY_RATIO] ?: defaults.partialModeBoundaryRatio,
+            verticalTextMode = prefs[Keys.VERTICAL_TEXT_MODE] ?: defaults.verticalTextMode
         )
     }
 
@@ -62,6 +64,7 @@ class SettingsDataStore(private val context: Context) {
             prefs[Keys.FURIGANA_IS_BOLD] = settings.furiganaIsBold
             prefs[Keys.FURIGANA_USE_WHITE_TEXT] = settings.furiganaUseWhiteText
             prefs[Keys.PARTIAL_MODE_BOUNDARY_RATIO] = settings.partialModeBoundaryRatio
+            prefs[Keys.VERTICAL_TEXT_MODE] = settings.verticalTextMode
         }
     }
 }

@@ -87,6 +87,13 @@ class CameraViewModel @Inject constructor(
         _canvasSize.value = size
     }
 
+    fun updateVerticalTextMode(enabled: Boolean) {
+        viewModelScope.launch {
+            val updated = settings.value.copy(verticalTextMode = enabled)
+            settingsRepository.updateSettings(updated)
+        }
+    }
+
     fun updatePartialModeBoundaryRatio(ratio: Float) {
         viewModelScope.launch {
             // Clear detections when switching modes (fresh start)

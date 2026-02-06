@@ -128,6 +128,7 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
     var settingsBtnOffset by remember { mutableStateOf(Offset.Zero) }
     var flashBtnOffset by remember { mutableStateOf(Offset.Zero) }
     var modeBtnOffset by remember { mutableStateOf(Offset.Zero) }
+    var verticalBtnOffset by remember { mutableStateOf(Offset.Zero) }
     var buttonsInitialized by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
@@ -159,6 +160,7 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
             settingsBtnOffset = Offset(maxWidthPx - btnSizePx - 16f, topMargin)
             flashBtnOffset = Offset(maxWidthPx - btnSizePx - 16f, topMargin + btnSizePx + 12f)
             modeBtnOffset = Offset(maxWidthPx - btnSizePx - 16f, topMargin + (btnSizePx + 12f) * 2)
+            verticalBtnOffset = Offset(maxWidthPx - btnSizePx - 16f, topMargin + (btnSizePx + 12f) * 3)
             buttonsInitialized = true
         }
 
@@ -173,6 +175,7 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
         if (settingsBtnOffset.y > maxButtonY) settingsBtnOffset = settingsBtnOffset.copy(y = maxButtonY)
         if (flashBtnOffset.y > maxButtonY) flashBtnOffset = flashBtnOffset.copy(y = maxButtonY)
         if (modeBtnOffset.y > maxButtonY) modeBtnOffset = modeBtnOffset.copy(y = maxButtonY)
+        if (verticalBtnOffset.y > maxButtonY) verticalBtnOffset = verticalBtnOffset.copy(y = maxButtonY)
 
         val boundaryYDp = with(density) { (maxHeightPx * displayBoundary).toDp() }
 
@@ -234,6 +237,7 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
                 imageHeight = sourceImageSize.height,
                 rotationDegrees = rotationDegrees,
                 settings = settings,
+                isVerticalMode = settings.verticalTextMode,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -392,6 +396,22 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
                 if (settings.partialModeBoundaryRatio > 0.6f) "25%" else "FULL",
                 color = Color.White,
                 fontSize = 10.sp
+            )
+        }
+
+        // Layer 9: Vertical/Horizontal text mode toggle button
+        DraggableFloatingButton(
+            offset = verticalBtnOffset,
+            onOffsetChange = { verticalBtnOffset = it },
+            onClick = { viewModel.updateVerticalTextMode(!settings.verticalTextMode) },
+            maxWidth = maxWidthPx,
+            maxHeight = maxHeightPx,
+            btnSize = btnSizePx
+        ) {
+            Text(
+                if (settings.verticalTextMode) "縦" else "横",
+                color = if (settings.verticalTextMode) Color.Yellow else Color.White,
+                fontSize = 14.sp
             )
         }
     }

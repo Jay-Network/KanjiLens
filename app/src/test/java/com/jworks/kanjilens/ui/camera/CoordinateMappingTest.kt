@@ -238,6 +238,105 @@ class CoordinateMappingTest {
         assertTrue("Bottom should be <= canvas height", screenBounds.bottom <= canvasHeight.toInt() + 10)
     }
 
+    // ========== Vertical Text Mode Tests ==========
+
+    /**
+     * Mirrors the vertical segment positioning logic in OverlayCanvas.drawKanjiSegments
+     * when isVerticalMode=true: charHeight = elemHeight / textLength,
+     * segTop = elemTop + startIndex * charHeight
+     */
+    private data class VerticalSegmentResult(
+        val segTop: Float,
+        val segHeight: Float,
+        val furiganaBgLeft: Float,
+        val furiganaBgTop: Float
+    )
+
+    private fun computeVerticalSegment(
+        elemLeft: Float,
+        elemTop: Float,
+        elemWidth: Float,
+        elemHeight: Float,
+        textLength: Int,
+        startIndex: Int,
+        endIndex: Int,
+        furiganaWidth: Float,
+        furiganaHeight: Float
+    ): VerticalSegmentResult {
+        val charHeight = elemHeight / textLength.toFloat()
+        val segTop = elemTop + startIndex * charHeight
+        val segHeight = (endIndex - startIndex) * charHeight
+
+        val padH = 6f
+        val padV = 3f
+        val bgWidth = furiganaWidth + padH * 2
+        val bgHeight = furiganaHeight + padV * 2
+        val bgLeft = elemLeft + elemWidth + 2f
+        val bgTop = (segTop + (segHeight - bgHeight) / 2f).coerceAtLeast(0f)
+
+        return VerticalSegmentResult(segTop, segHeight, bgLeft, bgTop)
+    }
+
+    @Test
+    fun `vertical mode - charHeight divides element evenly`() {
+        // Element with 4 characters, 400px tall
+        val elemHeight = 400f
+        val textLength = 4
+        val charHeight = elemHeight / textLength
+        assertEquals(100f, charHeight, 0.001f)
+    }
+
+    @Test
+    fun `vertical mode - segment top positioned correctly`() {
+        // 4-character element at y=100, segment starts at index 2
+        val result = computeVerticalSegment(
+            elemLeft = 50f, elemTop = 100f, elemWidth = 80f, elemHeight = 400f,
+            textLength = 4, startIndex = 2, endIndex = 4,
+            furiganaWidth = 40f, furiganaHeight = 16f
+        )
+        // segTop = 100 + 2 * 100 = 300
+        assertEquals(300f, result.segTop, 0.001f)
+        // segHeight = (4-2) * 100 = 200
+        assertEquals(200f, result.segHeight, 0.001f)
+    }
+
+    @Test
+    fun `vertical mode - furigana placed to the right of element`() {
+        val result = computeVerticalSegment(
+            elemLeft = 50f, elemTop = 100f, elemWidth = 80f, elemHeight = 400f,
+            textLength = 4, startIndex = 0, endIndex = 2,
+            furiganaWidth = 40f, furiganaHeight = 16f
+        )
+        // bgLeft = elemLeft + elemWidth + 2 = 50 + 80 + 2 = 132
+        assertEquals(132f, result.furiganaBgLeft, 0.001f)
+    }
+
+    @Test
+    fun `vertical mode - furigana vertically centered on segment`() {
+        val result = computeVerticalSegment(
+            elemLeft = 50f, elemTop = 0f, elemWidth = 80f, elemHeight = 400f,
+            textLength = 4, startIndex = 0, endIndex = 2,
+            furiganaWidth = 40f, furiganaHeight = 16f
+        )
+        // segTop = 0, segHeight = 200
+        // bgHeight = 16 + 3*2 = 22
+        // bgTop = 0 + (200 - 22) / 2 = 89
+        assertEquals(89f, result.furiganaBgTop, 0.001f)
+    }
+
+    @Test
+    fun `vertical mode - furigana clamped to top of screen`() {
+        // Segment at the very top, furigana centering would go negative
+        val result = computeVerticalSegment(
+            elemLeft = 50f, elemTop = 0f, elemWidth = 80f, elemHeight = 20f,
+            textLength = 1, startIndex = 0, endIndex = 1,
+            furiganaWidth = 40f, furiganaHeight = 30f
+        )
+        // segHeight = 20, bgHeight = 30 + 6 = 36
+        // bgTop = (0 + (20 - 36) / 2) = -8 -> clamped to 0
+        assertEquals(0f, result.furiganaBgTop, 0.001f)
+    }
+
     @Test
     fun `FILL_CENTER crops correctly on narrow canvas`() {
         // Wide image, narrow canvas - should crop horizontally

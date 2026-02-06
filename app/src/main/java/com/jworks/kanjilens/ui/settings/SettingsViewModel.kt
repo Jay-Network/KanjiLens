@@ -35,6 +35,8 @@ class SettingsViewModel @Inject constructor(
 
     fun updateFuriganaUseWhiteText(value: Boolean) = updateSettings { it.copy(furiganaUseWhiteText = value) }
 
+    fun updateVerticalTextMode(value: Boolean) = updateSettings { it.copy(verticalTextMode = value) }
+
     fun applyColorPreset(kanjiColor: Long, kanaColor: Long) = updateSettings {
         it.copy(kanjiColor = kanjiColor, kanaColor = kanaColor)
     }

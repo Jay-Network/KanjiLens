@@ -153,6 +153,23 @@ fun SettingsScreen(
                 )
             }
 
+            Spacer(modifier = Modifier.height(24.dp))
+            SectionHeader("Detection")
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Vertical text mode (縦書き)", style = MaterialTheme.typography.bodyMedium)
+                Switch(
+                    checked = settings.verticalTextMode,
+                    onCheckedChange = viewModel::updateVerticalTextMode
+                )
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
             Text("Color theme", style = MaterialTheme.typography.bodyMedium)
             Spacer(modifier = Modifier.height(8.dp))
