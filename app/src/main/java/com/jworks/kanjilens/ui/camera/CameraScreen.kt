@@ -10,13 +10,18 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Text
@@ -30,9 +35,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -65,12 +72,13 @@ private fun CameraContent(viewModel: CameraViewModel) {
     val sourceImageSize by viewModel.sourceImageSize.collectAsState()
     val rotationDegrees by viewModel.rotationDegrees.collectAsState()
     val isFlashOn by viewModel.isFlashOn.collectAsState()
+    val isProcessing by viewModel.isProcessing.collectAsState()
+    val ocrStats by viewModel.ocrStats.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
 
     val cameraExecutor: ExecutorService = remember { Executors.newSingleThreadExecutor() }
     var camera by remember { mutableStateOf<Camera?>(null) }
 
-    // Clean up executor on dispose
     DisposableEffect(Unit) {
         onDispose {
             cameraExecutor.shutdown()
@@ -78,7 +86,6 @@ private fun CameraContent(viewModel: CameraViewModel) {
         }
     }
 
-    // Sync flash state with camera
     LaunchedEffect(isFlashOn) {
         camera?.cameraControl?.enableTorch(isFlashOn)
     }
@@ -88,7 +95,8 @@ private fun CameraContent(viewModel: CameraViewModel) {
         AndroidView(
             factory = { ctx ->
                 PreviewView(ctx).apply {
-                    // Tap-to-focus
+                    scaleType = PreviewView.ScaleType.FILL_CENTER
+
                     setOnTouchListener { view, event ->
                         if (event.action == MotionEvent.ACTION_UP) {
                             val cam = camera ?: return@setOnTouchListener true
@@ -146,24 +154,80 @@ private fun CameraContent(viewModel: CameraViewModel) {
             )
         }
 
-        // Flash toggle button
-        camera?.let { cam ->
-            if (cam.cameraInfo.hasFlashUnit()) {
-                IconButton(
-                    onClick = { viewModel.toggleFlash() },
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(16.dp)
-                        .size(48.dp),
-                    colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = Color.Black.copy(alpha = 0.5f),
-                        contentColor = if (isFlashOn) Color.Yellow else Color.White
-                    )
-                ) {
-                    Text(if (isFlashOn) "⚡" else "🔦", color = Color.White)
+        // Top bar: flash toggle + processing indicator
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.TopCenter)
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Processing indicator
+            if (isProcessing) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = Color(0xFF4CAF50),
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Box(modifier = Modifier.size(24.dp))
+            }
+
+            // Flash toggle
+            camera?.let { cam ->
+                if (cam.cameraInfo.hasFlashUnit()) {
+                    IconButton(
+                        onClick = { viewModel.toggleFlash() },
+                        modifier = Modifier.size(48.dp),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = Color.Black.copy(alpha = 0.5f)
+                        )
+                    ) {
+                        Text(
+                            if (isFlashOn) "ON" else "OFF",
+                            color = if (isFlashOn) Color.Yellow else Color.White,
+                            fontSize = 11.sp
+                        )
+                    }
                 }
             }
         }
+
+        // Debug stats HUD (bottom-left)
+        if (ocrStats.framesProcessed > 0) {
+            DebugStatsHud(
+                stats = ocrStats,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(12.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun DebugStatsHud(stats: OCRStats, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(Color.Black.copy(alpha = 0.6f))
+            .padding(8.dp)
+    ) {
+        Text(
+            text = "OCR: ${stats.avgFrameMs}ms avg",
+            color = when {
+                stats.avgFrameMs < 200 -> Color(0xFF4CAF50)  // green
+                stats.avgFrameMs < 400 -> Color(0xFFFF9800)  // orange
+                else -> Color(0xFFF44336)                      // red
+            },
+            fontSize = 11.sp
+        )
+        Text(
+            text = "Lines: ${stats.linesDetected} | #${stats.framesProcessed}",
+            color = Color.White.copy(alpha = 0.7f),
+            fontSize = 10.sp
+        )
     }
 }
 
