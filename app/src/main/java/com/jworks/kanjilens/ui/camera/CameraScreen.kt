@@ -127,9 +127,7 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
                             it.setSurfaceProvider(surfaceProvider)
                         }
 
-                        @Suppress("DEPRECATION")
                         val imageAnalyzer = ImageAnalysis.Builder()
-                            .setTargetResolution(Size(1280, 720))
                             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                             .build()
                             .also { analysis ->

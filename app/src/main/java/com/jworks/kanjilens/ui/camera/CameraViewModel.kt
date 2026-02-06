@@ -81,6 +81,11 @@ class CameraViewModel @Inject constructor(
         val inputImage = InputImage.fromMediaImage(mediaImage, rotation)
         val imageSize = Size(mediaImage.width, mediaImage.height)
 
+        // Debug: Log actual camera dimensions (especially for Z Flip 7)
+        if (frameCount % (settings.value.frameSkip * 20) == 0) {
+            Log.d(TAG, "Camera frame: ${mediaImage.width}x${mediaImage.height}, rotation=$rotation°")
+        }
+
         viewModelScope.launch {
             try {
                 val result = processCameraFrame.execute(inputImage, imageSize)

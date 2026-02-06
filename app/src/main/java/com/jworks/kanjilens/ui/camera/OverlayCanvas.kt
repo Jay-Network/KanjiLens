@@ -50,8 +50,15 @@ fun TextOverlay(
 
         // Match PreviewView.ScaleType.FILL_CENTER: uniform scale + centered crop
         val scale = maxOf(size.width / effectiveWidth, size.height / effectiveHeight)
-        val offsetX = (effectiveWidth * scale - size.width) / 2f
-        val offsetY = (effectiveHeight * scale - size.height) / 2f
+
+        // FIX: Calculate visible crop region in IMAGE coordinates
+        // The scaled image may overflow the canvas - we need to know which part is visible
+        val scaledImageWidth = effectiveWidth * scale
+        val scaledImageHeight = effectiveHeight * scale
+
+        // Crop offset: how much of the scaled image is cut off on each side
+        val cropOffsetX = (scaledImageWidth - size.width) / 2f
+        val cropOffsetY = (scaledImageHeight - size.height) / 2f
 
         // Only render kanji elements that have readings
         for (detected in detectedTexts) {
@@ -62,20 +69,25 @@ fun TextOverlay(
                 val bounds = element.bounds ?: continue
                 if (bounds.isEmpty) continue
 
-                if (element.kanjiSegments.isNotEmpty()) {
-                    // Per-segment rendering: individual boxes + furigana per kanji word
-                    drawKanjiSegments(
-                        bounds, element.text.length, element.kanjiSegments,
-                        scale, offsetX, offsetY, kanjiColor, settings.strokeWidth,
-                        textMeasurer, furiganaStyle, labelBg
-                    )
-                } else if (element.reading != null) {
-                    // Fallback: element-level rendering
-                    drawBoundingBox(bounds, scale, offsetX, offsetY, kanjiColor, settings.strokeWidth)
-                    drawFuriganaLabel(
-                        bounds, element.reading, scale, offsetX, offsetY,
-                        kanjiColor, textMeasurer, furiganaStyle, labelBg
-                    )
+                try {
+                    if (element.kanjiSegments.isNotEmpty()) {
+                        // Per-segment rendering: individual boxes + furigana per kanji word
+                        drawKanjiSegments(
+                            bounds, element.text.length, element.kanjiSegments,
+                            scale, cropOffsetX, cropOffsetY, kanjiColor, settings.strokeWidth,
+                            textMeasurer, furiganaStyle, labelBg
+                        )
+                    } else if (element.reading != null) {
+                        // Fallback: element-level rendering
+                        drawBoundingBox(bounds, scale, cropOffsetX, cropOffsetY, kanjiColor, settings.strokeWidth)
+                        drawFuriganaLabel(
+                            bounds, element.reading, scale, cropOffsetX, cropOffsetY,
+                            kanjiColor, textMeasurer, furiganaStyle, labelBg
+                        )
+                    }
+                } catch (e: IllegalArgumentException) {
+                    // Skip this element if drawing fails (edge case with invalid dimensions)
+                    android.util.Log.w("OverlayCanvas", "Skipped drawing element due to: ${e.message}")
                 }
             }
         }
@@ -85,15 +97,20 @@ fun TextOverlay(
 private fun DrawScope.drawBoundingBox(
     bounds: Rect,
     scale: Float,
-    offsetX: Float,
-    offsetY: Float,
+    cropOffsetX: Float,
+    cropOffsetY: Float,
     color: Color,
     strokeWidth: Float
 ) {
-    val left = bounds.left * scale - offsetX
-    val top = bounds.top * scale - offsetY
+    val left = bounds.left * scale - cropOffsetX
+    val top = bounds.top * scale - cropOffsetY
     val width = bounds.width() * scale
     val height = bounds.height() * scale
+
+    // Skip if element is completely off-screen or has invalid dimensions
+    if (width <= 0 || height <= 0) return
+    if (left + width < 0 || top + height < 0) return  // Completely off left/top
+    if (left > size.width || top > size.height) return  // Completely off right/bottom
 
     drawRect(
         color = color,
@@ -108,18 +125,23 @@ private fun DrawScope.drawKanjiSegments(
     textLength: Int,
     segments: List<KanjiSegment>,
     scale: Float,
-    offsetX: Float,
-    offsetY: Float,
+    cropOffsetX: Float,
+    cropOffsetY: Float,
     color: Color,
     strokeWidth: Float,
     textMeasurer: TextMeasurer,
     furiganaStyle: TextStyle,
     labelBg: Color
 ) {
-    val elemLeft = elementBounds.left * scale - offsetX
-    val elemTop = elementBounds.top * scale - offsetY
+    val elemLeft = elementBounds.left * scale - cropOffsetX
+    val elemTop = elementBounds.top * scale - cropOffsetY
     val elemWidth = elementBounds.width() * scale
     val elemHeight = elementBounds.height() * scale
+
+    // Skip if element is completely off-screen or has invalid dimensions
+    if (elemWidth <= 0 || elemHeight <= 0) return
+    if (elemLeft + elemWidth < 0 || elemTop + elemHeight < 0) return  // Off left/top
+    if (elemLeft > size.width || elemTop > size.height) return  // Off right/bottom
 
     if (textLength <= 0) return
     val charWidth = elemWidth / textLength.toFloat()
@@ -127,6 +149,10 @@ private fun DrawScope.drawKanjiSegments(
     for (segment in segments) {
         val segLeft = elemLeft + segment.startIndex * charWidth
         val segWidth = (segment.endIndex - segment.startIndex) * charWidth
+
+        // Skip segment if it's off-screen or has invalid dimensions
+        if (segWidth <= 0) continue
+        if (segLeft + segWidth < 0 || segLeft > size.width) continue
 
         // Bounding box for this kanji segment
         drawRect(
@@ -147,6 +173,14 @@ private fun DrawScope.drawKanjiSegments(
         val bgHeight = furiganaHeight + padV * 2
         val bgLeft = segLeft + (segWidth - bgWidth) / 2f
         val bgTop = (elemTop - bgHeight - 2f).coerceAtLeast(0f)
+
+        // Skip label if it would be invalid or off-screen
+        if (bgWidth <= 0 || bgHeight <= 0) continue
+        if (bgLeft.isNaN() || bgTop.isNaN()) continue
+        if (bgLeft + bgWidth < -100 || bgTop + bgHeight < -100) continue  // Far off-screen
+
+        // Validate all dimensions are reasonable before drawing
+        if (bgWidth > 10000 || bgHeight > 10000) continue  // Unreasonably large
 
         drawRoundRect(
             color = labelBg,
@@ -175,16 +209,22 @@ private fun DrawScope.drawFuriganaLabel(
     bounds: Rect,
     reading: String,
     scale: Float,
-    offsetX: Float,
-    offsetY: Float,
+    cropOffsetX: Float,
+    cropOffsetY: Float,
     color: Color,
     textMeasurer: TextMeasurer,
     furiganaStyle: TextStyle,
     labelBg: Color
 ) {
-    val elemLeft = bounds.left * scale - offsetX
-    val elemTop = bounds.top * scale - offsetY
+    val elemLeft = bounds.left * scale - cropOffsetX
+    val elemTop = bounds.top * scale - cropOffsetY
     val elemWidth = bounds.width() * scale
+    val elemHeight = bounds.height() * scale
+
+    // Skip if element is completely off-screen or has invalid dimensions
+    if (elemWidth <= 0 || elemHeight <= 0) return
+    if (elemLeft + elemWidth < 0 || elemTop + elemHeight < 0) return  // Off left/top
+    if (elemLeft > size.width || elemTop > size.height) return  // Off right/bottom
 
     val measured = textMeasurer.measure(reading, furiganaStyle)
     val furiganaWidth = measured.size.width.toFloat()
@@ -197,6 +237,12 @@ private fun DrawScope.drawFuriganaLabel(
     val bgHeight = furiganaHeight + padV * 2
     val bgLeft = elemLeft + (elemWidth - bgWidth) / 2f
     val bgTop = (elemTop - bgHeight - 2f).coerceAtLeast(0f)
+
+    // Skip if label would be off-screen or have invalid dimensions
+    if (bgWidth <= 0 || bgHeight <= 0) return
+    if (bgLeft.isNaN() || bgTop.isNaN()) return
+    if (bgLeft + bgWidth < -100 || bgTop + bgHeight < -100) return  // Far off-screen
+    if (bgWidth > 10000 || bgHeight > 10000) return  // Unreasonably large
 
     // Background pill
     drawRoundRect(
