@@ -31,7 +31,9 @@ class SettingsViewModel @Inject constructor(
 
     fun updateShowBoxes(value: Boolean) = updateSettings { it.copy(showBoxes = value) }
 
-    fun updateFuriganaOutlineWidth(value: Float) = updateSettings { it.copy(furiganaOutlineWidth = value) }
+    fun updateFuriganaIsBold(value: Boolean) = updateSettings { it.copy(furiganaIsBold = value) }
+
+    fun updateFuriganaUseWhiteText(value: Boolean) = updateSettings { it.copy(furiganaUseWhiteText = value) }
 
     fun applyColorPreset(kanjiColor: Long, kanaColor: Long) = updateSettings {
         it.copy(kanjiColor = kanjiColor, kanaColor = kanaColor)

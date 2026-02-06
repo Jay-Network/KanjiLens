@@ -26,7 +26,8 @@ class SettingsDataStore(private val context: Context) {
         val FRAME_SKIP = intPreferencesKey("frame_skip")
         val SHOW_DEBUG_HUD = booleanPreferencesKey("show_debug_hud")
         val SHOW_BOXES = booleanPreferencesKey("show_boxes")
-        val FURIGANA_OUTLINE_WIDTH = floatPreferencesKey("furigana_outline_width")
+        val FURIGANA_IS_BOLD = booleanPreferencesKey("furigana_is_bold")
+        val FURIGANA_USE_WHITE_TEXT = booleanPreferencesKey("furigana_use_white_text")
     }
 
     private val defaults = AppSettings()
@@ -41,7 +42,8 @@ class SettingsDataStore(private val context: Context) {
             frameSkip = prefs[Keys.FRAME_SKIP] ?: defaults.frameSkip,
             showDebugHud = prefs[Keys.SHOW_DEBUG_HUD] ?: defaults.showDebugHud,
             showBoxes = prefs[Keys.SHOW_BOXES] ?: defaults.showBoxes,
-            furiganaOutlineWidth = prefs[Keys.FURIGANA_OUTLINE_WIDTH] ?: defaults.furiganaOutlineWidth
+            furiganaIsBold = prefs[Keys.FURIGANA_IS_BOLD] ?: defaults.furiganaIsBold,
+            furiganaUseWhiteText = prefs[Keys.FURIGANA_USE_WHITE_TEXT] ?: defaults.furiganaUseWhiteText
         )
     }
 
@@ -55,7 +57,8 @@ class SettingsDataStore(private val context: Context) {
             prefs[Keys.FRAME_SKIP] = settings.frameSkip
             prefs[Keys.SHOW_DEBUG_HUD] = settings.showDebugHud
             prefs[Keys.SHOW_BOXES] = settings.showBoxes
-            prefs[Keys.FURIGANA_OUTLINE_WIDTH] = settings.furiganaOutlineWidth
+            prefs[Keys.FURIGANA_IS_BOLD] = settings.furiganaIsBold
+            prefs[Keys.FURIGANA_USE_WHITE_TEXT] = settings.furiganaUseWhiteText
         }
     }
 }

@@ -107,13 +107,35 @@ fun SettingsScreen(
                 onValueChange = viewModel::updateLabelBackgroundAlpha
             )
 
-            SliderSetting(
-                label = "Furigana text outline",
-                value = settings.furiganaOutlineWidth,
-                valueLabel = "${String.format("%.1f", settings.furiganaOutlineWidth)}px",
-                range = 0f..4f,
-                onValueChange = viewModel::updateFuriganaOutlineWidth
-            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Bold furigana text", style = MaterialTheme.typography.bodyMedium)
+                Switch(
+                    checked = settings.furiganaIsBold,
+                    onCheckedChange = viewModel::updateFuriganaIsBold
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("White furigana text", style = MaterialTheme.typography.bodyMedium)
+                Switch(
+                    checked = settings.furiganaUseWhiteText,
+                    onCheckedChange = viewModel::updateFuriganaUseWhiteText
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 

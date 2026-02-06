@@ -9,5 +9,6 @@ data class AppSettings(
     val frameSkip: Int = 1,  // Process every frame for real-time feel
     val showDebugHud: Boolean = true,
     val showBoxes: Boolean = true,  // Show bounding boxes around text
-    val furiganaOutlineWidth: Float = 1.5f  // Outline/shadow width for better readability
+    val furiganaIsBold: Boolean = false,  // Make furigana text bold
+    val furiganaUseWhiteText: Boolean = false  // White text (true) or black text (false)
 )

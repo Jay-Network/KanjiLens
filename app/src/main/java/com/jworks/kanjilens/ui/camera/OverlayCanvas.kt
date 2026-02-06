@@ -15,13 +15,12 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.sp
 import com.jworks.kanjilens.domain.models.AppSettings
 import com.jworks.kanjilens.domain.models.DetectedText
 import com.jworks.kanjilens.domain.models.KanjiSegment
-
-private val LABEL_TEXT_COLOR = Color.Black
 
 @Composable
 fun TextOverlay(
@@ -37,17 +36,11 @@ fun TextOverlay(
     val labelBg = remember(settings.labelBackgroundAlpha) {
         Color.Black.copy(alpha = settings.labelBackgroundAlpha)
     }
-    val furiganaStyle = remember(settings.labelFontSize, settings.furiganaOutlineWidth) {
+    val furiganaStyle = remember(settings.labelFontSize, settings.furiganaIsBold, settings.furiganaUseWhiteText) {
         TextStyle(
-            color = LABEL_TEXT_COLOR,
+            color = if (settings.furiganaUseWhiteText) Color.White else Color.Black,
             fontSize = (settings.labelFontSize * 0.75f).sp,
-            shadow = if (settings.furiganaOutlineWidth > 0) {
-                androidx.compose.ui.graphics.Shadow(
-                    color = Color.White,
-                    offset = Offset(0f, 0f),
-                    blurRadius = settings.furiganaOutlineWidth * 2f
-                )
-            } else null
+            fontWeight = if (settings.furiganaIsBold) FontWeight.Bold else FontWeight.Normal
         )
     }
 
