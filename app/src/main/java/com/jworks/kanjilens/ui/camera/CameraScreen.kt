@@ -119,8 +119,8 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
     val boundaryAnim = remember { Animatable(1f) }
     val displayBoundary = boundaryAnim.value
 
-    // Sync with saved setting on first load
-    LaunchedEffect(settings.partialModeBoundaryRatio) {
+    // Sync with saved setting on first load only (not on every settings change)
+    LaunchedEffect(Unit) {
         boundaryAnim.snapTo(settings.partialModeBoundaryRatio)
     }
 
