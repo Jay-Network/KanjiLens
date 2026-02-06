@@ -6,5 +6,13 @@ data class DetectedText(
     val text: String,
     val bounds: Rect?,
     val confidence: Float,
-    val language: String = "ja"
+    val language: String = "ja",
+    val containsKanji: Boolean = false,
+    val elements: List<TextElement> = emptyList()
+)
+
+data class TextElement(
+    val text: String,
+    val bounds: Rect?,
+    val containsKanji: Boolean = false
 )

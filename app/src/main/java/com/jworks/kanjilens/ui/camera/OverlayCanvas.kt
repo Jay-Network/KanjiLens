@@ -12,6 +12,9 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import com.jworks.kanjilens.domain.models.DetectedText
 
+private val KANJI_COLOR = Color(0xFF4CAF50)   // green - needs furigana
+private val KANA_COLOR = Color(0xFF2196F3)     // blue - already readable
+
 @Composable
 fun TextOverlay(
     detectedTexts: List<DetectedText>,
@@ -21,9 +24,6 @@ fun TextOverlay(
     modifier: Modifier = Modifier
 ) {
     Canvas(modifier = modifier.fillMaxSize()) {
-        // For portrait mode (rotation 90 or 270), the image dimensions are swapped
-        // relative to the screen. ML Kit returns coordinates in the rotated frame,
-        // so we need to account for this when mapping to screen coordinates.
         val isRotated = rotationDegrees == 90 || rotationDegrees == 270
         val effectiveWidth = if (isRotated) imageHeight else imageWidth
         val effectiveHeight = if (isRotated) imageWidth else imageHeight
@@ -33,7 +33,8 @@ fun TextOverlay(
 
         detectedTexts.forEach { detected ->
             val bounds = detected.bounds ?: return@forEach
-            drawBoundingBox(bounds, scaleX, scaleY)
+            val color = if (detected.containsKanji) KANJI_COLOR else KANA_COLOR
+            drawBoundingBox(bounds, scaleX, scaleY, color)
         }
     }
 }
@@ -41,7 +42,8 @@ fun TextOverlay(
 private fun DrawScope.drawBoundingBox(
     bounds: Rect,
     scaleX: Float,
-    scaleY: Float
+    scaleY: Float,
+    color: Color
 ) {
     val left = bounds.left * scaleX
     val top = bounds.top * scaleY
@@ -50,7 +52,7 @@ private fun DrawScope.drawBoundingBox(
 
     // Bounding box outline
     drawRect(
-        color = Color(0xFF4CAF50),
+        color = color,
         topLeft = Offset(left, top),
         size = Size(width, height),
         style = Stroke(width = 3f)
@@ -60,7 +62,7 @@ private fun DrawScope.drawBoundingBox(
     val labelHeight = 36f
     val labelTop = (top - labelHeight).coerceAtLeast(0f)
     drawRect(
-        color = Color.Black.copy(alpha = 0.6f),
+        color = color.copy(alpha = 0.3f),
         topLeft = Offset(left, labelTop),
         size = Size(width.coerceAtLeast(80f), labelHeight)
     )
