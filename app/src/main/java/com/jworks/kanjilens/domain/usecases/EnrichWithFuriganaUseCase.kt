@@ -2,6 +2,7 @@ package com.jworks.kanjilens.domain.usecases
 
 import android.util.Log
 import com.jworks.kanjilens.domain.models.DetectedText
+import com.jworks.kanjilens.domain.models.JapaneseTextUtil
 import com.jworks.kanjilens.domain.repository.FuriganaRepository
 import javax.inject.Inject
 
@@ -10,42 +11,97 @@ class EnrichWithFuriganaUseCase @Inject constructor(
 ) {
     companion object {
         private const val TAG = "FuriganaEnrich"
+        private const val MAX_WORD_LEN = 6
     }
 
     suspend fun execute(detectedTexts: List<DetectedText>): List<DetectedText> {
-        // Collect all kanji-containing element texts for batch lookup
-        val kanjiWords = detectedTexts
-            .flatMap { it.elements }
-            .filter { it.containsKanji }
-            .map { it.text }
-            .distinct()
+        val kanjiLines = detectedTexts.filter { it.containsKanji }
+        if (kanjiLines.isEmpty()) return detectedTexts
 
-        if (kanjiWords.isEmpty()) return detectedTexts
+        // Step 1: Extract candidate substrings from full line texts (line-level context)
+        val candidates = mutableSetOf<String>()
+        for (line in kanjiLines) {
+            candidates.addAll(extractCandidates(line.text))
+        }
+        if (candidates.isEmpty()) return detectedTexts
 
-        // Batch lookup: local DB first, then backend fallback (handled by repository)
+        // Step 2: Batch lookup all candidates against JMDict
         val readings = try {
-            furiganaRepository.batchGetFurigana(kanjiWords).getOrDefault(emptyMap())
+            furiganaRepository.batchGetFurigana(candidates.toList())
+                .getOrDefault(emptyMap())
         } catch (e: Exception) {
-            Log.w(TAG, "Batch furigana lookup failed for ${kanjiWords.size} words", e)
+            Log.w(TAG, "Batch lookup failed for ${candidates.size} candidates", e)
             emptyMap()
         }
 
-        if (readings.isNotEmpty()) {
-            Log.d(TAG, "Resolved ${readings.size}/${kanjiWords.size} readings")
-        }
+        if (readings.isEmpty()) return detectedTexts
 
-        // Enrich elements with readings
+        val wordMap = readings.mapValues { it.value.reading }
+        Log.d(TAG, "Loaded ${wordMap.size} readings from ${candidates.size} candidates")
+
+        // Step 3: For each element that contains kanji, resolve its reading
+        // using greedy longest-match with the pre-loaded wordMap
         return detectedTexts.map { detected ->
+            if (!detected.containsKanji) return@map detected
+
             detected.copy(
                 elements = detected.elements.map { element ->
                     if (element.containsKanji) {
-                        val result = readings[element.text]
-                        element.copy(reading = result?.reading)
+                        val reading = resolveElementReading(element.text, wordMap)
+                        element.copy(reading = reading)
                     } else {
                         element
                     }
                 }
             )
         }
+    }
+
+    private fun extractCandidates(text: String): Set<String> {
+        val candidates = mutableSetOf<String>()
+        for (i in text.indices) {
+            if (!JapaneseTextUtil.containsKanji(text[i].toString())) continue
+            for (len in 1..MAX_WORD_LEN.coerceAtMost(text.length - i)) {
+                candidates.add(text.substring(i, i + len))
+            }
+        }
+        return candidates
+    }
+
+    /**
+     * Greedy longest-match on the element text to build a combined reading.
+     * Only the kanji portions get replaced with readings; kana pass through.
+     * Returns null if no kanji in the element could be resolved.
+     */
+    private fun resolveElementReading(text: String, wordMap: Map<String, String>): String? {
+        val result = StringBuilder()
+        var i = 0
+        var matchCount = 0
+
+        while (i < text.length) {
+            if (JapaneseTextUtil.containsKanji(text[i].toString())) {
+                var matched = false
+                for (len in MAX_WORD_LEN.coerceAtMost(text.length - i) downTo 1) {
+                    val sub = text.substring(i, i + len)
+                    val reading = wordMap[sub]
+                    if (reading != null) {
+                        result.append(reading)
+                        i += len
+                        matched = true
+                        matchCount++
+                        break
+                    }
+                }
+                if (!matched) {
+                    result.append(text[i])
+                    i++
+                }
+            } else {
+                result.append(text[i])
+                i++
+            }
+        }
+
+        return if (matchCount > 0) result.toString() else null
     }
 }

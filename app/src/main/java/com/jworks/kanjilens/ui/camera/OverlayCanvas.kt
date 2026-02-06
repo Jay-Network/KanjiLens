@@ -19,10 +19,8 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.sp
 import com.jworks.kanjilens.domain.models.AppSettings
 import com.jworks.kanjilens.domain.models.DetectedText
-import com.jworks.kanjilens.domain.models.TextElement
 
 private val LABEL_TEXT_COLOR = Color.White
-private val FURIGANA_TEXT_COLOR = Color.White
 
 @Composable
 fun TextOverlay(
@@ -35,15 +33,11 @@ fun TextOverlay(
 ) {
     val textMeasurer = rememberTextMeasurer()
     val kanjiColor = remember(settings.kanjiColor) { Color(settings.kanjiColor) }
-    val kanaColor = remember(settings.kanaColor) { Color(settings.kanaColor) }
     val labelBg = remember(settings.labelBackgroundAlpha) {
         Color.Black.copy(alpha = settings.labelBackgroundAlpha)
     }
-    val labelStyle = remember(settings.labelFontSize) {
-        TextStyle(color = LABEL_TEXT_COLOR, fontSize = settings.labelFontSize.sp)
-    }
     val furiganaStyle = remember(settings.labelFontSize) {
-        TextStyle(color = FURIGANA_TEXT_COLOR, fontSize = (settings.labelFontSize * 0.75f).sp)
+        TextStyle(color = LABEL_TEXT_COLOR, fontSize = (settings.labelFontSize * 0.75f).sp)
     }
 
     Canvas(modifier = modifier.fillMaxSize()) {
@@ -56,31 +50,25 @@ fun TextOverlay(
         val scaleX = size.width / effectiveWidth
         val scaleY = size.height / effectiveHeight
 
-        detectedTexts.forEach { detected ->
-            val bounds = detected.bounds ?: return@forEach
-            if (bounds.isEmpty) return@forEach
-            val color = if (detected.containsKanji) kanjiColor else kanaColor
+        // Only render kanji elements that have readings
+        for (detected in detectedTexts) {
+            if (!detected.containsKanji) continue
 
-            // Draw line bounding box
-            drawBoundingBox(bounds, scaleX, scaleY, color, settings.strokeWidth)
+            for (element in detected.elements) {
+                if (!element.containsKanji) continue
+                val bounds = element.bounds ?: continue
+                if (bounds.isEmpty) continue
 
-            // Draw furigana for each kanji element that has a reading
-            val elementsWithReading = detected.elements.filter {
-                it.containsKanji && it.reading != null && it.bounds != null
-            }
-            if (elementsWithReading.isNotEmpty()) {
-                elementsWithReading.forEach { element ->
+                // Bounding box around kanji element
+                drawBoundingBox(bounds, scaleX, scaleY, kanjiColor, settings.strokeWidth)
+
+                // Furigana pill above kanji element (only if reading resolved)
+                if (element.reading != null) {
                     drawFuriganaLabel(
-                        element, scaleX, scaleY, kanjiColor,
-                        textMeasurer, furiganaStyle, labelBg
+                        bounds, element.reading, scaleX, scaleY,
+                        kanjiColor, textMeasurer, furiganaStyle, labelBg
                     )
                 }
-            } else {
-                // No furigana available - fall back to showing detected text as label
-                drawTextLabel(
-                    bounds, scaleX, scaleY, color, detected.text,
-                    textMeasurer, labelStyle, labelBg
-                )
             }
         }
     }
@@ -107,7 +95,8 @@ private fun DrawScope.drawBoundingBox(
 }
 
 private fun DrawScope.drawFuriganaLabel(
-    element: TextElement,
+    bounds: Rect,
+    reading: String,
     scaleX: Float,
     scaleY: Float,
     color: Color,
@@ -115,9 +104,6 @@ private fun DrawScope.drawFuriganaLabel(
     furiganaStyle: TextStyle,
     labelBg: Color
 ) {
-    val bounds = element.bounds ?: return
-    val reading = element.reading ?: return
-
     val elemLeft = bounds.left * scaleX
     val elemTop = bounds.top * scaleY
     val elemWidth = bounds.width() * scaleX
@@ -126,11 +112,11 @@ private fun DrawScope.drawFuriganaLabel(
     val furiganaWidth = measured.size.width.toFloat()
     val furiganaHeight = measured.size.height.toFloat()
 
-    // Center furigana above the element's bounding box
-    val labelPadH = 6f
-    val labelPadV = 3f
-    val bgWidth = furiganaWidth + labelPadH * 2
-    val bgHeight = furiganaHeight + labelPadV * 2
+    // Center furigana pill above the kanji element
+    val padH = 6f
+    val padV = 3f
+    val bgWidth = furiganaWidth + padH * 2
+    val bgHeight = furiganaHeight + padV * 2
     val bgLeft = elemLeft + (elemWidth - bgWidth) / 2f
     val bgTop = (elemTop - bgHeight - 2f).coerceAtLeast(0f)
 
@@ -154,47 +140,7 @@ private fun DrawScope.drawFuriganaLabel(
     drawText(
         textMeasurer = textMeasurer,
         text = reading,
-        topLeft = Offset(bgLeft + labelPadH, bgTop + labelPadV),
+        topLeft = Offset(bgLeft + padH, bgTop + padV),
         style = furiganaStyle
-    )
-}
-
-private fun DrawScope.drawTextLabel(
-    bounds: Rect,
-    scaleX: Float,
-    scaleY: Float,
-    color: Color,
-    text: String,
-    textMeasurer: TextMeasurer,
-    labelStyle: TextStyle,
-    labelBg: Color
-) {
-    val left = bounds.left * scaleX
-    val top = bounds.top * scaleY
-
-    val measuredText = textMeasurer.measure(text, labelStyle)
-    val labelWidth = measuredText.size.width.toFloat() + 12f
-    val labelHeight = measuredText.size.height.toFloat() + 8f
-    val labelTop = (top - labelHeight - 4f).coerceAtLeast(0f)
-
-    drawRoundRect(
-        color = labelBg,
-        topLeft = Offset(left, labelTop),
-        size = Size(labelWidth, labelHeight),
-        cornerRadius = CornerRadius(6f, 6f)
-    )
-
-    drawRoundRect(
-        color = color,
-        topLeft = Offset(left, labelTop),
-        size = Size(4f, labelHeight),
-        cornerRadius = CornerRadius(2f, 2f)
-    )
-
-    drawText(
-        textMeasurer = textMeasurer,
-        text = text,
-        topLeft = Offset(left + 8f, labelTop + 4f),
-        style = labelStyle
     )
 }
