@@ -107,6 +107,14 @@ fun SettingsScreen(
                 onValueChange = viewModel::updateLabelBackgroundAlpha
             )
 
+            SliderSetting(
+                label = "Furigana text outline",
+                value = settings.furiganaOutlineWidth,
+                valueLabel = "${String.format("%.1f", settings.furiganaOutlineWidth)}px",
+                range = 0f..4f,
+                onValueChange = viewModel::updateFuriganaOutlineWidth
+            )
+
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(

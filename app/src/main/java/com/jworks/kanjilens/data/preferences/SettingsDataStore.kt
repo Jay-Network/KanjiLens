@@ -26,6 +26,7 @@ class SettingsDataStore(private val context: Context) {
         val FRAME_SKIP = intPreferencesKey("frame_skip")
         val SHOW_DEBUG_HUD = booleanPreferencesKey("show_debug_hud")
         val SHOW_BOXES = booleanPreferencesKey("show_boxes")
+        val FURIGANA_OUTLINE_WIDTH = floatPreferencesKey("furigana_outline_width")
     }
 
     private val defaults = AppSettings()
@@ -39,7 +40,8 @@ class SettingsDataStore(private val context: Context) {
             labelBackgroundAlpha = prefs[Keys.LABEL_BG_ALPHA] ?: defaults.labelBackgroundAlpha,
             frameSkip = prefs[Keys.FRAME_SKIP] ?: defaults.frameSkip,
             showDebugHud = prefs[Keys.SHOW_DEBUG_HUD] ?: defaults.showDebugHud,
-            showBoxes = prefs[Keys.SHOW_BOXES] ?: defaults.showBoxes
+            showBoxes = prefs[Keys.SHOW_BOXES] ?: defaults.showBoxes,
+            furiganaOutlineWidth = prefs[Keys.FURIGANA_OUTLINE_WIDTH] ?: defaults.furiganaOutlineWidth
         )
     }
 
@@ -53,6 +55,7 @@ class SettingsDataStore(private val context: Context) {
             prefs[Keys.FRAME_SKIP] = settings.frameSkip
             prefs[Keys.SHOW_DEBUG_HUD] = settings.showDebugHud
             prefs[Keys.SHOW_BOXES] = settings.showBoxes
+            prefs[Keys.FURIGANA_OUTLINE_WIDTH] = settings.furiganaOutlineWidth
         }
     }
 }

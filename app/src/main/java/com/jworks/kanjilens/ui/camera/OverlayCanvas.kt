@@ -21,7 +21,7 @@ import com.jworks.kanjilens.domain.models.AppSettings
 import com.jworks.kanjilens.domain.models.DetectedText
 import com.jworks.kanjilens.domain.models.KanjiSegment
 
-private val LABEL_TEXT_COLOR = Color.White
+private val LABEL_TEXT_COLOR = Color.Black
 
 @Composable
 fun TextOverlay(
@@ -37,8 +37,18 @@ fun TextOverlay(
     val labelBg = remember(settings.labelBackgroundAlpha) {
         Color.Black.copy(alpha = settings.labelBackgroundAlpha)
     }
-    val furiganaStyle = remember(settings.labelFontSize) {
-        TextStyle(color = LABEL_TEXT_COLOR, fontSize = (settings.labelFontSize * 0.75f).sp)
+    val furiganaStyle = remember(settings.labelFontSize, settings.furiganaOutlineWidth) {
+        TextStyle(
+            color = LABEL_TEXT_COLOR,
+            fontSize = (settings.labelFontSize * 0.75f).sp,
+            shadow = if (settings.furiganaOutlineWidth > 0) {
+                androidx.compose.ui.graphics.Shadow(
+                    color = Color.White,
+                    offset = Offset(0f, 0f),
+                    blurRadius = settings.furiganaOutlineWidth * 2f
+                )
+            } else null
+        )
     }
 
     Canvas(modifier = modifier.fillMaxSize()) {
@@ -182,11 +192,15 @@ private fun DrawScope.drawKanjiSegments(
         val safeBgWidth = bgWidth.coerceAtLeast(0.1f)
         val safeBgHeight = bgHeight.coerceAtLeast(0.1f)
 
-        // Skip text if it would be positioned off-screen
+        // Skip text if it would create invalid constraints
         val textLeft = bgLeft + padH
         val textTop = bgTop + padV
-        if (textLeft < -10 || textTop < -10) continue
-        if (textLeft > size.width + 10) continue
+        if (textLeft < 0 || textTop < 0) continue
+        if (textLeft >= size.width || textTop >= size.height) continue
+        // Ensure there's enough space for text to render without negative constraints
+        val availableWidth = (size.width - textLeft).coerceAtLeast(0f)
+        val availableHeight = (size.height - textTop).coerceAtLeast(0f)
+        if (availableWidth < 10f || availableHeight < 10f) continue
 
         drawRoundRect(
             color = labelBg,
@@ -250,11 +264,15 @@ private fun DrawScope.drawFuriganaLabel(
     val safeBgWidth = bgWidth.coerceAtLeast(0.1f)
     val safeBgHeight = bgHeight.coerceAtLeast(0.1f)
 
-    // Skip text if it would be positioned off-screen
+    // Skip text if it would create invalid constraints
     val textLeft = bgLeft + padH
     val textTop = bgTop + padV
-    if (textLeft < -10 || textTop < -10) return
-    if (textLeft > size.width + 10) return
+    if (textLeft < 0 || textTop < 0) return
+    if (textLeft >= size.width || textTop >= size.height) return
+    // Ensure there's enough space for text to render without negative constraints
+    val availableWidth = (size.width - textLeft).coerceAtLeast(0f)
+    val availableHeight = (size.height - textTop).coerceAtLeast(0f)
+    if (availableWidth < 10f || availableHeight < 10f) return
 
     // Background pill
     drawRoundRect(

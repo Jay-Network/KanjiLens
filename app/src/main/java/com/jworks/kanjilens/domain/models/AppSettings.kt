@@ -8,5 +8,6 @@ data class AppSettings(
     val labelBackgroundAlpha: Float = 0.7f,
     val frameSkip: Int = 1,  // Process every frame for real-time feel
     val showDebugHud: Boolean = true,
-    val showBoxes: Boolean = true  // Show bounding boxes around text
+    val showBoxes: Boolean = true,  // Show bounding boxes around text
+    val furiganaOutlineWidth: Float = 1.5f  // Outline/shadow width for better readability
 )
