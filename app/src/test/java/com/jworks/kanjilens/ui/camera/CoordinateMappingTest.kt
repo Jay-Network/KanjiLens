@@ -337,6 +337,136 @@ class CoordinateMappingTest {
         assertEquals(0f, result.furiganaBgTop, 0.001f)
     }
 
+    // ========== Visible Region (Partial Mode) Tests ==========
+
+    /**
+     * Mirrors calculateVisibleRegion() from CameraViewModel.
+     * Maps screen-space partial mode region back to image coordinates.
+     */
+    private fun calculateVisibleRegionForTest(
+        imageWidth: Int,
+        imageHeight: Int,
+        canvasWidth: Float,
+        canvasHeight: Float,
+        rotationDegrees: Int,
+        isVerticalMode: Boolean,
+        isFullMode: Boolean = false
+    ): TestRect {
+        if (isFullMode) {
+            return TestRect(0, 0, imageWidth, imageHeight)
+        }
+
+        val isRotated = rotationDegrees == 90 || rotationDegrees == 270
+        val effectiveWidth = (if (isRotated) imageHeight else imageWidth).toFloat()
+        val effectiveHeight = (if (isRotated) imageWidth else imageHeight).toFloat()
+
+        val scale = maxOf(canvasWidth / effectiveWidth, canvasHeight / effectiveHeight)
+        val cropOffsetX = (effectiveWidth * scale - canvasWidth) / 2f
+        val cropOffsetY = (effectiveHeight * scale - canvasHeight) / 2f
+
+        val screenLeft: Float
+        val screenTop: Float
+        val screenRight: Float
+        val screenBottom: Float
+
+        if (isVerticalMode) {
+            screenLeft = canvasWidth * (1f - 0.40f)  // VERT_CAMERA_WIDTH_RATIO
+            screenTop = 0f
+            screenRight = canvasWidth
+            screenBottom = canvasHeight * 0.50f       // VERT_PAD_TOP_RATIO
+        } else {
+            screenLeft = 0f
+            screenTop = 0f
+            screenRight = canvasWidth
+            screenBottom = canvasHeight * 0.25f       // HORIZ_CAMERA_HEIGHT_RATIO
+        }
+
+        return TestRect(
+            ((screenLeft + cropOffsetX) / scale).toInt().coerceAtLeast(0),
+            ((screenTop + cropOffsetY) / scale).toInt().coerceAtLeast(0),
+            ((screenRight + cropOffsetX) / scale).toInt().coerceAtMost(imageWidth),
+            ((screenBottom + cropOffsetY) / scale).toInt().coerceAtMost(imageHeight)
+        )
+    }
+
+    private fun testRectsIntersect(a: TestRect, b: TestRect): Boolean {
+        return a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom
+    }
+
+    @Test
+    fun `visible region - horizontal partial is top 25 percent`() {
+        // Z Flip 7: 2992x2992 square sensor, 1080x2340 screen
+        val region = calculateVisibleRegionForTest(
+            2992, 2992, 1080f, 2340f, 0,
+            isVerticalMode = false
+        )
+        // Screen bottom = 2340 * 0.25 = 585px
+        // scale = max(1080/2992, 2340/2992) = 0.7821
+        // cropOffsetY = (2992*0.7821 - 2340)/2 ≈ 0 (nearly square fit)
+        // imageBottom = (585 + cropOffsetY) / scale ≈ 748
+        // Full width: imageLeft near 0 (after crop), imageRight near imageWidth
+        assertTrue("Region should span significant width", region.width() > 1000)
+        assertTrue("Region height should be ~25% of image visible area", region.height() < imageHeightQuarter(2992, 2340f, 1080f))
+        assertTrue("Region top should be >= 0", region.top >= 0)
+    }
+
+    /** Helper: approximate image-space height for 25% of canvas */
+    private fun imageHeightQuarter(imageSize: Int, canvasH: Float, canvasW: Float): Int {
+        val scale = maxOf(canvasW / imageSize, canvasH / imageSize)
+        return ((canvasH * 0.30f) / scale).toInt()  // Allow 30% slack for crop offset
+    }
+
+    @Test
+    fun `visible region - vertical partial is top-right quadrant`() {
+        val region = calculateVisibleRegionForTest(
+            2992, 2992, 1080f, 2340f, 0,
+            isVerticalMode = true
+        )
+        // Screen region: left=648 (60% of 1080), top=0, right=1080, bottom=1170 (50% of 2340)
+        // scale=0.782, cropOffsetX≈630 → imageLeft≈1634, imageRight≈2187
+        // Should map to right portion of image, top half
+        assertTrue("Region left should be in right portion of image (was ${region.left})", region.left > 1500)
+        assertTrue("Region right should be past center (was ${region.right})", region.right > 2000)
+        assertTrue("Region top should be near 0 (was ${region.top})", region.top < 100)
+        assertTrue("Region bottom should be roughly half of image (was ${region.bottom})", region.bottom < 2000)
+    }
+
+    @Test
+    fun `visible region - vertical partial filters panel area`() {
+        val region = calculateVisibleRegionForTest(
+            2992, 2992, 1080f, 2340f, 0,
+            isVerticalMode = true
+        )
+        // Element in the left 60% panel area (image coords: far left)
+        val panelElement = TestRect(100, 500, 300, 600)
+        val intersects = testRectsIntersect(panelElement, region)
+        assertTrue("Element in panel area should be filtered out", !intersects)
+    }
+
+    @Test
+    fun `visible region - vertical partial filters bottom pad`() {
+        val region = calculateVisibleRegionForTest(
+            2992, 2992, 1080f, 2340f, 0,
+            isVerticalMode = true
+        )
+        // Element in the bottom pad area (image coords: bottom of image, right side)
+        val bottomElement = TestRect(2000, 2800, 2200, 2950)
+        val intersects = testRectsIntersect(bottomElement, region)
+        assertTrue("Element in bottom pad area should be filtered out", !intersects)
+    }
+
+    @Test
+    fun `visible region - full mode returns entire image`() {
+        val region = calculateVisibleRegionForTest(
+            2992, 2992, 1080f, 2340f, 0,
+            isVerticalMode = false, isFullMode = true
+        )
+        assertEquals(0, region.left)
+        assertEquals(0, region.top)
+        assertEquals(2992, region.right)
+        assertEquals(2992, region.bottom)
+    }
+
     @Test
     fun `FILL_CENTER crops correctly on narrow canvas`() {
         // Wide image, narrow canvas - should crop horizontally

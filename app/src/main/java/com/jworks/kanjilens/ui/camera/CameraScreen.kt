@@ -109,6 +109,7 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
     val isFlashOn by viewModel.isFlashOn.collectAsState()
     val isProcessing by viewModel.isProcessing.collectAsState()
     val ocrStats by viewModel.ocrStats.collectAsState()
+    val visibleRegion by viewModel.visibleRegion.collectAsState()
     val settings by viewModel.settings.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
@@ -133,7 +134,7 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
     var buttonsInitialized by remember { mutableStateOf(false) }
 
     // Bottom pad in vertical partial mode (ratio of screen height: 0.5 = pad covers bottom half)
-    val verticalPadTopRatio = 0.5f
+    val verticalPadTopRatio = PartialModeConstants.VERT_PAD_TOP_RATIO
 
     DisposableEffect(Unit) {
         onDispose {
@@ -160,8 +161,8 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
 
         // Fixed split ratios: camera portion of screen
         val isPartial = displayBoundary < 0.99f
-        val vertCameraRatio = 0.40f  // 40% width for camera in vertical partial
-        val horizCameraRatio = 0.25f // 25% height for camera in horizontal partial
+        val vertCameraRatio = PartialModeConstants.VERT_CAMERA_WIDTH_RATIO
+        val horizCameraRatio = PartialModeConstants.HORIZ_CAMERA_HEIGHT_RATIO
         val isVerticalPartial = isPartial && settings.verticalTextMode
         val isHorizontalPartial = isPartial && !settings.verticalTextMode
         val btnGap = 12f
@@ -251,25 +252,44 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
         // Horizontal mode: TOP 25% camera, BOTTOM 75% panel
         if (displayBoundary < 0.99f) {
             // Jukugo collection state (5-second refresh)
-            var jukugoList by remember { mutableStateOf<List<JukugoEntry>>(emptyList()) }
-            var jukugoAccumulator by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
-            var selectedJukugo by remember { mutableStateOf<JukugoEntry?>(null) }
+            // Key on verticalTextMode so state resets when switching modes
+            val modeKey = settings.verticalTextMode
+            var jukugoList by remember(modeKey) { mutableStateOf<List<JukugoEntry>>(emptyList()) }
+            var jukugoAccumulator by remember(modeKey) { mutableStateOf<Map<String, String>>(emptyMap()) }
+            var selectedJukugo by remember(modeKey) { mutableStateOf<JukugoEntry?>(null) }
 
             // Accumulate jukugo from current frame
-            LaunchedEffect(detectedTexts) {
+            // Key on modeKey so LaunchedEffect restarts with fresh state refs after mode switch
+            LaunchedEffect(detectedTexts, modeKey) {
+                val region = visibleRegion
                 val newJukugo = detectedTexts.flatMap { detected ->
                     detected.elements.flatMap { element ->
+                        val bounds = element.bounds
                         element.kanjiSegments
-                            .filter { it.text.length > 1 }  // Only compound words
+                            .filter { segment ->
+                                if (segment.text.length <= 1) return@filter false
+                                // In partial mode, estimate segment's image-space position
+                                // and skip segments outside the visible region
+                                if (region == null || bounds == null || element.text.isEmpty()) {
+                                    true
+                                } else {
+                                    val segCenter = (segment.startIndex + segment.endIndex) / 2f
+                                    val ratio = segCenter / element.text.length
+                                    val segY = bounds.top + ratio * bounds.height()
+                                    val segX = bounds.left + ratio * bounds.width()
+                                    segY <= region.bottom && segX >= region.left
+                                }
+                            }
                             .map { it.text to it.reading }
                     }
-                }.toMap()  // Map: text -> reading
+                }.toMap()
 
                 jukugoAccumulator = jukugoAccumulator + newJukugo
             }
 
             // Refresh list every 5 seconds
-            LaunchedEffect(Unit) {
+            // Key on modeKey so timer restarts with fresh state refs after mode switch
+            LaunchedEffect(modeKey) {
                 while (true) {
                     kotlinx.coroutines.delay(5000)
                     jukugoList = jukugoAccumulator.map { (text, reading) ->
@@ -447,9 +467,8 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
             onOffsetChange = { verticalBtnOffset = it },
             onClick = {
                 val goingVertical = !settings.verticalTextMode
-                viewModel.updateVerticalTextMode(goingVertical)
-                // Adjust partial ratio if already in partial mode
                 if (settings.partialModeBoundaryRatio < 0.99f) {
+                    // In partial mode: update both atomically to avoid race condition
                     val newRatio = if (goingVertical) 0.40f else 0.25f
                     scope.launch {
                         boundaryAnim.animateTo(
@@ -457,7 +476,9 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
                             spring(dampingRatio = 0.7f, stiffness = 300f)
                         )
                     }
-                    viewModel.updatePartialModeBoundaryRatio(newRatio)
+                    viewModel.updateVerticalModeAndBoundary(goingVertical, newRatio)
+                } else {
+                    viewModel.updateVerticalTextMode(goingVertical)
                 }
             },
             maxWidth = maxWidthPx,

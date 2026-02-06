@@ -64,6 +64,20 @@ fun TextOverlay(
         val cropOffsetX = (scaledImageWidth - size.width) / 2f
         val cropOffsetY = (scaledImageHeight - size.height) / 2f
 
+        // In partial modes, skip elements partially hidden behind the panel edge.
+        // FILL_CENTER mapping makes elemLeft deeply negative (cropOffsetX ~405px on Z Flip 7),
+        // so left-edge clipping is handled by the OCR filter in CameraViewModel instead.
+        // Here we only clip at the bottom boundary where the panel/pad starts.
+        val isPartial = settings.partialModeBoundaryRatio < 0.99f
+        val clipLeftEdge = 0f  // OCR filter handles left-edge spatial filtering
+        val clipBottomEdge = if (isPartial) {
+            if (isVerticalMode) {
+                size.height * PartialModeConstants.VERT_PAD_TOP_RATIO
+            } else {
+                size.height * PartialModeConstants.HORIZ_CAMERA_HEIGHT_RATIO
+            }
+        } else 0f
+
         // Only render kanji elements that have readings
         for (detected in detectedTexts) {
             if (!detected.containsKanji) continue
@@ -79,10 +93,15 @@ fun TextOverlay(
                         bounds, element.text.length, element.kanjiSegments,
                         scale, cropOffsetX, cropOffsetY, kanjiColor, settings.strokeWidth,
                         textMeasurer, furiganaStyle, labelBg, settings.showBoxes,
-                        isVerticalMode
+                        isVerticalMode, clipLeftEdge, clipBottomEdge
                     )
                 } else if (element.reading != null) {
                     // Fallback: element-level rendering
+                    val elemLeft = bounds.left * scale - cropOffsetX
+                    val elemTop = bounds.top * scale - cropOffsetY
+                    if (clipLeftEdge > 0f && elemLeft < clipLeftEdge) continue
+                    if (clipBottomEdge > 0f && elemTop > clipBottomEdge) continue
+
                     if (settings.showBoxes) {
                         drawBoundingBox(bounds, scale, cropOffsetX, cropOffsetY, kanjiColor, settings.strokeWidth)
                     }
@@ -139,7 +158,9 @@ private fun DrawScope.drawKanjiSegments(
     furiganaStyle: TextStyle,
     labelBg: Color,
     showBoxes: Boolean,
-    isVerticalMode: Boolean = false
+    isVerticalMode: Boolean = false,
+    clipLeftEdge: Float = 0f,
+    clipBottomEdge: Float = 0f
 ) {
     val elemLeft = elementBounds.left * scale - cropOffsetX
     val elemTop = elementBounds.top * scale - cropOffsetY
@@ -151,6 +172,11 @@ private fun DrawScope.drawKanjiSegments(
     if (elemLeft + elemWidth < -50 || elemLeft > size.width + 50) return  // Off-screen horizontally
     if (elemTop + elemHeight < -50 || elemTop > size.height + 50) return  // Off-screen vertically
 
+    // Skip elements fully hidden behind panel left edge
+    if (clipLeftEdge > 0f && elemLeft < clipLeftEdge) return
+    // Skip elements that START below the panel bottom edge
+    if (clipBottomEdge > 0f && elemTop > clipBottomEdge) return
+
     if (isVerticalMode) {
         // Vertical mode: characters stacked top-to-bottom, furigana to the RIGHT
         val charHeight = elemHeight / textLength.toFloat()
@@ -161,6 +187,9 @@ private fun DrawScope.drawKanjiSegments(
 
             // Quick validation
             if (segHeight <= 0 || segTop + segHeight < -50 || segTop > size.height + 50) continue
+
+            // Per-segment clip: skip segments that extend into the pad/panel area
+            if (clipBottomEdge > 0f && segTop + segHeight > clipBottomEdge) continue
 
             val safeSegHeight = segHeight.coerceAtLeast(0.1f)
             val safeElemWidth = elemWidth.coerceAtLeast(0.1f)
@@ -188,6 +217,9 @@ private fun DrawScope.drawKanjiSegments(
         }
     } else {
         // Horizontal mode: characters laid out left-to-right, furigana ABOVE
+        // All segments share the same Y — skip entire element if bottom is clipped by panel
+        if (clipBottomEdge > 0f && elemTop + elemHeight > clipBottomEdge) return
+
         val charWidth = elemWidth / textLength.toFloat()
 
         for (segment in segments) {

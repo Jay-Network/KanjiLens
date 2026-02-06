@@ -40,6 +40,7 @@ class CameraViewModel @Inject constructor(
         private const val STATS_WINDOW = 30 // rolling average over N frames
         private const val SMOOTHING_ALPHA = 0.3f // 30% new position, 70% old (higher = less smooth)
         private const val MAX_TRACKING_DISTANCE = 100f // Max pixel distance to match elements
+        private const val PERSIST_FRAMES = 3 // Keep previous results for N sparse frames
     }
 
     // Position stabilization: track text elements across frames
@@ -72,12 +73,16 @@ class CameraViewModel @Inject constructor(
     private val _isFlashOn = MutableStateFlow(false)
     val isFlashOn: StateFlow<Boolean> = _isFlashOn.asStateFlow()
 
+    private val _visibleRegion = MutableStateFlow<Rect?>(null)
+    val visibleRegion: StateFlow<Rect?> = _visibleRegion.asStateFlow()
+
     private val _ocrStats = MutableStateFlow(OCRStats())
     val ocrStats: StateFlow<OCRStats> = _ocrStats.asStateFlow()
 
     private var frameCount = 0
     private val recentTimings = ArrayDeque<Long>(STATS_WINDOW)
     private var modeSwitchPauseFrames = 0  // Pause frames after mode switch
+    private var emptyFrameCount = 0  // Consecutive frames with fewer results than previous
 
     fun toggleFlash() {
         _isFlashOn.value = !_isFlashOn.value
@@ -104,6 +109,23 @@ class CameraViewModel @Inject constructor(
 
             // Update settings
             val updated = settings.value.copy(partialModeBoundaryRatio = ratio)
+            settingsRepository.updateSettings(updated)
+        }
+    }
+
+    /**
+     * Update both vertical mode and boundary ratio atomically to avoid race condition
+     * where two separate coroutines read stale settings.value and overwrite each other.
+     */
+    fun updateVerticalModeAndBoundary(verticalMode: Boolean, ratio: Float) {
+        viewModelScope.launch {
+            _detectedTexts.value = emptyList()
+            modeSwitchPauseFrames = 15
+
+            val updated = settings.value.copy(
+                verticalTextMode = verticalMode,
+                partialModeBoundaryRatio = ratio
+            )
             settingsRepository.updateSettings(updated)
         }
     }
@@ -162,10 +184,14 @@ class CameraViewModel @Inject constructor(
                         result.imageSize,
                         canvasSize,
                         settings.value.partialModeBoundaryRatio,
-                        rotation
+                        rotation,
+                        settings.value.verticalTextMode
                     )
+                    _visibleRegion.value = visibleRegion
 
-                    enriched.mapNotNull { detected ->
+                    val totalBefore = enriched.sumOf { it.elements.size }
+
+                    val result2 = enriched.mapNotNull { detected ->
                         val visibleElements = detected.elements.filter { element ->
                             val bounds = element.bounds ?: return@filter false
                             Rect.intersects(bounds, visibleRegion)
@@ -173,8 +199,21 @@ class CameraViewModel @Inject constructor(
                         if (visibleElements.isEmpty()) null
                         else detected.copy(elements = visibleElements)
                     }
+
+                    val totalAfter = result2.sumOf { it.elements.size }
+
+                    if (frameCount % (settings.value.frameSkip * 5) == 0) {
+                        Log.d(TAG, "Filter: region=$visibleRegion, vertical=${settings.value.verticalTextMode}, boundary=${settings.value.partialModeBoundaryRatio}")
+                        Log.d(TAG, "Filter: canvas=${canvasSize}, image=${result.imageSize}, rot=$rotation")
+                        Log.d(TAG, "Filter: elements $totalBefore -> $totalAfter")
+                        enriched.flatMap { it.elements }.take(3).forEach { elem ->
+                            Log.d(TAG, "Filter: sample elem bounds=${elem.bounds}, text=${elem.text.take(10)}")
+                        }
+                    }
+
+                    result2
                 } else {
-                    enriched
+                    enriched.also { _visibleRegion.value = null }
                 }
 
                 // Sort by position (top-to-bottom, left-to-right) to prevent order jumping
@@ -182,7 +221,16 @@ class CameraViewModel @Inject constructor(
                     { it.bounds?.top ?: Int.MAX_VALUE },
                     { it.bounds?.left ?: Int.MAX_VALUE }
                 ))
-                _detectedTexts.value = sorted
+
+                // Persist previous results for a few frames when current frame is sparse
+                val prevCount = _detectedTexts.value.sumOf { it.elements.size }
+                val newCount = sorted.sumOf { it.elements.size }
+                if (newCount > 0 || emptyFrameCount >= PERSIST_FRAMES) {
+                    _detectedTexts.value = sorted
+                    emptyFrameCount = if (newCount == 0) emptyFrameCount + 1 else 0
+                } else {
+                    emptyFrameCount++
+                }
                 _sourceImageSize.value = result.imageSize
                 updateStats(result.processingTimeMs, sorted.size)
             } catch (_: Exception) {
@@ -196,14 +244,23 @@ class CameraViewModel @Inject constructor(
 
     /**
      * Calculate which portion of camera frame is visible on screen.
-     * Uses FILL_CENTER scaling to map canvas area to image coordinates.
+     * Uses FILL_CENTER scaling to map screen region back to image coordinates.
+     *
+     * Horizontal partial: top HORIZ_CAMERA_HEIGHT_RATIO of screen height, full width
+     * Vertical partial: right VERT_CAMERA_WIDTH_RATIO of screen width, top VERT_PAD_TOP_RATIO of height
      */
     private fun calculateVisibleRegion(
         imageSize: Size,
         canvasSize: Size,
         displayBoundary: Float,
-        rotationDegrees: Int
+        rotationDegrees: Int,
+        isVerticalMode: Boolean
     ): Rect {
+        // Full mode: entire image visible
+        if (displayBoundary >= 0.99f) {
+            return Rect(0, 0, imageSize.width, imageSize.height)
+        }
+
         // Handle rotation (swap dimensions if rotated)
         val isRotated = rotationDegrees == 90 || rotationDegrees == 270
         val effectiveWidth = (if (isRotated) imageSize.height else imageSize.width).toFloat()
@@ -215,25 +272,39 @@ class CameraViewModel @Inject constructor(
             canvasSize.height / effectiveHeight
         )
 
-        // Full mode: entire image visible
-        if (displayBoundary >= 0.99f) {
-            return Rect(0, 0, imageSize.width, imageSize.height)
-        }
+        // Crop offsets: how much of the scaled image is cropped from each edge
+        val cropOffsetX = (effectiveWidth * scale - canvasSize.width) / 2f
+        val cropOffsetY = (effectiveHeight * scale - canvasSize.height) / 2f
 
-        // Partial mode: map visible canvas height to image coordinates
-        val visibleCanvasHeight = canvasSize.height * displayBoundary
-        val visibleImageHeight = (visibleCanvasHeight / scale).toInt()
+        // Convert screen coordinates to image coordinates:
+        // imageCoord = (screenCoord + cropOffset) / scale
 
-        // FILL_CENTER crops equally from edges
-        val scaledImageHeight = effectiveHeight * scale
-        if (scaledImageHeight > canvasSize.height) {
-            // Vertical crop: offset from top
-            val cropOffsetTop = ((effectiveHeight - canvasSize.height / scale) / 2f).toInt()
-            return Rect(0, cropOffsetTop, imageSize.width, cropOffsetTop + visibleImageHeight)
+        if (isVerticalMode) {
+            // Vertical partial: right 40% of width, top 50% of height
+            val screenLeft = canvasSize.width * (1f - PartialModeConstants.VERT_CAMERA_WIDTH_RATIO)
+            val screenTop = 0f
+            val screenRight = canvasSize.width.toFloat()
+            val screenBottom = canvasSize.height * PartialModeConstants.VERT_PAD_TOP_RATIO
+
+            val imageLeft = ((screenLeft + cropOffsetX) / scale).toInt().coerceAtLeast(0)
+            val imageTop = ((screenTop + cropOffsetY) / scale).toInt().coerceAtLeast(0)
+            val imageRight = ((screenRight + cropOffsetX) / scale).toInt().coerceAtMost(imageSize.width)
+            val imageBottom = ((screenBottom + cropOffsetY) / scale).toInt().coerceAtMost(imageSize.height)
+
+            return Rect(imageLeft, imageTop, imageRight, imageBottom)
         } else {
-            // Horizontal crop: offset from left
-            val cropOffsetLeft = ((effectiveWidth - canvasSize.width / scale) / 2f).toInt()
-            return Rect(cropOffsetLeft, 0, cropOffsetLeft + (canvasSize.width / scale).toInt(), visibleImageHeight)
+            // Horizontal partial: full width, top 25% of height
+            val screenLeft = 0f
+            val screenTop = 0f
+            val screenRight = canvasSize.width.toFloat()
+            val screenBottom = canvasSize.height * PartialModeConstants.HORIZ_CAMERA_HEIGHT_RATIO
+
+            val imageLeft = ((screenLeft + cropOffsetX) / scale).toInt().coerceAtLeast(0)
+            val imageTop = ((screenTop + cropOffsetY) / scale).toInt().coerceAtLeast(0)
+            val imageRight = ((screenRight + cropOffsetX) / scale).toInt().coerceAtMost(imageSize.width)
+            val imageBottom = ((screenBottom + cropOffsetY) / scale).toInt().coerceAtMost(imageSize.height)
+
+            return Rect(imageLeft, imageTop, imageRight, imageBottom)
         }
     }
 
