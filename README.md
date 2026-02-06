@@ -11,6 +11,7 @@ Real-time furigana overlay for Japanese text using phone camera.
 - **Camera**: CameraX
 - **OCR**: Google ML Kit (Japanese)
 - **Target SDK**: Android 8.0+ (API 26+)
+- **GitHub**: https://github.com/Jay-Network/KanjiLens
 
 ## Project Documentation
 
