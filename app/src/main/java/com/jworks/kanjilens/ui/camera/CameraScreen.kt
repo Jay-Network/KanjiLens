@@ -11,12 +11,16 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -39,6 +43,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -86,6 +92,9 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
 
     val cameraExecutor: ExecutorService = remember { Executors.newSingleThreadExecutor() }
     var camera by remember { mutableStateOf<Camera?>(null) }
+
+    // For draggable boundary in partial mode
+    var boundaryOffset by remember { mutableStateOf(settings.partialModeBoundaryRatio) }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -157,6 +166,7 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
                 imageHeight = sourceImageSize.height,
                 rotationDegrees = rotationDegrees,
                 settings = settings,
+                boundaryRatio = if (settings.usePartialMode) boundaryOffset else 1f,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -231,6 +241,41 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
                     .align(Alignment.BottomStart)
                     .padding(12.dp)
             )
+        }
+
+        // Partial mode overlay with draggable boundary
+        if (settings.usePartialMode) {
+            val density = LocalDensity.current
+            Box(modifier = Modifier.fillMaxSize()) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // Camera detection area (top)
+                    Spacer(modifier = Modifier.fillMaxWidth().weight(boundaryOffset))
+
+                    // Draggable divider
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .background(Color(0xFF4CAF50))
+                            .pointerInput(Unit) {
+                                detectVerticalDragGestures { _, dragAmount ->
+                                    val screenHeight = size.height.toFloat()
+                                    val delta = dragAmount / screenHeight
+                                    boundaryOffset = (boundaryOffset + delta).coerceIn(0.3f, 0.9f)
+                                    viewModel.updatePartialModeBoundaryRatio(boundaryOffset)
+                                }
+                            }
+                    )
+
+                    // White area for future features (bottom)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f - boundaryOffset)
+                            .background(Color.White)
+                    )
+                }
+            }
         }
     }
 }

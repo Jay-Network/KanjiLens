@@ -28,6 +28,8 @@ class SettingsDataStore(private val context: Context) {
         val SHOW_BOXES = booleanPreferencesKey("show_boxes")
         val FURIGANA_IS_BOLD = booleanPreferencesKey("furigana_is_bold")
         val FURIGANA_USE_WHITE_TEXT = booleanPreferencesKey("furigana_use_white_text")
+        val USE_PARTIAL_MODE = booleanPreferencesKey("use_partial_mode")
+        val PARTIAL_MODE_BOUNDARY_RATIO = floatPreferencesKey("partial_mode_boundary_ratio")
     }
 
     private val defaults = AppSettings()
@@ -43,7 +45,9 @@ class SettingsDataStore(private val context: Context) {
             showDebugHud = prefs[Keys.SHOW_DEBUG_HUD] ?: defaults.showDebugHud,
             showBoxes = prefs[Keys.SHOW_BOXES] ?: defaults.showBoxes,
             furiganaIsBold = prefs[Keys.FURIGANA_IS_BOLD] ?: defaults.furiganaIsBold,
-            furiganaUseWhiteText = prefs[Keys.FURIGANA_USE_WHITE_TEXT] ?: defaults.furiganaUseWhiteText
+            furiganaUseWhiteText = prefs[Keys.FURIGANA_USE_WHITE_TEXT] ?: defaults.furiganaUseWhiteText,
+            usePartialMode = prefs[Keys.USE_PARTIAL_MODE] ?: defaults.usePartialMode,
+            partialModeBoundaryRatio = prefs[Keys.PARTIAL_MODE_BOUNDARY_RATIO] ?: defaults.partialModeBoundaryRatio
         )
     }
 
@@ -59,6 +63,8 @@ class SettingsDataStore(private val context: Context) {
             prefs[Keys.SHOW_BOXES] = settings.showBoxes
             prefs[Keys.FURIGANA_IS_BOLD] = settings.furiganaIsBold
             prefs[Keys.FURIGANA_USE_WHITE_TEXT] = settings.furiganaUseWhiteText
+            prefs[Keys.USE_PARTIAL_MODE] = settings.usePartialMode
+            prefs[Keys.PARTIAL_MODE_BOUNDARY_RATIO] = settings.partialModeBoundaryRatio
         }
     }
 }

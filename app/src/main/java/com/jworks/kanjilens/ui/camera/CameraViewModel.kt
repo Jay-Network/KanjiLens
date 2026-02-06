@@ -24,7 +24,7 @@ import javax.inject.Inject
 class CameraViewModel @Inject constructor(
     private val processCameraFrame: ProcessCameraFrameUseCase,
     private val enrichWithFurigana: EnrichWithFuriganaUseCase,
-    settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     companion object {
@@ -58,6 +58,13 @@ class CameraViewModel @Inject constructor(
 
     fun toggleFlash() {
         _isFlashOn.value = !_isFlashOn.value
+    }
+
+    fun updatePartialModeBoundaryRatio(ratio: Float) {
+        viewModelScope.launch {
+            val updated = settings.value.copy(partialModeBoundaryRatio = ratio)
+            settingsRepository.updateSettings(updated)
+        }
     }
 
     fun processFrame(imageProxy: ImageProxy) {
