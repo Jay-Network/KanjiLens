@@ -1,6 +1,5 @@
 package com.jworks.kanjilens.domain.usecases
 
-import android.graphics.Rect
 import android.util.Log
 import android.util.Size
 import com.google.mlkit.vision.common.InputImage
@@ -46,7 +45,7 @@ class ProcessCameraFrameUseCase @Inject constructor(
 
                 DetectedText(
                     text = line.text,
-                    bounds = line.boundingBox ?: Rect(),
+                    bounds = line.boundingBox,
                     confidence = line.confidence,
                     language = line.recognizedLanguage ?: "ja",
                     containsKanji = JapaneseTextUtil.containsKanji(line.text),

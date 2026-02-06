@@ -17,11 +17,9 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.sp
+import com.jworks.kanjilens.domain.models.AppSettings
 import com.jworks.kanjilens.domain.models.DetectedText
 
-private val KANJI_COLOR = Color(0xFF4CAF50)   // green - contains kanji
-private val KANA_COLOR = Color(0xFF2196F3)    // blue - kana only
-private val LABEL_BG = Color.Black.copy(alpha = 0.7f)
 private val LABEL_TEXT_COLOR = Color.White
 
 @Composable
@@ -30,17 +28,25 @@ fun TextOverlay(
     imageWidth: Int,
     imageHeight: Int,
     rotationDegrees: Int,
+    settings: AppSettings,
     modifier: Modifier = Modifier
 ) {
     val textMeasurer = rememberTextMeasurer()
-    val labelStyle = remember {
+    val kanjiColor = remember(settings.kanjiColor) { Color(settings.kanjiColor) }
+    val kanaColor = remember(settings.kanaColor) { Color(settings.kanaColor) }
+    val labelBg = remember(settings.labelBackgroundAlpha) {
+        Color.Black.copy(alpha = settings.labelBackgroundAlpha)
+    }
+    val labelStyle = remember(settings.labelFontSize) {
         TextStyle(
             color = LABEL_TEXT_COLOR,
-            fontSize = 14.sp
+            fontSize = settings.labelFontSize.sp
         )
     }
 
     Canvas(modifier = modifier.fillMaxSize()) {
+        if (imageWidth <= 0 || imageHeight <= 0) return@Canvas
+
         val isRotated = rotationDegrees == 90 || rotationDegrees == 270
         val effectiveWidth = if (isRotated) imageHeight else imageWidth
         val effectiveHeight = if (isRotated) imageWidth else imageHeight
@@ -50,8 +56,12 @@ fun TextOverlay(
 
         detectedTexts.forEach { detected ->
             val bounds = detected.bounds ?: return@forEach
-            val color = if (detected.containsKanji) KANJI_COLOR else KANA_COLOR
-            drawDetectedText(bounds, scaleX, scaleY, color, detected.text, textMeasurer, labelStyle)
+            if (bounds.isEmpty) return@forEach
+            val color = if (detected.containsKanji) kanjiColor else kanaColor
+            drawDetectedText(
+                bounds, scaleX, scaleY, color, detected.text,
+                textMeasurer, labelStyle, labelBg, settings.strokeWidth
+            )
         }
     }
 }
@@ -63,7 +73,9 @@ private fun DrawScope.drawDetectedText(
     color: Color,
     text: String,
     textMeasurer: TextMeasurer,
-    labelStyle: TextStyle
+    labelStyle: TextStyle,
+    labelBg: Color,
+    strokeWidth: Float
 ) {
     val left = bounds.left * scaleX
     val top = bounds.top * scaleY
@@ -75,7 +87,7 @@ private fun DrawScope.drawDetectedText(
         color = color,
         topLeft = Offset(left, top),
         size = Size(width, height),
-        style = Stroke(width = 2f)
+        style = Stroke(width = strokeWidth)
     )
 
     // Measure text for label sizing
@@ -86,7 +98,7 @@ private fun DrawScope.drawDetectedText(
 
     // Label background (rounded)
     drawRoundRect(
-        color = LABEL_BG,
+        color = labelBg,
         topLeft = Offset(left, labelTop),
         size = Size(labelWidth, labelHeight),
         cornerRadius = CornerRadius(6f, 6f)

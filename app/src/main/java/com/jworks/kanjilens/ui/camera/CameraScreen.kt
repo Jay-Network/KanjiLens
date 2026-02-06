@@ -19,9 +19,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Text
@@ -38,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -47,17 +50,21 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
+import com.jworks.kanjilens.R
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun CameraScreen(viewModel: CameraViewModel = hiltViewModel()) {
+fun CameraScreen(
+    onSettingsClick: () -> Unit,
+    viewModel: CameraViewModel = hiltViewModel()
+) {
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
 
     if (cameraPermissionState.status.isGranted) {
-        CameraContent(viewModel)
+        CameraContent(viewModel, onSettingsClick)
     } else {
         CameraPermissionRequest(
             showRationale = cameraPermissionState.status.shouldShowRationale,
@@ -67,13 +74,14 @@ fun CameraScreen(viewModel: CameraViewModel = hiltViewModel()) {
 }
 
 @Composable
-private fun CameraContent(viewModel: CameraViewModel) {
+private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Unit) {
     val detectedTexts by viewModel.detectedTexts.collectAsState()
     val sourceImageSize by viewModel.sourceImageSize.collectAsState()
     val rotationDegrees by viewModel.rotationDegrees.collectAsState()
     val isFlashOn by viewModel.isFlashOn.collectAsState()
     val isProcessing by viewModel.isProcessing.collectAsState()
     val ocrStats by viewModel.ocrStats.collectAsState()
+    val settings by viewModel.settings.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
 
     val cameraExecutor: ExecutorService = remember { Executors.newSingleThreadExecutor() }
@@ -150,15 +158,17 @@ private fun CameraContent(viewModel: CameraViewModel) {
                 imageWidth = sourceImageSize.width,
                 imageHeight = sourceImageSize.height,
                 rotationDegrees = rotationDegrees,
+                settings = settings,
                 modifier = Modifier.fillMaxSize()
             )
         }
 
-        // Top bar: flash toggle + processing indicator
+        // Top bar: processing indicator + settings gear + flash toggle
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopCenter)
+                .statusBarsPadding()
                 .padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
@@ -174,28 +184,49 @@ private fun CameraContent(viewModel: CameraViewModel) {
                 Box(modifier = Modifier.size(24.dp))
             }
 
-            // Flash toggle
-            camera?.let { cam ->
-                if (cam.cameraInfo.hasFlashUnit()) {
-                    IconButton(
-                        onClick = { viewModel.toggleFlash() },
-                        modifier = Modifier.size(48.dp),
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = Color.Black.copy(alpha = 0.5f)
-                        )
-                    ) {
-                        Text(
-                            if (isFlashOn) "ON" else "OFF",
-                            color = if (isFlashOn) Color.Yellow else Color.White,
-                            fontSize = 11.sp
-                        )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Settings gear
+                IconButton(
+                    onClick = onSettingsClick,
+                    modifier = Modifier.size(48.dp),
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = Color.Black.copy(alpha = 0.5f)
+                    )
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_settings),
+                        contentDescription = "Settings",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                // Flash toggle
+                camera?.let { cam ->
+                    if (cam.cameraInfo.hasFlashUnit()) {
+                        IconButton(
+                            onClick = { viewModel.toggleFlash() },
+                            modifier = Modifier.size(48.dp),
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = Color.Black.copy(alpha = 0.5f)
+                            )
+                        ) {
+                            Text(
+                                if (isFlashOn) "ON" else "OFF",
+                                color = if (isFlashOn) Color.Yellow else Color.White,
+                                fontSize = 11.sp
+                            )
+                        }
                     }
                 }
             }
         }
 
-        // Debug stats HUD (bottom-left)
-        if (ocrStats.framesProcessed > 0) {
+        // Debug stats HUD (bottom-left) - conditional on settings
+        if (settings.showDebugHud && ocrStats.framesProcessed > 0) {
             DebugStatsHud(
                 stats = ocrStats,
                 modifier = Modifier
