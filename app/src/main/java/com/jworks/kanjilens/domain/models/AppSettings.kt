@@ -12,5 +12,5 @@ data class AppSettings(
     val furiganaIsBold: Boolean = false,  // Make furigana text bold
     val furiganaUseWhiteText: Boolean = false,  // White text (true) or black text (false)
     val usePartialMode: Boolean = false,  // Partial screen mode for better FPS
-    val partialModeBoundaryRatio: Float = 0.6f  // Camera area height ratio (0.6 = 60% camera, 40% features)
+    val partialModeBoundaryRatio: Float = 0.25f  // Camera area height ratio (0.25 = 25% camera, 75% features)
 )

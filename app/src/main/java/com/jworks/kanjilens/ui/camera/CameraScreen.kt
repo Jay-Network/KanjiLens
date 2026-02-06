@@ -251,12 +251,11 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
                     // Camera detection area (top)
                     Spacer(modifier = Modifier.fillMaxWidth().weight(boundaryOffset))
 
-                    // Draggable divider
+                    // Draggable divider with larger touch area
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(4.dp)
-                            .background(Color(0xFF4CAF50))
+                            .height(48.dp)
                             .pointerInput(Unit) {
                                 detectVerticalDragGestures { _, dragAmount ->
                                     val screenHeight = size.height.toFloat()
@@ -264,8 +263,23 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
                                     boundaryOffset = (boundaryOffset + delta).coerceIn(0.3f, 0.9f)
                                     viewModel.updatePartialModeBoundaryRatio(boundaryOffset)
                                 }
-                            }
-                    )
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // Visual divider bar
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .background(Color(0xFF4CAF50))
+                        )
+                        // Drag handle indicator
+                        Box(
+                            modifier = Modifier
+                                .size(width = 60.dp, height = 4.dp)
+                                .background(Color.White, RoundedCornerShape(2.dp))
+                        )
+                    }
 
                     // White area for future features (bottom)
                     Box(
