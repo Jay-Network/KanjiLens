@@ -212,13 +212,6 @@ private fun DrawScope.drawKanjiSegments(
             cornerRadius = CornerRadius(4f, 4f)
         )
 
-        drawRoundRect(
-            color = color,
-            topLeft = Offset(bgLeft, bgTop),
-            size = Size(safeBgWidth, 2f),
-            cornerRadius = CornerRadius(2f, 2f)
-        )
-
         drawText(
             textMeasurer = textMeasurer,
             text = segment.reading,
@@ -283,14 +276,6 @@ private fun DrawScope.drawFuriganaLabel(
         topLeft = Offset(bgLeft, bgTop),
         size = Size(safeBgWidth, safeBgHeight),
         cornerRadius = CornerRadius(4f, 4f)
-    )
-
-    // Color accent bar on top
-    drawRoundRect(
-        color = color,
-        topLeft = Offset(bgLeft, bgTop),
-        size = Size(safeBgWidth, 2f),
-        cornerRadius = CornerRadius(2f, 2f)
     )
 
     // Furigana text

@@ -52,6 +52,8 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/CONTRIBUTORS.md"
+            excludes += "/META-INF/LICENSE.md"
         }
     }
 }
@@ -81,6 +83,9 @@ dependencies {
     // ML Kit - Text Recognition (Japanese)
     implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.0")
     implementation("com.google.android.gms:play-services-mlkit-text-recognition-japanese:16.0.0")
+
+    // Kuromoji (Japanese morphological analyzer - context-aware readings)
+    implementation("com.atilika.kuromoji:kuromoji-ipadic:0.9.0")
 
     // Room (local JMDict database)
     val roomVersion = "2.6.1"

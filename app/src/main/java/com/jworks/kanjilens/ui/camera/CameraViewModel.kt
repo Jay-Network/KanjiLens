@@ -96,28 +96,12 @@ class CameraViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val result = processCameraFrame.execute(inputImage, imageSize)
-
-                // In partial mode, filter to only show text in top 1/4 of image
-                val filteredTexts = if (partialMode) {
-                    val maxY = mediaImage.height * 0.25f
-                    result.texts.mapNotNull { detectedText ->
-                        val filteredElements = detectedText.elements.filter { element ->
-                            element.bounds?.top?.let { it < maxY } ?: false
-                        }
-                        if (filteredElements.isNotEmpty()) {
-                            detectedText.copy(elements = filteredElements)
-                        } else null
-                    }
-                } else {
-                    result.texts
-                }
-
                 // Try to enrich with furigana, but fall back to raw OCR if it fails
                 val enriched = try {
-                    enrichWithFurigana.execute(filteredTexts)
+                    enrichWithFurigana.execute(result.texts)
                 } catch (e: Exception) {
                     android.util.Log.w("CameraVM", "Furigana enrichment failed, using raw OCR", e)
-                    filteredTexts
+                    result.texts
                 }
                 _detectedTexts.value = enriched
                 _sourceImageSize.value = result.imageSize
