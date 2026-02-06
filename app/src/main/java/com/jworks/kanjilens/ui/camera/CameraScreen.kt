@@ -93,9 +93,6 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
     val cameraExecutor: ExecutorService = remember { Executors.newSingleThreadExecutor() }
     var camera by remember { mutableStateOf<Camera?>(null) }
 
-    // For draggable boundary in partial mode
-    var boundaryOffset by remember { mutableStateOf(settings.partialModeBoundaryRatio) }
-
     DisposableEffect(Unit) {
         onDispose {
             cameraExecutor.shutdown()
@@ -107,187 +104,255 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
         camera?.cameraControl?.enableTorch(isFlashOn)
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        // Camera preview with tap-to-focus
-        AndroidView(
-            factory = { ctx ->
-                PreviewView(ctx).apply {
-                    scaleType = PreviewView.ScaleType.FILL_CENTER
+    // Full screen mode vs Partial mode
+    if (settings.usePartialMode) {
+        // Partial mode: 25% camera / 75% white area
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Camera detection area (top 1/4)
+            Box(modifier = Modifier
+                .fillMaxWidth()
+                .weight(0.25f)
+            ) {
+                AndroidView(
+                    factory = { ctx ->
+                        PreviewView(ctx).apply {
+                            scaleType = PreviewView.ScaleType.FILL_CENTER
 
-                    setOnTouchListener { view, event ->
-                        if (event.action == MotionEvent.ACTION_UP) {
-                            val cam = camera ?: return@setOnTouchListener true
-                            val factory = meteringPointFactory
-                            val point = factory.createPoint(event.x, event.y)
-                            val action = FocusMeteringAction.Builder(point)
-                                .setAutoCancelDuration(3, TimeUnit.SECONDS)
-                                .build()
-                            cam.cameraControl.startFocusAndMetering(action)
-                            view.performClick()
-                        }
-                        true
-                    }
-
-                    val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-                    cameraProviderFuture.addListener({
-                        val cameraProvider = cameraProviderFuture.get()
-
-                        val preview = Preview.Builder().build().also {
-                            it.setSurfaceProvider(surfaceProvider)
-                        }
-
-                        val imageAnalyzer = ImageAnalysis.Builder()
-                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                            .build()
-                            .also { analysis ->
-                                analysis.setAnalyzer(cameraExecutor) { imageProxy ->
-                                    viewModel.processFrame(imageProxy)
+                            setOnTouchListener { view, event ->
+                                if (event.action == MotionEvent.ACTION_UP) {
+                                    val cam = camera ?: return@setOnTouchListener true
+                                    val factory = meteringPointFactory
+                                    val point = factory.createPoint(event.x, event.y)
+                                    val action = FocusMeteringAction.Builder(point)
+                                        .setAutoCancelDuration(3, TimeUnit.SECONDS)
+                                        .build()
+                                    cam.cameraControl.startFocusAndMetering(action)
+                                    view.performClick()
                                 }
+                                true
                             }
 
-                        cameraProvider.unbindAll()
-                        camera = cameraProvider.bindToLifecycle(
-                            lifecycleOwner,
-                            CameraSelector.DEFAULT_BACK_CAMERA,
-                            preview,
-                            imageAnalyzer
-                        )
-                    }, ContextCompat.getMainExecutor(ctx))
-                }
-            },
-            modifier = Modifier.fillMaxSize()
-        )
+                            val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+                            cameraProviderFuture.addListener({
+                                val cameraProvider = cameraProviderFuture.get()
 
-        // Text overlay
-        if (detectedTexts.isNotEmpty()) {
-            TextOverlay(
-                detectedTexts = detectedTexts,
-                imageWidth = sourceImageSize.width,
-                imageHeight = sourceImageSize.height,
-                rotationDegrees = rotationDegrees,
-                settings = settings,
-                boundaryRatio = if (settings.usePartialMode) boundaryOffset else 1f,
+                                val preview = Preview.Builder().build().also {
+                                    it.setSurfaceProvider(surfaceProvider)
+                                }
+
+                                val imageAnalyzer = ImageAnalysis.Builder()
+                                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                                    .build()
+                                    .also { analysis ->
+                                        analysis.setAnalyzer(cameraExecutor) { imageProxy ->
+                                            viewModel.processFrame(imageProxy, partialMode = true)
+                                        }
+                                    }
+
+                                cameraProvider.unbindAll()
+                                camera = cameraProvider.bindToLifecycle(
+                                    lifecycleOwner,
+                                    CameraSelector.DEFAULT_BACK_CAMERA,
+                                    preview,
+                                    imageAnalyzer
+                                )
+                            }, ContextCompat.getMainExecutor(ctx))
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                // Text overlay only in camera area
+                if (detectedTexts.isNotEmpty()) {
+                    TextOverlay(
+                        detectedTexts = detectedTexts,
+                        imageWidth = sourceImageSize.width,
+                        imageHeight = sourceImageSize.height,
+                        rotationDegrees = rotationDegrees,
+                        settings = settings,
+                        boundaryRatio = 1f,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
+                CameraTopBar(
+                    isProcessing = isProcessing,
+                    isFlashOn = isFlashOn,
+                    camera = camera,
+                    onSettingsClick = onSettingsClick,
+                    onToggleFlash = { viewModel.toggleFlash() },
+                    modifier = Modifier.align(Alignment.TopCenter)
+                )
+
+                if (settings.showDebugHud && ocrStats.framesProcessed > 0) {
+                    DebugStatsHud(
+                        stats = ocrStats,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(12.dp)
+                    )
+                }
+            }
+
+            // White feature area (bottom 3/4)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.75f)
+                    .background(Color.White)
+            )
+        }
+    } else {
+        // Full screen mode (original behavior)
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Camera preview with tap-to-focus
+            AndroidView(
+                factory = { ctx ->
+                    PreviewView(ctx).apply {
+                        scaleType = PreviewView.ScaleType.FILL_CENTER
+
+                        setOnTouchListener { view, event ->
+                            if (event.action == MotionEvent.ACTION_UP) {
+                                val cam = camera ?: return@setOnTouchListener true
+                                val factory = meteringPointFactory
+                                val point = factory.createPoint(event.x, event.y)
+                                val action = FocusMeteringAction.Builder(point)
+                                    .setAutoCancelDuration(3, TimeUnit.SECONDS)
+                                    .build()
+                                cam.cameraControl.startFocusAndMetering(action)
+                                view.performClick()
+                            }
+                            true
+                        }
+
+                        val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+                        cameraProviderFuture.addListener({
+                            val cameraProvider = cameraProviderFuture.get()
+
+                            val preview = Preview.Builder().build().also {
+                                it.setSurfaceProvider(surfaceProvider)
+                            }
+
+                            val imageAnalyzer = ImageAnalysis.Builder()
+                                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                                .build()
+                                .also { analysis ->
+                                    analysis.setAnalyzer(cameraExecutor) { imageProxy ->
+                                        viewModel.processFrame(imageProxy, partialMode = false)
+                                    }
+                                }
+
+                            cameraProvider.unbindAll()
+                            camera = cameraProvider.bindToLifecycle(
+                                lifecycleOwner,
+                                CameraSelector.DEFAULT_BACK_CAMERA,
+                                preview,
+                                imageAnalyzer
+                            )
+                        }, ContextCompat.getMainExecutor(ctx))
+                    }
+                },
                 modifier = Modifier.fillMaxSize()
             )
+
+            // Text overlay
+            if (detectedTexts.isNotEmpty()) {
+                TextOverlay(
+                    detectedTexts = detectedTexts,
+                    imageWidth = sourceImageSize.width,
+                    imageHeight = sourceImageSize.height,
+                    rotationDegrees = rotationDegrees,
+                    settings = settings,
+                    boundaryRatio = 1f,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            CameraTopBar(
+                isProcessing = isProcessing,
+                isFlashOn = isFlashOn,
+                camera = camera,
+                onSettingsClick = onSettingsClick,
+                onToggleFlash = { viewModel.toggleFlash() },
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
+
+            if (settings.showDebugHud && ocrStats.framesProcessed > 0) {
+                DebugStatsHud(
+                    stats = ocrStats,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(12.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CameraTopBar(
+    isProcessing: Boolean,
+    isFlashOn: Boolean,
+    camera: Camera?,
+    onSettingsClick: () -> Unit,
+    onToggleFlash: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Processing indicator
+        if (isProcessing) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(24.dp),
+                color = Color(0xFF4CAF50),
+                strokeWidth = 2.dp
+            )
+        } else {
+            Box(modifier = Modifier.size(24.dp))
         }
 
-        // Top bar: processing indicator + settings gear + flash toggle
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.TopCenter)
-                .statusBarsPadding()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Processing indicator
-            if (isProcessing) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = Color(0xFF4CAF50),
-                    strokeWidth = 2.dp
+            // Settings gear
+            IconButton(
+                onClick = onSettingsClick,
+                modifier = Modifier.size(48.dp),
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = Color.Black.copy(alpha = 0.5f)
                 )
-            } else {
-                Box(modifier = Modifier.size(24.dp))
-            }
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Settings gear
-                IconButton(
-                    onClick = onSettingsClick,
-                    modifier = Modifier.size(48.dp),
-                    colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = Color.Black.copy(alpha = 0.5f)
-                    )
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_settings),
-                        contentDescription = "Settings",
-                        tint = Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-
-                // Flash toggle
-                camera?.let { cam ->
-                    if (cam.cameraInfo.hasFlashUnit()) {
-                        IconButton(
-                            onClick = { viewModel.toggleFlash() },
-                            modifier = Modifier.size(48.dp),
-                            colors = IconButtonDefaults.iconButtonColors(
-                                containerColor = Color.Black.copy(alpha = 0.5f)
-                            )
-                        ) {
-                            Text(
-                                if (isFlashOn) "ON" else "OFF",
-                                color = if (isFlashOn) Color.Yellow else Color.White,
-                                fontSize = 11.sp
-                            )
-                        }
-                    }
-                }
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_settings),
+                    contentDescription = "Settings",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
             }
-        }
 
-        // Debug stats HUD (bottom-left) - conditional on settings
-        if (settings.showDebugHud && ocrStats.framesProcessed > 0) {
-            DebugStatsHud(
-                stats = ocrStats,
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(12.dp)
-            )
-        }
-
-        // Partial mode overlay with draggable boundary
-        if (settings.usePartialMode) {
-            val density = LocalDensity.current
-            Box(modifier = Modifier.fillMaxSize()) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    // Camera detection area (top)
-                    Spacer(modifier = Modifier.fillMaxWidth().weight(boundaryOffset))
-
-                    // Draggable divider with larger touch area
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
-                            .pointerInput(Unit) {
-                                detectVerticalDragGestures { _, dragAmount ->
-                                    val screenHeight = size.height.toFloat()
-                                    val delta = dragAmount / screenHeight
-                                    boundaryOffset = (boundaryOffset + delta).coerceIn(0.3f, 0.9f)
-                                    viewModel.updatePartialModeBoundaryRatio(boundaryOffset)
-                                }
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        // Visual divider bar
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(6.dp)
-                                .background(Color(0xFF4CAF50))
+            // Flash toggle
+            camera?.let { cam ->
+                if (cam.cameraInfo.hasFlashUnit()) {
+                    IconButton(
+                        onClick = onToggleFlash,
+                        modifier = Modifier.size(48.dp),
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = Color.Black.copy(alpha = 0.5f)
                         )
-                        // Drag handle indicator
-                        Box(
-                            modifier = Modifier
-                                .size(width = 60.dp, height = 4.dp)
-                                .background(Color.White, RoundedCornerShape(2.dp))
+                    ) {
+                        Text(
+                            if (isFlashOn) "ON" else "OFF",
+                            color = if (isFlashOn) Color.Yellow else Color.White,
+                            fontSize = 11.sp
                         )
                     }
-
-                    // White area for future features (bottom)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f - boundaryOffset)
-                            .background(Color.White)
-                    )
                 }
             }
         }
