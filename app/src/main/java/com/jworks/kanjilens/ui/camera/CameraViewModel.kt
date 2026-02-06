@@ -9,6 +9,7 @@ import com.google.mlkit.vision.common.InputImage
 import com.jworks.kanjilens.domain.models.AppSettings
 import com.jworks.kanjilens.domain.models.DetectedText
 import com.jworks.kanjilens.domain.repository.SettingsRepository
+import com.jworks.kanjilens.domain.usecases.EnrichWithFuriganaUseCase
 import com.jworks.kanjilens.domain.usecases.ProcessCameraFrameUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +23,7 @@ import javax.inject.Inject
 @HiltViewModel
 class CameraViewModel @Inject constructor(
     private val processCameraFrame: ProcessCameraFrameUseCase,
+    private val enrichWithFurigana: EnrichWithFuriganaUseCase,
     settingsRepository: SettingsRepository
 ) : ViewModel() {
 
@@ -82,9 +84,16 @@ class CameraViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val result = processCameraFrame.execute(inputImage, imageSize)
-                _detectedTexts.value = result.texts
+                // Try to enrich with furigana, but fall back to raw OCR if it fails
+                val enriched = try {
+                    enrichWithFurigana.execute(result.texts)
+                } catch (e: Exception) {
+                    android.util.Log.w("CameraVM", "Furigana enrichment failed, using raw OCR", e)
+                    result.texts
+                }
+                _detectedTexts.value = enriched
                 _sourceImageSize.value = result.imageSize
-                updateStats(result.processingTimeMs, result.texts.size)
+                updateStats(result.processingTimeMs, enriched.size)
             } catch (_: Exception) {
                 // OCR failed for this frame, keep previous results
             } finally {

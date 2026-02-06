@@ -22,7 +22,7 @@ object DatabaseModule {
             context,
             JMDictDatabase::class.java,
             "jmdict.db"
-        ).build()
+        ).createFromAsset("jmdict.db").build()
     }
 
     @Provides

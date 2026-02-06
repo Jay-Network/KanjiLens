@@ -14,5 +14,6 @@ data class DetectedText(
 data class TextElement(
     val text: String,
     val bounds: Rect?,
-    val containsKanji: Boolean = false
+    val containsKanji: Boolean = false,
+    val reading: String? = null
 )
