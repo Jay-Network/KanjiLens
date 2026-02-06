@@ -67,7 +67,7 @@ class CameraViewModel @Inject constructor(
         }
     }
 
-    fun processFrame(imageProxy: ImageProxy, partialMode: Boolean = false) {
+    fun processFrame(imageProxy: ImageProxy) {
         frameCount++
         val frameSkip = settings.value.frameSkip
         if (frameCount % frameSkip != 0 || _isProcessing.value) {
@@ -85,12 +85,43 @@ class CameraViewModel @Inject constructor(
         val rotation = imageProxy.imageInfo.rotationDegrees
         _rotationDegrees.value = rotation
 
+        // In partial mode, crop image to visible region for FPS boost
+        val boundaryRatio = settings.value.partialModeBoundaryRatio
+        if (boundaryRatio < 0.95f) {
+            val rect = mediaImage.cropRect
+            val w = rect.width()
+            val h = rect.height()
+            mediaImage.cropRect = when (rotation) {
+                90 -> {
+                    // Screen top = raw image left
+                    val cropW = (w * boundaryRatio).toInt().coerceAtLeast(100)
+                    android.graphics.Rect(rect.left, rect.top, rect.left + cropW, rect.bottom)
+                }
+                270 -> {
+                    // Screen top = raw image right
+                    val cropW = (w * boundaryRatio).toInt().coerceAtLeast(100)
+                    android.graphics.Rect(rect.right - cropW, rect.top, rect.right, rect.bottom)
+                }
+                180 -> {
+                    // Screen top = raw image bottom
+                    val cropH = (h * boundaryRatio).toInt().coerceAtLeast(100)
+                    android.graphics.Rect(rect.left, rect.bottom - cropH, rect.right, rect.bottom)
+                }
+                else -> {
+                    // rotation=0: Screen top = raw image top
+                    val cropH = (h * boundaryRatio).toInt().coerceAtLeast(100)
+                    android.graphics.Rect(rect.left, rect.top, rect.right, rect.top + cropH)
+                }
+            }
+        }
+
         val inputImage = InputImage.fromMediaImage(mediaImage, rotation)
-        val imageSize = Size(mediaImage.width, mediaImage.height)
+        val cropRect = mediaImage.cropRect
+        val imageSize = Size(cropRect.width(), cropRect.height())
 
         // Debug: Log actual camera dimensions (especially for Z Flip 7)
         if (frameCount % (settings.value.frameSkip * 20) == 0) {
-            Log.d(TAG, "Camera frame: ${mediaImage.width}x${mediaImage.height}, rotation=$rotation°")
+            Log.d(TAG, "Camera frame: ${mediaImage.width}x${mediaImage.height}, crop=${cropRect.width()}x${cropRect.height()}, rotation=$rotation°, boundary=$boundaryRatio")
         }
 
         viewModelScope.launch {

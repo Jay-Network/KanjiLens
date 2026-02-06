@@ -162,20 +162,6 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(24.dp))
             SectionHeader("Performance")
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Partial screen mode (better FPS)", style = MaterialTheme.typography.bodyMedium)
-                Switch(
-                    checked = settings.usePartialMode,
-                    onCheckedChange = viewModel::updateUsePartialMode
-                )
-            }
-
             SliderSetting(
                 label = "Frame skip",
                 value = settings.frameSkip.toFloat(),

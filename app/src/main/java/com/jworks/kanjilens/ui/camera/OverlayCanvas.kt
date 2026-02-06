@@ -29,7 +29,6 @@ fun TextOverlay(
     imageHeight: Int,
     rotationDegrees: Int,
     settings: AppSettings,
-    boundaryRatio: Float = 1f,  // For partial mode: only show overlays in top portion
     modifier: Modifier = Modifier
 ) {
     val textMeasurer = rememberTextMeasurer()
@@ -55,9 +54,6 @@ fun TextOverlay(
         // Match PreviewView.ScaleType.FILL_CENTER: uniform scale + centered crop
         val scale = maxOf(size.width / effectiveWidth, size.height / effectiveHeight)
 
-        // Partial mode: only show overlays in top portion of screen
-        val maxY = size.height * boundaryRatio
-
         // FIX: Calculate visible crop region in IMAGE coordinates
         // The scaled image may overflow the canvas - we need to know which part is visible
         val scaledImageWidth = effectiveWidth * scale
@@ -76,16 +72,12 @@ fun TextOverlay(
                 val bounds = element.bounds ?: continue
                 if (bounds.isEmpty) continue
 
-                // Skip elements below the boundary in partial mode
-                val elemTop = bounds.top * scale - cropOffsetY
-                if (elemTop > maxY) continue
-
                 if (element.kanjiSegments.isNotEmpty()) {
                     // Per-segment rendering: individual boxes + furigana per kanji word
                     drawKanjiSegments(
                         bounds, element.text.length, element.kanjiSegments,
                         scale, cropOffsetX, cropOffsetY, kanjiColor, settings.strokeWidth,
-                        textMeasurer, furiganaStyle, labelBg, settings.showBoxes, maxY
+                        textMeasurer, furiganaStyle, labelBg, settings.showBoxes
                     )
                 } else if (element.reading != null) {
                     // Fallback: element-level rendering
@@ -142,8 +134,7 @@ private fun DrawScope.drawKanjiSegments(
     textMeasurer: TextMeasurer,
     furiganaStyle: TextStyle,
     labelBg: Color,
-    showBoxes: Boolean,
-    maxY: Float = Float.MAX_VALUE
+    showBoxes: Boolean
 ) {
     val elemLeft = elementBounds.left * scale - cropOffsetX
     val elemTop = elementBounds.top * scale - cropOffsetY
@@ -161,7 +152,6 @@ private fun DrawScope.drawKanjiSegments(
 
         // Quick validation
         if (segWidth <= 0 || segLeft + segWidth < -50 || segLeft > size.width + 50) continue
-        if (elemTop > maxY) continue  // Skip segments below boundary in partial mode
 
         val safeSegWidth = segWidth.coerceAtLeast(0.1f)
         val safeElemHeight = elemHeight.coerceAtLeast(0.1f)

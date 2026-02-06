@@ -35,10 +35,6 @@ class SettingsViewModel @Inject constructor(
 
     fun updateFuriganaUseWhiteText(value: Boolean) = updateSettings { it.copy(furiganaUseWhiteText = value) }
 
-    fun updateUsePartialMode(value: Boolean) = updateSettings { it.copy(usePartialMode = value) }
-
-    fun updatePartialModeBoundaryRatio(value: Float) = updateSettings { it.copy(partialModeBoundaryRatio = value) }
-
     fun applyColorPreset(kanjiColor: Long, kanaColor: Long) = updateSettings {
         it.copy(kanjiColor = kanjiColor, kanaColor = kanaColor)
     }

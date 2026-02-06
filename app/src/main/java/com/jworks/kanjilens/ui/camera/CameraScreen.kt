@@ -1,7 +1,6 @@
 package com.jworks.kanjilens.ui.camera
 
 import android.Manifest
-import android.util.Size
 import android.view.MotionEvent
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
@@ -10,43 +9,50 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -57,9 +63,11 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import com.jworks.kanjilens.R
+import kotlinx.coroutines.launch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -89,9 +97,28 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
     val ocrStats by viewModel.ocrStats.collectAsState()
     val settings by viewModel.settings.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
+    val scope = rememberCoroutineScope()
 
     val cameraExecutor: ExecutorService = remember { Executors.newSingleThreadExecutor() }
     var camera by remember { mutableStateOf<Camera?>(null) }
+
+    // Boundary animation: snaps between 0.25 (partial) and 1.0 (full screen)
+    val boundaryAnim = remember { Animatable(1f) }
+    var isDragging by remember { mutableStateOf(false) }
+    var dragBoundary by remember { mutableFloatStateOf(1f) }
+    val displayBoundary = if (isDragging) dragBoundary else boundaryAnim.value
+
+    // Sync with saved setting on first load
+    LaunchedEffect(settings.partialModeBoundaryRatio) {
+        if (!isDragging) {
+            boundaryAnim.snapTo(settings.partialModeBoundaryRatio)
+        }
+    }
+
+    // Draggable button positions (in px)
+    var settingsBtnOffset by remember { mutableStateOf(Offset.Zero) }
+    var flashBtnOffset by remember { mutableStateOf(Offset.Zero) }
+    var buttonsInitialized by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -104,258 +131,270 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
         camera?.cameraControl?.enableTorch(isFlashOn)
     }
 
-    // Full screen mode vs Partial mode
-    if (settings.usePartialMode) {
-        // Partial mode: 25% camera / 75% white area
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Camera detection area (top 1/4)
-            Box(modifier = Modifier
-                .fillMaxWidth()
-                .weight(0.25f)
-            ) {
-                AndroidView(
-                    factory = { ctx ->
-                        PreviewView(ctx).apply {
-                            scaleType = PreviewView.ScaleType.FILL_CENTER
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val density = LocalDensity.current
+        val maxHeightPx = with(density) { maxHeight.toPx() }
+        val maxWidthPx = with(density) { maxWidth.toPx() }
+        val statusBarPx = with(density) { 48.dp.toPx() }
+        val btnSizePx = with(density) { 44.dp.toPx() }
 
-                            setOnTouchListener { view, event ->
-                                if (event.action == MotionEvent.ACTION_UP) {
-                                    val cam = camera ?: return@setOnTouchListener true
-                                    val factory = meteringPointFactory
-                                    val point = factory.createPoint(event.x, event.y)
-                                    val action = FocusMeteringAction.Builder(point)
-                                        .setAutoCancelDuration(3, TimeUnit.SECONDS)
-                                        .build()
-                                    cam.cameraControl.startFocusAndMetering(action)
-                                    view.performClick()
+        // Initialize button positions (top-right area)
+        if (!buttonsInitialized) {
+            settingsBtnOffset = Offset(maxWidthPx - btnSizePx - 16f, statusBarPx + 16f)
+            flashBtnOffset = Offset(maxWidthPx - btnSizePx - 16f, statusBarPx + btnSizePx + 28f)
+            buttonsInitialized = true
+        }
+
+        val boundaryYDp = with(density) { (maxHeightPx * displayBoundary).toDp() }
+
+        // Layer 1: Full-screen camera preview
+        AndroidView(
+            factory = { ctx ->
+                PreviewView(ctx).apply {
+                    scaleType = PreviewView.ScaleType.FILL_CENTER
+
+                    setOnTouchListener { view, event ->
+                        if (event.action == MotionEvent.ACTION_UP) {
+                            val cam = camera ?: return@setOnTouchListener true
+                            val factory = meteringPointFactory
+                            val point = factory.createPoint(event.x, event.y)
+                            val action = FocusMeteringAction.Builder(point)
+                                .setAutoCancelDuration(3, TimeUnit.SECONDS)
+                                .build()
+                            cam.cameraControl.startFocusAndMetering(action)
+                            view.performClick()
+                        }
+                        true
+                    }
+
+                    val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
+                    cameraProviderFuture.addListener({
+                        val cameraProvider = cameraProviderFuture.get()
+
+                        val preview = Preview.Builder().build().also {
+                            it.setSurfaceProvider(surfaceProvider)
+                        }
+
+                        val imageAnalyzer = ImageAnalysis.Builder()
+                            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                            .build()
+                            .also { analysis ->
+                                analysis.setAnalyzer(cameraExecutor) { imageProxy ->
+                                    viewModel.processFrame(imageProxy)
                                 }
-                                true
                             }
 
-                            val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-                            cameraProviderFuture.addListener({
-                                val cameraProvider = cameraProviderFuture.get()
-
-                                val preview = Preview.Builder().build().also {
-                                    it.setSurfaceProvider(surfaceProvider)
-                                }
-
-                                val imageAnalyzer = ImageAnalysis.Builder()
-                                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                                    .build()
-                                    .also { analysis ->
-                                        analysis.setAnalyzer(cameraExecutor) { imageProxy ->
-                                            viewModel.processFrame(imageProxy, partialMode = true)
-                                        }
-                                    }
-
-                                cameraProvider.unbindAll()
-                                camera = cameraProvider.bindToLifecycle(
-                                    lifecycleOwner,
-                                    CameraSelector.DEFAULT_BACK_CAMERA,
-                                    preview,
-                                    imageAnalyzer
-                                )
-                            }, ContextCompat.getMainExecutor(ctx))
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
-
-                // Text overlay only in camera area
-                if (detectedTexts.isNotEmpty()) {
-                    TextOverlay(
-                        detectedTexts = detectedTexts,
-                        imageWidth = sourceImageSize.width,
-                        imageHeight = sourceImageSize.height,
-                        rotationDegrees = rotationDegrees,
-                        settings = settings,
-                        boundaryRatio = 1f,
-                        modifier = Modifier.fillMaxSize()
-                    )
+                        cameraProvider.unbindAll()
+                        camera = cameraProvider.bindToLifecycle(
+                            lifecycleOwner,
+                            CameraSelector.DEFAULT_BACK_CAMERA,
+                            preview,
+                            imageAnalyzer
+                        )
+                    }, ContextCompat.getMainExecutor(ctx))
                 }
+            },
+            modifier = Modifier.fillMaxSize()
+        )
 
-                CameraTopBar(
-                    isProcessing = isProcessing,
-                    isFlashOn = isFlashOn,
-                    camera = camera,
-                    onSettingsClick = onSettingsClick,
-                    onToggleFlash = { viewModel.toggleFlash() },
-                    modifier = Modifier.align(Alignment.TopCenter)
-                )
-
-                if (settings.showDebugHud && ocrStats.framesProcessed > 0) {
-                    DebugStatsHud(
-                        stats = ocrStats,
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(12.dp)
-                    )
-                }
-            }
-
-            // White feature area (bottom 3/4)
+        // Layer 2: Text overlay (sized to camera visible area)
+        if (detectedTexts.isNotEmpty() && displayBoundary > 0.1f) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(0.75f)
-                    .background(Color.White)
-            )
-        }
-    } else {
-        // Full screen mode (original behavior)
-        Box(modifier = Modifier.fillMaxSize()) {
-            // Camera preview with tap-to-focus
-            AndroidView(
-                factory = { ctx ->
-                    PreviewView(ctx).apply {
-                        scaleType = PreviewView.ScaleType.FILL_CENTER
-
-                        setOnTouchListener { view, event ->
-                            if (event.action == MotionEvent.ACTION_UP) {
-                                val cam = camera ?: return@setOnTouchListener true
-                                val factory = meteringPointFactory
-                                val point = factory.createPoint(event.x, event.y)
-                                val action = FocusMeteringAction.Builder(point)
-                                    .setAutoCancelDuration(3, TimeUnit.SECONDS)
-                                    .build()
-                                cam.cameraControl.startFocusAndMetering(action)
-                                view.performClick()
-                            }
-                            true
-                        }
-
-                        val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-                        cameraProviderFuture.addListener({
-                            val cameraProvider = cameraProviderFuture.get()
-
-                            val preview = Preview.Builder().build().also {
-                                it.setSurfaceProvider(surfaceProvider)
-                            }
-
-                            val imageAnalyzer = ImageAnalysis.Builder()
-                                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                                .build()
-                                .also { analysis ->
-                                    analysis.setAnalyzer(cameraExecutor) { imageProxy ->
-                                        viewModel.processFrame(imageProxy, partialMode = false)
-                                    }
-                                }
-
-                            cameraProvider.unbindAll()
-                            camera = cameraProvider.bindToLifecycle(
-                                lifecycleOwner,
-                                CameraSelector.DEFAULT_BACK_CAMERA,
-                                preview,
-                                imageAnalyzer
-                            )
-                        }, ContextCompat.getMainExecutor(ctx))
-                    }
-                },
-                modifier = Modifier.fillMaxSize()
-            )
-
-            // Text overlay
-            if (detectedTexts.isNotEmpty()) {
+                    .height(boundaryYDp)
+                    .align(Alignment.TopCenter)
+            ) {
                 TextOverlay(
                     detectedTexts = detectedTexts,
                     imageWidth = sourceImageSize.width,
                     imageHeight = sourceImageSize.height,
                     rotationDegrees = rotationDegrees,
                     settings = settings,
-                    boundaryRatio = 1f,
                     modifier = Modifier.fillMaxSize()
                 )
             }
+        }
 
-            CameraTopBar(
-                isProcessing = isProcessing,
-                isFlashOn = isFlashOn,
-                camera = camera,
-                onSettingsClick = onSettingsClick,
-                onToggleFlash = { viewModel.toggleFlash() },
-                modifier = Modifier.align(Alignment.TopCenter)
+        // Layer 3: White area below boundary
+        if (displayBoundary < 0.99f) {
+            val whiteHeightDp = with(density) { (maxHeightPx * (1f - displayBoundary)).toDp() }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(whiteHeightDp)
+                    .align(Alignment.BottomCenter)
+                    .background(Color.White)
+            ) {
+                // Jukugo list will go here in the future
+            }
+        }
+
+        // Layer 4: Draggable boundary handle
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .offset(y = boundaryYDp - 24.dp)
+                .pointerInput(Unit) {
+                    detectVerticalDragGestures(
+                        onDragStart = {
+                            isDragging = true
+                            dragBoundary = boundaryAnim.value
+                        },
+                        onVerticalDrag = { _, dragAmount ->
+                            dragBoundary = (dragBoundary + dragAmount / maxHeightPx)
+                                .coerceIn(0.15f, 1f)
+                        },
+                        onDragEnd = {
+                            isDragging = false
+                            val snapTarget = if (dragBoundary > 0.625f) 1f else 0.25f
+                            scope.launch {
+                                boundaryAnim.snapTo(dragBoundary)
+                                boundaryAnim.animateTo(
+                                    snapTarget,
+                                    spring(dampingRatio = 0.7f, stiffness = 300f)
+                                )
+                            }
+                            viewModel.updatePartialModeBoundaryRatio(snapTarget)
+                        }
+                    )
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            // Handle pill
+            Box(
+                modifier = Modifier
+                    .width(48.dp)
+                    .height(5.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(
+                        if (displayBoundary < 0.99f) Color.Gray
+                        else Color.White.copy(alpha = 0.5f)
+                    )
             )
+        }
 
-            if (settings.showDebugHud && ocrStats.framesProcessed > 0) {
-                DebugStatsHud(
-                    stats = ocrStats,
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(12.dp)
-                )
+        // Layer 5: Processing indicator
+        if (isProcessing) {
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .statusBarsPadding()
+                    .padding(12.dp)
+                    .size(24.dp),
+                color = Color(0xFF4CAF50),
+                strokeWidth = 2.dp
+            )
+        }
+
+        // Layer 6: Debug HUD (in camera area)
+        if (settings.showDebugHud && ocrStats.framesProcessed > 0) {
+            val hudY = with(density) { (maxHeightPx * displayBoundary - 80.dp.toPx()).coerceAtLeast(0f).toDp() }
+            DebugStatsHud(
+                stats = ocrStats,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .offset(y = hudY)
+                    .padding(start = 12.dp)
+            )
+        }
+
+        // Layer 7: Draggable floating settings button
+        DraggableFloatingButton(
+            offset = settingsBtnOffset,
+            onOffsetChange = { settingsBtnOffset = it },
+            onClick = onSettingsClick,
+            maxWidth = maxWidthPx,
+            maxHeight = maxHeightPx,
+            btnSize = btnSizePx
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_settings),
+                contentDescription = "Settings",
+                tint = Color.White,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+
+        // Layer 8: Draggable floating flash button
+        camera?.let { cam ->
+            if (cam.cameraInfo.hasFlashUnit()) {
+                DraggableFloatingButton(
+                    offset = flashBtnOffset,
+                    onOffsetChange = { flashBtnOffset = it },
+                    onClick = { viewModel.toggleFlash() },
+                    maxWidth = maxWidthPx,
+                    maxHeight = maxHeightPx,
+                    btnSize = btnSizePx
+                ) {
+                    Text(
+                        if (isFlashOn) "ON" else "OFF",
+                        color = if (isFlashOn) Color.Yellow else Color.White,
+                        fontSize = 11.sp
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun CameraTopBar(
-    isProcessing: Boolean,
-    isFlashOn: Boolean,
-    camera: Camera?,
-    onSettingsClick: () -> Unit,
-    onToggleFlash: () -> Unit,
-    modifier: Modifier = Modifier
+private fun DraggableFloatingButton(
+    offset: Offset,
+    onOffsetChange: (Offset) -> Unit,
+    onClick: () -> Unit,
+    maxWidth: Float,
+    maxHeight: Float,
+    btnSize: Float,
+    content: @Composable () -> Unit
 ) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .statusBarsPadding()
-            .padding(12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Processing indicator
-        if (isProcessing) {
-            CircularProgressIndicator(
-                modifier = Modifier.size(24.dp),
-                color = Color(0xFF4CAF50),
-                strokeWidth = 2.dp
-            )
-        } else {
-            Box(modifier = Modifier.size(24.dp))
-        }
+    Box(
+        modifier = Modifier
+            .offset { IntOffset(offset.x.roundToInt(), offset.y.roundToInt()) }
+            .size(44.dp)
+            .clip(CircleShape)
+            .background(Color.Black.copy(alpha = 0.4f))
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val down = awaitPointerEvent()
+                        val firstDown = down.changes.firstOrNull() ?: continue
+                        if (!firstDown.pressed) continue
+                        firstDown.consume()
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Settings gear
-            IconButton(
-                onClick = onSettingsClick,
-                modifier = Modifier.size(48.dp),
-                colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = Color.Black.copy(alpha = 0.5f)
-                )
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_settings),
-                    contentDescription = "Settings",
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
+                        var totalDrag = Offset.Zero
+                        var wasDragged = false
 
-            // Flash toggle
-            camera?.let { cam ->
-                if (cam.cameraInfo.hasFlashUnit()) {
-                    IconButton(
-                        onClick = onToggleFlash,
-                        modifier = Modifier.size(48.dp),
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = Color.Black.copy(alpha = 0.5f)
-                        )
-                    ) {
-                        Text(
-                            if (isFlashOn) "ON" else "OFF",
-                            color = if (isFlashOn) Color.Yellow else Color.White,
-                            fontSize = 11.sp
-                        )
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.firstOrNull() ?: break
+                            if (!change.pressed) {
+                                change.consume()
+                                if (!wasDragged) onClick()
+                                break
+                            }
+                            val delta = change.positionChange()
+                            totalDrag += delta
+                            if (totalDrag.getDistance() > viewConfiguration.touchSlop) {
+                                wasDragged = true
+                            }
+                            if (wasDragged) {
+                                onOffsetChange(
+                                    Offset(
+                                        (offset.x + delta.x).coerceIn(0f, maxWidth - btnSize),
+                                        (offset.y + delta.y).coerceIn(0f, maxHeight - btnSize)
+                                    )
+                                )
+                            }
+                            change.consume()
+                        }
                     }
                 }
-            }
-        }
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        content()
     }
 }
 
@@ -370,9 +409,9 @@ private fun DebugStatsHud(stats: OCRStats, modifier: Modifier = Modifier) {
         Text(
             text = "OCR: ${stats.avgFrameMs}ms avg",
             color = when {
-                stats.avgFrameMs < 200 -> Color(0xFF4CAF50)  // green
-                stats.avgFrameMs < 400 -> Color(0xFFFF9800)  // orange
-                else -> Color(0xFFF44336)                      // red
+                stats.avgFrameMs < 200 -> Color(0xFF4CAF50)
+                stats.avgFrameMs < 400 -> Color(0xFFFF9800)
+                else -> Color(0xFFF44336)
             },
             fontSize = 11.sp
         )
