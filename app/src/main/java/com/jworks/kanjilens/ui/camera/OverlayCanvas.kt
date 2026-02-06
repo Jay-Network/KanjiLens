@@ -177,6 +177,12 @@ private fun DrawScope.drawKanjiSegments(
         val safeBgWidth = bgWidth.coerceAtLeast(0.1f)
         val safeBgHeight = bgHeight.coerceAtLeast(0.1f)
 
+        // Skip text if it would be positioned off-screen
+        val textLeft = bgLeft + padH
+        val textTop = bgTop + padV
+        if (textLeft < -10 || textTop < -10) continue
+        if (textLeft > size.width + 10) continue
+
         drawRoundRect(
             color = labelBg,
             topLeft = Offset(bgLeft, bgTop),
@@ -194,7 +200,7 @@ private fun DrawScope.drawKanjiSegments(
         drawText(
             textMeasurer = textMeasurer,
             text = segment.reading,
-            topLeft = Offset(bgLeft + padH, bgTop + padV),
+            topLeft = Offset(textLeft, textTop),
             style = furiganaStyle
         )
     }
@@ -239,6 +245,12 @@ private fun DrawScope.drawFuriganaLabel(
     val safeBgWidth = bgWidth.coerceAtLeast(0.1f)
     val safeBgHeight = bgHeight.coerceAtLeast(0.1f)
 
+    // Skip text if it would be positioned off-screen
+    val textLeft = bgLeft + padH
+    val textTop = bgTop + padV
+    if (textLeft < -10 || textTop < -10) return
+    if (textLeft > size.width + 10) return
+
     // Background pill
     drawRoundRect(
         color = labelBg,
@@ -259,7 +271,7 @@ private fun DrawScope.drawFuriganaLabel(
     drawText(
         textMeasurer = textMeasurer,
         text = reading,
-        topLeft = Offset(bgLeft + padH, bgTop + padV),
+        topLeft = Offset(textLeft, textTop),
         style = furiganaStyle
     )
 }
