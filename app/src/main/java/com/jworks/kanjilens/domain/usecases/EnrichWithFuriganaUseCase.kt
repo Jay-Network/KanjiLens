@@ -3,6 +3,7 @@ package com.jworks.kanjilens.domain.usecases
 import android.util.Log
 import com.jworks.kanjilens.domain.models.DetectedText
 import com.jworks.kanjilens.domain.models.JapaneseTextUtil
+import com.jworks.kanjilens.domain.models.KanjiSegment
 import com.jworks.kanjilens.domain.repository.FuriganaRepository
 import javax.inject.Inject
 
@@ -47,8 +48,8 @@ class EnrichWithFuriganaUseCase @Inject constructor(
             detected.copy(
                 elements = detected.elements.map { element ->
                     if (element.containsKanji) {
-                        val reading = resolveElementReading(element.text, wordMap)
-                        element.copy(reading = reading)
+                        val (reading, segments) = resolveElement(element.text, wordMap)
+                        element.copy(reading = reading, kanjiSegments = segments)
                     } else {
                         element
                     }
@@ -69,14 +70,18 @@ class EnrichWithFuriganaUseCase @Inject constructor(
     }
 
     /**
-     * Greedy longest-match on the element text to build a combined reading.
-     * Only the kanji portions get replaced with readings; kana pass through.
-     * Returns null if no kanji in the element could be resolved.
+     * Greedy longest-match on the element text to produce:
+     * 1. A positional reading string where kana are replaced with full-width spaces
+     *    (e.g. "今日は良い天気です" → "きょう　よ　てんき")
+     * 2. A list of KanjiSegments with character indices for per-segment rendering
      */
-    private fun resolveElementReading(text: String, wordMap: Map<String, String>): String? {
+    private fun resolveElement(
+        text: String,
+        wordMap: Map<String, String>
+    ): Pair<String?, List<KanjiSegment>> {
+        val segments = mutableListOf<KanjiSegment>()
         val result = StringBuilder()
         var i = 0
-        var matchCount = 0
 
         while (i < text.length) {
             if (JapaneseTextUtil.containsKanji(text[i].toString())) {
@@ -85,23 +90,24 @@ class EnrichWithFuriganaUseCase @Inject constructor(
                     val sub = text.substring(i, i + len)
                     val reading = wordMap[sub]
                     if (reading != null) {
+                        segments.add(KanjiSegment(sub, reading, i, i + len))
                         result.append(reading)
                         i += len
                         matched = true
-                        matchCount++
                         break
                     }
                 }
                 if (!matched) {
-                    result.append(text[i])
+                    result.append('\u3000')
                     i++
                 }
             } else {
-                result.append(text[i])
+                result.append('\u3000')
                 i++
             }
         }
 
-        return if (matchCount > 0) result.toString() else null
+        val reading = if (segments.isNotEmpty()) result.toString().trimEnd('\u3000') else null
+        return Pair(reading, segments)
     }
 }

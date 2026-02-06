@@ -19,6 +19,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.sp
 import com.jworks.kanjilens.domain.models.AppSettings
 import com.jworks.kanjilens.domain.models.DetectedText
+import com.jworks.kanjilens.domain.models.KanjiSegment
 
 private val LABEL_TEXT_COLOR = Color.White
 
@@ -59,11 +60,16 @@ fun TextOverlay(
                 val bounds = element.bounds ?: continue
                 if (bounds.isEmpty) continue
 
-                // Bounding box around kanji element
-                drawBoundingBox(bounds, scaleX, scaleY, kanjiColor, settings.strokeWidth)
-
-                // Furigana pill above kanji element (only if reading resolved)
-                if (element.reading != null) {
+                if (element.kanjiSegments.isNotEmpty()) {
+                    // Per-segment rendering: individual boxes + furigana per kanji word
+                    drawKanjiSegments(
+                        bounds, element.text.length, element.kanjiSegments,
+                        scaleX, scaleY, kanjiColor, settings.strokeWidth,
+                        textMeasurer, furiganaStyle, labelBg
+                    )
+                } else if (element.reading != null) {
+                    // Fallback: element-level rendering
+                    drawBoundingBox(bounds, scaleX, scaleY, kanjiColor, settings.strokeWidth)
                     drawFuriganaLabel(
                         bounds, element.reading, scaleX, scaleY,
                         kanjiColor, textMeasurer, furiganaStyle, labelBg
@@ -92,6 +98,73 @@ private fun DrawScope.drawBoundingBox(
         size = Size(width, height),
         style = Stroke(width = strokeWidth)
     )
+}
+
+private fun DrawScope.drawKanjiSegments(
+    elementBounds: Rect,
+    textLength: Int,
+    segments: List<KanjiSegment>,
+    scaleX: Float,
+    scaleY: Float,
+    color: Color,
+    strokeWidth: Float,
+    textMeasurer: TextMeasurer,
+    furiganaStyle: TextStyle,
+    labelBg: Color
+) {
+    val elemLeft = elementBounds.left * scaleX
+    val elemTop = elementBounds.top * scaleY
+    val elemWidth = elementBounds.width() * scaleX
+    val elemHeight = elementBounds.height() * scaleY
+
+    if (textLength <= 0) return
+    val charWidth = elemWidth / textLength.toFloat()
+
+    for (segment in segments) {
+        val segLeft = elemLeft + segment.startIndex * charWidth
+        val segWidth = (segment.endIndex - segment.startIndex) * charWidth
+
+        // Bounding box for this kanji segment
+        drawRect(
+            color = color,
+            topLeft = Offset(segLeft, elemTop),
+            size = Size(segWidth, elemHeight),
+            style = Stroke(width = strokeWidth)
+        )
+
+        // Furigana pill above this segment
+        val measured = textMeasurer.measure(segment.reading, furiganaStyle)
+        val furiganaWidth = measured.size.width.toFloat()
+        val furiganaHeight = measured.size.height.toFloat()
+
+        val padH = 6f
+        val padV = 3f
+        val bgWidth = furiganaWidth + padH * 2
+        val bgHeight = furiganaHeight + padV * 2
+        val bgLeft = segLeft + (segWidth - bgWidth) / 2f
+        val bgTop = (elemTop - bgHeight - 2f).coerceAtLeast(0f)
+
+        drawRoundRect(
+            color = labelBg,
+            topLeft = Offset(bgLeft, bgTop),
+            size = Size(bgWidth, bgHeight),
+            cornerRadius = CornerRadius(4f, 4f)
+        )
+
+        drawRoundRect(
+            color = color,
+            topLeft = Offset(bgLeft, bgTop),
+            size = Size(bgWidth, 2f),
+            cornerRadius = CornerRadius(2f, 2f)
+        )
+
+        drawText(
+            textMeasurer = textMeasurer,
+            text = segment.reading,
+            topLeft = Offset(bgLeft + padH, bgTop + padV),
+            style = furiganaStyle
+        )
+    }
 }
 
 private fun DrawScope.drawFuriganaLabel(

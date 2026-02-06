@@ -15,5 +15,13 @@ data class TextElement(
     val text: String,
     val bounds: Rect?,
     val containsKanji: Boolean = false,
-    val reading: String? = null
+    val reading: String? = null,
+    val kanjiSegments: List<KanjiSegment> = emptyList()
+)
+
+data class KanjiSegment(
+    val text: String,
+    val reading: String,
+    val startIndex: Int,
+    val endIndex: Int
 )
