@@ -7,5 +7,6 @@ data class AppSettings(
     val labelFontSize: Float = 14f,
     val labelBackgroundAlpha: Float = 0.7f,
     val frameSkip: Int = 1,  // Process every frame for real-time feel
-    val showDebugHud: Boolean = true
+    val showDebugHud: Boolean = true,
+    val showBoxes: Boolean = true  // Show bounding boxes around text
 )

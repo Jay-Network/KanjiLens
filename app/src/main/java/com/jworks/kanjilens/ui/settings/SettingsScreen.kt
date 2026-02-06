@@ -87,7 +87,7 @@ fun SettingsScreen(
                 label = "Label font size",
                 value = settings.labelFontSize,
                 valueLabel = "${settings.labelFontSize.roundToInt()}sp",
-                range = 10f..24f,
+                range = 5f..24f,
                 onValueChange = viewModel::updateLabelFontSize
             )
 
@@ -103,9 +103,25 @@ fun SettingsScreen(
                 label = "Label opacity",
                 value = settings.labelBackgroundAlpha,
                 valueLabel = "${(settings.labelBackgroundAlpha * 100).roundToInt()}%",
-                range = 0.3f..1f,
+                range = 0f..1f,
                 onValueChange = viewModel::updateLabelBackgroundAlpha
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Show bounding boxes", style = MaterialTheme.typography.bodyMedium)
+                Switch(
+                    checked = settings.showBoxes,
+                    onCheckedChange = viewModel::updateShowBoxes
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
             Text("Color theme", style = MaterialTheme.typography.bodyMedium)

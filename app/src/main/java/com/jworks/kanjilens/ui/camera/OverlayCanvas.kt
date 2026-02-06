@@ -74,11 +74,13 @@ fun TextOverlay(
                     drawKanjiSegments(
                         bounds, element.text.length, element.kanjiSegments,
                         scale, cropOffsetX, cropOffsetY, kanjiColor, settings.strokeWidth,
-                        textMeasurer, furiganaStyle, labelBg
+                        textMeasurer, furiganaStyle, labelBg, settings.showBoxes
                     )
                 } else if (element.reading != null) {
                     // Fallback: element-level rendering
-                    drawBoundingBox(bounds, scale, cropOffsetX, cropOffsetY, kanjiColor, settings.strokeWidth)
+                    if (settings.showBoxes) {
+                        drawBoundingBox(bounds, scale, cropOffsetX, cropOffsetY, kanjiColor, settings.strokeWidth)
+                    }
                     drawFuriganaLabel(
                         bounds, element.reading, scale, cropOffsetX, cropOffsetY,
                         kanjiColor, textMeasurer, furiganaStyle, labelBg
@@ -128,7 +130,8 @@ private fun DrawScope.drawKanjiSegments(
     strokeWidth: Float,
     textMeasurer: TextMeasurer,
     furiganaStyle: TextStyle,
-    labelBg: Color
+    labelBg: Color,
+    showBoxes: Boolean
 ) {
     val elemLeft = elementBounds.left * scale - cropOffsetX
     val elemTop = elementBounds.top * scale - cropOffsetY
@@ -150,13 +153,15 @@ private fun DrawScope.drawKanjiSegments(
         val safeSegWidth = segWidth.coerceAtLeast(0.1f)
         val safeElemHeight = elemHeight.coerceAtLeast(0.1f)
 
-        // Bounding box for this kanji segment
-        drawRect(
-            color = color,
-            topLeft = Offset(segLeft, elemTop),
-            size = Size(safeSegWidth, safeElemHeight),
-            style = Stroke(width = strokeWidth)
-        )
+        // Bounding box for this kanji segment (if enabled)
+        if (showBoxes) {
+            drawRect(
+                color = color,
+                topLeft = Offset(segLeft, elemTop),
+                size = Size(safeSegWidth, safeElemHeight),
+                style = Stroke(width = strokeWidth)
+            )
+        }
 
         // Furigana pill above this segment
         val measured = textMeasurer.measure(segment.reading, furiganaStyle)

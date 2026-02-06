@@ -29,6 +29,8 @@ class SettingsViewModel @Inject constructor(
 
     fun updateShowDebugHud(value: Boolean) = updateSettings { it.copy(showDebugHud = value) }
 
+    fun updateShowBoxes(value: Boolean) = updateSettings { it.copy(showBoxes = value) }
+
     fun applyColorPreset(kanjiColor: Long, kanaColor: Long) = updateSettings {
         it.copy(kanjiColor = kanjiColor, kanaColor = kanaColor)
     }
