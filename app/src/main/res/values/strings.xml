@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">KanjiLens</string>
+    <string name="camera_permission_rationale">KanjiLens needs camera access to detect and read Japanese text.</string>
+    <string name="camera_permission_denied">Camera permission is required. Please enable it in Settings.</string>
+</resources>
