@@ -12,11 +12,16 @@ import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,8 +31,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Divider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -52,6 +61,7 @@ import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -68,6 +78,9 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
+
+// Data class for jukugo with reading
+private data class JukugoEntry(val text: String, val reading: String)
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -102,22 +115,19 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
     val cameraExecutor: ExecutorService = remember { Executors.newSingleThreadExecutor() }
     var camera by remember { mutableStateOf<Camera?>(null) }
 
-    // Boundary animation: snaps between 0.25 (partial) and 1.0 (full screen)
+    // Boundary animation: smooth transition between 0.25 (partial) and 1.0 (full screen)
     val boundaryAnim = remember { Animatable(1f) }
-    var isDragging by remember { mutableStateOf(false) }
-    var dragBoundary by remember { mutableFloatStateOf(1f) }
-    val displayBoundary = if (isDragging) dragBoundary else boundaryAnim.value
+    val displayBoundary = boundaryAnim.value
 
     // Sync with saved setting on first load
     LaunchedEffect(settings.partialModeBoundaryRatio) {
-        if (!isDragging) {
-            boundaryAnim.snapTo(settings.partialModeBoundaryRatio)
-        }
+        boundaryAnim.snapTo(settings.partialModeBoundaryRatio)
     }
 
     // Draggable button positions (in px)
     var settingsBtnOffset by remember { mutableStateOf(Offset.Zero) }
     var flashBtnOffset by remember { mutableStateOf(Offset.Zero) }
+    var modeBtnOffset by remember { mutableStateOf(Offset.Zero) }
     var buttonsInitialized by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
@@ -138,10 +148,17 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
         val statusBarPx = with(density) { 48.dp.toPx() }
         val btnSizePx = with(density) { 44.dp.toPx() }
 
-        // Initialize button positions (top-right area)
+        // Report canvas size to ViewModel
+        LaunchedEffect(maxWidthPx, maxHeightPx) {
+            viewModel.updateCanvasSize(android.util.Size(maxWidthPx.toInt(), maxHeightPx.toInt()))
+        }
+
+        // Initialize button positions (1/4 from top, right side, stacked vertically)
         if (!buttonsInitialized) {
-            settingsBtnOffset = Offset(maxWidthPx - btnSizePx - 16f, statusBarPx + 16f)
-            flashBtnOffset = Offset(maxWidthPx - btnSizePx - 16f, statusBarPx + btnSizePx + 28f)
+            val quarterHeightPx = maxHeightPx * 0.25f
+            settingsBtnOffset = Offset(maxWidthPx - btnSizePx - 16f, quarterHeightPx)
+            flashBtnOffset = Offset(maxWidthPx - btnSizePx - 16f, quarterHeightPx + btnSizePx + 12f)
+            modeBtnOffset = Offset(maxWidthPx - btnSizePx - 16f, quarterHeightPx + (btnSizePx + 12f) * 2)
             buttonsInitialized = true
         }
 
@@ -197,85 +214,82 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
             modifier = Modifier.fillMaxSize()
         )
 
-        // Layer 2: Text overlay (sized to camera visible area)
-        if (detectedTexts.isNotEmpty() && displayBoundary > 0.1f) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(boundaryYDp)
-                    .align(Alignment.TopCenter)
-            ) {
-                TextOverlay(
-                    detectedTexts = detectedTexts,
-                    imageWidth = sourceImageSize.width,
-                    imageHeight = sourceImageSize.height,
-                    rotationDegrees = rotationDegrees,
-                    settings = settings,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
+        // Layer 2: Text overlay (full screen to match camera coordinates)
+        if (detectedTexts.isNotEmpty()) {
+            TextOverlay(
+                detectedTexts = detectedTexts,
+                imageWidth = sourceImageSize.width,
+                imageHeight = sourceImageSize.height,
+                rotationDegrees = rotationDegrees,
+                settings = settings,
+                modifier = Modifier.fillMaxSize()
+            )
         }
 
-        // Layer 3: White area below boundary
+        // Layer 3: White area below boundary with jukugo list
         if (displayBoundary < 0.99f) {
             val whiteHeightDp = with(density) { (maxHeightPx * (1f - displayBoundary)).toDp() }
+
+            // Jukugo collection state (5-second refresh)
+            var jukugoList by remember { mutableStateOf<List<JukugoEntry>>(emptyList()) }
+            var jukugoAccumulator by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+            var selectedJukugo by remember { mutableStateOf<JukugoEntry?>(null) }
+
+            // Accumulate jukugo from current frame
+            LaunchedEffect(detectedTexts) {
+                val newJukugo = detectedTexts.flatMap { detected ->
+                    detected.elements.flatMap { element ->
+                        element.kanjiSegments
+                            .filter { it.text.length > 1 }  // Only compound words
+                            .map { it.text to it.reading }
+                    }
+                }.toMap()  // Map: text -> reading
+
+                jukugoAccumulator = jukugoAccumulator + newJukugo
+            }
+
+            // Refresh list every 5 seconds
+            LaunchedEffect(Unit) {
+                while (true) {
+                    kotlinx.coroutines.delay(5000)
+                    jukugoList = jukugoAccumulator.map { (text, reading) ->
+                        JukugoEntry(text, reading)
+                    }.sortedBy { it.text }
+                    jukugoAccumulator = emptyMap()
+                }
+            }
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(whiteHeightDp)
                     .align(Alignment.BottomCenter)
-                    .background(Color.White)
+                    .background(Color(0xFFF5E6D3))  // Pale brown
+                    .border(width = 2.dp, color = Color(0xFFD4B896))  // Darker brown border
             ) {
-                // Jukugo list will go here in the future
+                if (selectedJukugo == null) {
+                    // Show list of jukugo
+                    DetectedJukugoList(
+                        jukugo = jukugoList,
+                        onJukugoClick = { entry ->
+                            selectedJukugo = entry
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    // Show dictionary view for selected jukugo
+                    JukugoDictionaryView(
+                        jukugo = selectedJukugo!!,
+                        onBackClick = {
+                            selectedJukugo = null
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
         }
 
-        // Layer 4: Draggable boundary handle
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .offset(y = boundaryYDp - 24.dp)
-                .pointerInput(Unit) {
-                    detectVerticalDragGestures(
-                        onDragStart = {
-                            isDragging = true
-                            dragBoundary = boundaryAnim.value
-                        },
-                        onVerticalDrag = { _, dragAmount ->
-                            dragBoundary = (dragBoundary + dragAmount / maxHeightPx)
-                                .coerceIn(0.15f, 1f)
-                        },
-                        onDragEnd = {
-                            isDragging = false
-                            val snapTarget = if (dragBoundary > 0.625f) 1f else 0.25f
-                            scope.launch {
-                                boundaryAnim.snapTo(dragBoundary)
-                                boundaryAnim.animateTo(
-                                    snapTarget,
-                                    spring(dampingRatio = 0.7f, stiffness = 300f)
-                                )
-                            }
-                            viewModel.updatePartialModeBoundaryRatio(snapTarget)
-                        }
-                    )
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            // Handle pill
-            Box(
-                modifier = Modifier
-                    .width(48.dp)
-                    .height(5.dp)
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(
-                        if (displayBoundary < 0.99f) Color.Gray
-                        else Color.White.copy(alpha = 0.5f)
-                    )
-            )
-        }
-
-        // Layer 5: Processing indicator
+        // Layer 4: Processing indicator
         if (isProcessing) {
             CircularProgressIndicator(
                 modifier = Modifier
@@ -288,7 +302,7 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
             )
         }
 
-        // Layer 6: Debug HUD (in camera area)
+        // Layer 5: Debug HUD (in camera area)
         if (settings.showDebugHud && ocrStats.framesProcessed > 0) {
             val hudY = with(density) { (maxHeightPx * displayBoundary - 80.dp.toPx()).coerceAtLeast(0f).toDp() }
             DebugStatsHud(
@@ -300,7 +314,7 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
             )
         }
 
-        // Layer 7: Draggable floating settings button
+        // Layer 6: Draggable floating settings button
         DraggableFloatingButton(
             offset = settingsBtnOffset,
             onOffsetChange = { settingsBtnOffset = it },
@@ -317,7 +331,7 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
             )
         }
 
-        // Layer 8: Draggable floating flash button
+        // Layer 7: Draggable floating flash button
         camera?.let { cam ->
             if (cam.cameraInfo.hasFlashUnit()) {
                 DraggableFloatingButton(
@@ -335,6 +349,31 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
                     )
                 }
             }
+        }
+
+        // Layer 8: Mode toggle button (Full ↔ Partial)
+        DraggableFloatingButton(
+            offset = modeBtnOffset,
+            onOffsetChange = { modeBtnOffset = it },
+            onClick = {
+                val newMode = if (displayBoundary > 0.6f) 0.25f else 1f
+                scope.launch {
+                    boundaryAnim.animateTo(
+                        newMode,
+                        spring(dampingRatio = 0.7f, stiffness = 300f)
+                    )
+                }
+                viewModel.updatePartialModeBoundaryRatio(newMode)
+            },
+            maxWidth = maxWidthPx,
+            maxHeight = maxHeightPx,
+            btnSize = btnSizePx
+        ) {
+            Text(
+                if (displayBoundary > 0.6f) "25%" else "FULL",
+                color = Color.White,
+                fontSize = 10.sp
+            )
         }
     }
 }
@@ -395,6 +434,167 @@ private fun DraggableFloatingButton(
         contentAlignment = Alignment.Center
     ) {
         content()
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DetectedKanjiList(kanji: List<Char>, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Detected Kanji (${kanji.size})",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+
+        if (kanji.isEmpty()) {
+            Text(
+                text = "No kanji detected yet...",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray
+            )
+        } else {
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                kanji.forEach { char ->
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFFF5F5F5))
+                            .clickable {
+                                // TODO: Show dictionary definition
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = char.toString(),
+                            fontSize = 24.sp,
+                            color = Color.Black
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DetectedJukugoList(
+    jukugo: List<JukugoEntry>,
+    onJukugoClick: (JukugoEntry) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .verticalScroll(rememberScrollState())
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "List of detected 熟語 (${jukugo.size})",
+            style = MaterialTheme.typography.titleMedium,
+            color = Color(0xFF4A4A4A),  // Dark gray for good contrast
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+
+        if (jukugo.isEmpty()) {
+            Text(
+                text = "No jukugo detected yet...",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray
+            )
+        } else {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                jukugo.forEach { entry ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFFEDD9C0))  // Slightly darker brown for rows
+                            .clickable { onJukugoClick(entry) }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.Start,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = entry.text,
+                            fontSize = 18.sp,
+                            color = Color(0xFF2C2C2C),
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = " - ",
+                            fontSize = 14.sp,
+                            color = Color(0xFF666666)
+                        )
+                        Text(
+                            text = entry.reading,
+                            fontSize = 14.sp,
+                            color = Color(0xFF666666),  // Lighter gray for reading
+                            fontWeight = FontWeight.Normal
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun JukugoDictionaryView(
+    jukugo: JukugoEntry,
+    onBackClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.background(Color.White)) {
+        // Header with back button
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFFD4B896))
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_arrow_back),
+                contentDescription = "Back",
+                modifier = Modifier
+                    .size(24.dp)
+                    .clickable { onBackClick() },
+                tint = Color.White
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = "${jukugo.text} - ${jukugo.reading}",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        }
+
+        // WebView showing jisho.org dictionary
+        AndroidView(
+            factory = { context ->
+                android.webkit.WebView(context).apply {
+                    settings.javaScriptEnabled = true
+                    settings.domStorageEnabled = true
+                    webViewClient = android.webkit.WebViewClient()
+                    loadUrl("https://jisho.org/search/${jukugo.text}")
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        )
     }
 }
 
