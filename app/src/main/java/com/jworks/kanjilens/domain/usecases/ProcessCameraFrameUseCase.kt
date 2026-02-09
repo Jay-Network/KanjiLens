@@ -9,6 +9,7 @@ import com.jworks.kanjilens.domain.models.JapaneseTextUtil
 import com.jworks.kanjilens.domain.models.OCRResult
 import com.jworks.kanjilens.domain.models.TextElement
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 class ProcessCameraFrameUseCase @Inject constructor(
@@ -22,7 +23,9 @@ class ProcessCameraFrameUseCase @Inject constructor(
     suspend fun execute(inputImage: InputImage, imageSize: Size): OCRResult {
         val startTime = System.currentTimeMillis()
 
-        val visionText = textRecognizer.process(inputImage).await()
+        val visionText = withTimeoutOrNull(500L) {
+            textRecognizer.process(inputImage).await()
+        } ?: return OCRResult(emptyList(), System.currentTimeMillis(), imageSize, 500L)
 
         val detectedTexts = visionText.textBlocks.flatMap { block ->
             block.lines.mapNotNull { line ->

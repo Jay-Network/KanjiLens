@@ -4,6 +4,7 @@ import android.content.Context
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.TextRecognizer
 import com.google.mlkit.vision.text.japanese.JapaneseTextRecognizerOptions
+import android.os.Build
 import com.jworks.kanjilens.data.preferences.SettingsDataStore
 import com.jworks.kanjilens.data.remote.KuroshiroApi
 import com.jworks.kanjilens.data.repository.FuriganaRepositoryImpl
@@ -34,8 +35,13 @@ object AppModule {
     @Provides
     @Singleton
     fun provideRetrofit(): Retrofit {
+        val baseUrl = if (Build.FINGERPRINT.contains("generic")) {
+            "http://10.0.2.2:3000/"  // Emulator
+        } else {
+            "http://192.168.1.100:3000/"  // Physical device on local network
+        }
         return Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:3000/") // localhost from emulator
+            .baseUrl(baseUrl)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }

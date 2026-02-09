@@ -78,6 +78,14 @@ fun TextOverlay(
             }
         } else 0f
 
+        // Pre-measure sample char for vertical mode (avoids re-measuring "あ" per segment)
+        val sampleCharSize = textMeasurer.measure("あ", furiganaStyle).size
+        val cachedCharW = sampleCharSize.width.toFloat()
+        val cachedCharH = sampleCharSize.height.toFloat()
+
+        // Per-frame measurement cache (avoids re-measuring same reading string within one frame)
+        val measureCache = HashMap<String, androidx.compose.ui.text.TextLayoutResult>()
+
         // Only render kanji elements that have readings
         for (detected in detectedTexts) {
             if (!detected.containsKanji) continue
@@ -93,7 +101,8 @@ fun TextOverlay(
                         bounds, element.text.length, element.kanjiSegments,
                         scale, cropOffsetX, cropOffsetY, kanjiColor, settings.strokeWidth,
                         textMeasurer, furiganaStyle, labelBg, settings.showBoxes,
-                        isVerticalMode, clipLeftEdge, clipBottomEdge
+                        isVerticalMode, clipLeftEdge, clipBottomEdge,
+                        cachedCharW, cachedCharH, measureCache
                     )
                 } else if (element.reading != null) {
                     // Fallback: element-level rendering
@@ -108,7 +117,7 @@ fun TextOverlay(
                     drawFuriganaLabel(
                         bounds, element.reading, scale, cropOffsetX, cropOffsetY,
                         kanjiColor, textMeasurer, furiganaStyle, labelBg,
-                        isVerticalMode
+                        isVerticalMode, cachedCharW, cachedCharH
                     )
                 }
             }
@@ -160,7 +169,10 @@ private fun DrawScope.drawKanjiSegments(
     showBoxes: Boolean,
     isVerticalMode: Boolean = false,
     clipLeftEdge: Float = 0f,
-    clipBottomEdge: Float = 0f
+    clipBottomEdge: Float = 0f,
+    cachedCharW: Float = -1f,
+    cachedCharH: Float = -1f,
+    measureCache: HashMap<String, androidx.compose.ui.text.TextLayoutResult>? = null
 ) {
     val elemLeft = elementBounds.left * scale - cropOffsetX
     val elemTop = elementBounds.top * scale - cropOffsetY
@@ -212,7 +224,9 @@ private fun DrawScope.drawKanjiSegments(
                 anchorHeight = segHeight,
                 textMeasurer = textMeasurer,
                 furiganaStyle = furiganaStyle,
-                labelBg = labelBg
+                labelBg = labelBg,
+                cachedCharW = cachedCharW,
+                cachedCharH = cachedCharH
             )
         }
     } else {
@@ -242,8 +256,10 @@ private fun DrawScope.drawKanjiSegments(
                 )
             }
 
-            // Furigana pill above this segment
-            val measured = textMeasurer.measure(segment.reading, furiganaStyle)
+            // Furigana pill above this segment (use cache to avoid re-measuring same reading)
+            val measured = measureCache?.getOrPut(segment.reading) {
+                textMeasurer.measure(segment.reading, furiganaStyle)
+            } ?: textMeasurer.measure(segment.reading, furiganaStyle)
             val furiganaWidth = measured.size.width.toFloat()
             val furiganaHeight = measured.size.height.toFloat()
 
@@ -298,7 +314,9 @@ private fun DrawScope.drawFuriganaLabel(
     textMeasurer: TextMeasurer,
     furiganaStyle: TextStyle,
     labelBg: Color,
-    isVerticalMode: Boolean = false
+    isVerticalMode: Boolean = false,
+    cachedCharW: Float = -1f,
+    cachedCharH: Float = -1f
 ) {
     val elemLeft = bounds.left * scale - cropOffsetX
     val elemTop = bounds.top * scale - cropOffsetY
@@ -319,7 +337,9 @@ private fun DrawScope.drawFuriganaLabel(
             anchorHeight = elemHeight,
             textMeasurer = textMeasurer,
             furiganaStyle = furiganaStyle,
-            labelBg = labelBg
+            labelBg = labelBg,
+            cachedCharW = cachedCharW,
+            cachedCharH = cachedCharH
         )
         return
     }
@@ -381,14 +401,23 @@ private fun DrawScope.drawVerticalFurigana(
     anchorHeight: Float,
     textMeasurer: TextMeasurer,
     furiganaStyle: TextStyle,
-    labelBg: Color
+    labelBg: Color,
+    cachedCharW: Float = -1f,
+    cachedCharH: Float = -1f
 ) {
     if (reading.isEmpty()) return
 
-    // Measure a single character to get consistent dimensions
-    val sampleMeasured = textMeasurer.measure("あ", furiganaStyle)
-    val charW = sampleMeasured.size.width.toFloat()
-    val charH = sampleMeasured.size.height.toFloat()
+    // Use pre-computed dimensions if available, otherwise measure
+    val charW: Float
+    val charH: Float
+    if (cachedCharW > 0f && cachedCharH > 0f) {
+        charW = cachedCharW
+        charH = cachedCharH
+    } else {
+        val sampleMeasured = textMeasurer.measure("あ", furiganaStyle)
+        charW = sampleMeasured.size.width.toFloat()
+        charH = sampleMeasured.size.height.toFloat()
+    }
 
     val padH = 4f
     val padV = 3f

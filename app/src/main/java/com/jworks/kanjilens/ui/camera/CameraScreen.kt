@@ -1,6 +1,7 @@
 package com.jworks.kanjilens.ui.camera
 
 import android.Manifest
+import android.graphics.Bitmap
 import android.view.MotionEvent
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
@@ -11,6 +12,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -57,6 +59,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalDensity
@@ -74,6 +79,7 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import com.jworks.kanjilens.R
+
 import kotlinx.coroutines.launch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -87,12 +93,14 @@ private data class JukugoEntry(val text: String, val reading: String)
 @Composable
 fun CameraScreen(
     onSettingsClick: () -> Unit,
+    onRewardsClick: () -> Unit = {},
+    onPaywallNeeded: () -> Unit = {},
     viewModel: CameraViewModel = hiltViewModel()
 ) {
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
 
     if (cameraPermissionState.status.isGranted) {
-        CameraContent(viewModel, onSettingsClick)
+        CameraContent(viewModel, onSettingsClick, onRewardsClick)
     } else {
         CameraPermissionRequest(
             showRationale = cameraPermissionState.status.shouldShowRationale,
@@ -102,12 +110,17 @@ fun CameraScreen(
 }
 
 @Composable
-private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Unit) {
+private fun CameraContent(
+    viewModel: CameraViewModel,
+    onSettingsClick: () -> Unit,
+    onRewardsClick: () -> Unit
+) {
     val detectedTexts by viewModel.detectedTexts.collectAsState()
     val sourceImageSize by viewModel.sourceImageSize.collectAsState()
     val rotationDegrees by viewModel.rotationDegrees.collectAsState()
     val isFlashOn by viewModel.isFlashOn.collectAsState()
     val isProcessing by viewModel.isProcessing.collectAsState()
+    val isPaused by viewModel.isPaused.collectAsState()
     val ocrStats by viewModel.ocrStats.collectAsState()
     val visibleRegion by viewModel.visibleRegion.collectAsState()
     val settings by viewModel.settings.collectAsState()
@@ -116,6 +129,19 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
 
     val cameraExecutor: ExecutorService = remember { Executors.newSingleThreadExecutor() }
     var camera by remember { mutableStateOf<Camera?>(null) }
+    var previewViewRef by remember { mutableStateOf<PreviewView?>(null) }
+    var frozenBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
+
+    // Capture/release frozen preview when pause state changes
+    LaunchedEffect(isPaused) {
+        if (isPaused) {
+            previewViewRef?.bitmap?.let { bmp ->
+                frozenBitmap = bmp.asImageBitmap()
+            }
+        } else {
+            frozenBitmap = null
+        }
+    }
 
     // Boundary animation: smooth transition between 0.25 (partial) and 1.0 (full screen)
     val boundaryAnim = remember { Animatable(0.25f) }
@@ -131,6 +157,7 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
     var flashBtnOffset by remember { mutableStateOf(Offset.Zero) }
     var modeBtnOffset by remember { mutableStateOf(Offset.Zero) }
     var verticalBtnOffset by remember { mutableStateOf(Offset.Zero) }
+    var pauseBtnOffset by remember { mutableStateOf(Offset.Zero) }
     var buttonsInitialized by remember { mutableStateOf(false) }
 
     // Bottom pad in vertical partial mode (ratio of screen height: 0.5 = pad covers bottom half)
@@ -170,15 +197,17 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
         val bottomFooterPadding = 160f  // Space for phone's navigation bar
 
         if (!buttonsInitialized) {
-            // 2x2 grid: bottom-right corner
+            // 2x2 grid + pause button: bottom-right corner
             val col2 = maxWidthPx - btnSizePx - rightMargin
             val col1 = col2 - btnSizePx - btnGap
             val row2 = maxHeightPx - btnSizePx - bottomFooterPadding
             val row1 = row2 - btnSizePx - btnGap
+            val row0 = row1 - btnSizePx - btnGap
             settingsBtnOffset = Offset(col1, row1)
             flashBtnOffset = Offset(col2, row1)
             modeBtnOffset = Offset(col1, row2)
             verticalBtnOffset = Offset(col2, row2)
+            pauseBtnOffset = Offset(col2, row0)
             buttonsInitialized = true
         }
 
@@ -187,7 +216,7 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
         // Layer 1: Full-screen camera preview
         AndroidView(
             factory = { ctx ->
-                PreviewView(ctx).apply {
+                PreviewView(ctx).also { previewViewRef = it }.apply {
                     scaleType = PreviewView.ScaleType.FILL_CENTER
 
                     setOnTouchListener { view, event ->
@@ -234,6 +263,16 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
             modifier = Modifier.fillMaxSize()
         )
 
+        // Layer 1b: Frozen preview snapshot when paused
+        frozenBitmap?.let { bitmap ->
+            Image(
+                bitmap = bitmap,
+                contentDescription = "Paused camera",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
         // Layer 2: Text overlay (full screen to match camera coordinates)
         if (detectedTexts.isNotEmpty()) {
             TextOverlay(
@@ -258,9 +297,11 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
             var jukugoAccumulator by remember(modeKey) { mutableStateOf<Map<String, String>>(emptyMap()) }
             var selectedJukugo by remember(modeKey) { mutableStateOf<JukugoEntry?>(null) }
 
-            // Accumulate jukugo from current frame
+            // Accumulate jukugo from current frame (skip when paused)
             // Key on modeKey so LaunchedEffect restarts with fresh state refs after mode switch
             LaunchedEffect(detectedTexts, modeKey) {
+                if (isPaused) return@LaunchedEffect
+
                 val region = visibleRegion
                 val newJukugo = detectedTexts.flatMap { detected ->
                     detected.elements.flatMap { element ->
@@ -287,11 +328,12 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
                 jukugoAccumulator = jukugoAccumulator + newJukugo
             }
 
-            // Refresh list every 5 seconds
+            // Refresh list every 1 second (skip when paused to keep list stable)
             // Key on modeKey so timer restarts with fresh state refs after mode switch
-            LaunchedEffect(modeKey) {
+            LaunchedEffect(modeKey, isPaused) {
+                if (isPaused) return@LaunchedEffect
                 while (true) {
-                    kotlinx.coroutines.delay(5000)
+                    kotlinx.coroutines.delay(1000)
                     jukugoList = jukugoAccumulator.map { (text, reading) ->
                         JukugoEntry(text, reading)
                     }.sortedBy { it.text }
@@ -489,6 +531,72 @@ private fun CameraContent(viewModel: CameraViewModel, onSettingsClick: () -> Uni
                 if (settings.verticalTextMode) "縦" else "横",
                 color = if (settings.verticalTextMode) Color.Yellow else Color.White,
                 fontSize = 14.sp
+            )
+        }
+
+        // Layer 10: Pause/Play toggle button
+        DraggableFloatingButton(
+            offset = pauseBtnOffset,
+            onOffsetChange = { pauseBtnOffset = it },
+            onClick = { viewModel.togglePause() },
+            maxWidth = maxWidthPx,
+            maxHeight = maxHeightPx,
+            btnSize = btnSizePx
+        ) {
+            Text(
+                if (isPaused) "▶" else "⏸",
+                color = if (isPaused) Color.Yellow else Color.White,
+                fontSize = 14.sp
+            )
+        }
+
+        // Version label (bottom-left)
+        Text(
+            text = "v${com.jworks.kanjilens.BuildConfig.VERSION_NAME}",
+            color = Color.White.copy(alpha = 0.5f),
+            fontSize = 9.sp,
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 8.dp, bottom = 8.dp)
+        )
+
+        // Layer 10: J Coin rewards button (top-right)
+        // Uses pointerInput to consume touch before AndroidView's tap-to-focus
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .statusBarsPadding()
+                .padding(end = 12.dp, top = 12.dp)
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(Color(0xFFFFB74D).copy(alpha = 0.85f))
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val down = awaitPointerEvent()
+                            val change = down.changes.firstOrNull() ?: continue
+                            if (!change.pressed) continue
+                            change.consume()
+                            // Wait for release
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                val up = event.changes.firstOrNull() ?: break
+                                if (!up.pressed) {
+                                    up.consume()
+                                    onRewardsClick()
+                                    break
+                                }
+                            }
+                        }
+                    }
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "J",
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold
             )
         }
     }

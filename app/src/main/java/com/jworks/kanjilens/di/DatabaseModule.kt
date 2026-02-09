@@ -26,6 +26,7 @@ object DatabaseModule {
     }
 
     @Provides
+    @Singleton
     fun provideJMDictDao(database: JMDictDatabase): JMDictDao {
         return database.jmDictDao()
     }

@@ -5,7 +5,7 @@ import com.jworks.kanjilens.data.remote.FuriganaRequest
 import com.jworks.kanjilens.data.remote.KuroshiroApi
 import com.jworks.kanjilens.domain.models.FuriganaResult
 import com.jworks.kanjilens.domain.repository.FuriganaRepository
-import java.util.concurrent.ConcurrentHashMap
+import java.util.Collections
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -15,7 +15,11 @@ class FuriganaRepositoryImpl @Inject constructor(
     private val kuroshiroApi: KuroshiroApi
 ) : FuriganaRepository {
 
-    private val memoryCache = ConcurrentHashMap<String, FuriganaResult>()
+    private val memoryCache = Collections.synchronizedMap(
+        object : LinkedHashMap<String, FuriganaResult>(256, 0.75f, true) {
+            override fun removeEldestEntry(eldest: Map.Entry<String, FuriganaResult>?) = size > 2000
+        }
+    )
 
     override suspend fun getFurigana(text: String): Result<FuriganaResult> {
         // 1. Check memory cache
@@ -54,31 +58,36 @@ class FuriganaRepositoryImpl @Inject constructor(
             if (cached != null) {
                 results[text] = cached
             } else {
-                val entry = jmDictDao.getFurigana(text)
-                if (entry != null) {
-                    val result = FuriganaResult(
-                        word = entry.word,
-                        reading = entry.reading,
-                        frequency = entry.frequency
-                    )
-                    memoryCache[text] = result
-                    results[text] = result
-                } else {
-                    missing.add(text)
-                }
+                missing.add(text)
             }
         }
 
+        // Single batch DB query for all cache misses (instead of N individual queries)
         if (missing.isNotEmpty()) {
-            try {
-                val response = kuroshiroApi.getFurigana(FuriganaRequest(missing))
-                for ((word, reading) in response.results) {
-                    val result = FuriganaResult(word = word, reading = reading)
-                    memoryCache[word] = result
-                    results[word] = result
+            val entries = jmDictDao.batchGetFurigana(missing)
+            for (entry in entries) {
+                val result = FuriganaResult(
+                    word = entry.word,
+                    reading = entry.reading,
+                    frequency = entry.frequency
+                )
+                memoryCache[entry.word] = result
+                results[entry.word] = result
+            }
+
+            // Remaining misses go to Kuroshiro API
+            val stillMissing = missing.filter { it !in results }
+            if (stillMissing.isNotEmpty()) {
+                try {
+                    val response = kuroshiroApi.getFurigana(FuriganaRequest(stillMissing))
+                    for ((word, reading) in response.results) {
+                        val result = FuriganaResult(word = word, reading = reading)
+                        memoryCache[word] = result
+                        results[word] = result
+                    }
+                } catch (e: Exception) {
+                    if (results.isEmpty()) return Result.failure(e)
                 }
-            } catch (e: Exception) {
-                if (results.isEmpty()) return Result.failure(e)
             }
         }
 

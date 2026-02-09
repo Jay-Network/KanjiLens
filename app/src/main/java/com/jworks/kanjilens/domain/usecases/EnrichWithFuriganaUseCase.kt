@@ -151,9 +151,13 @@ class EnrichWithFuriganaUseCase @Inject constructor(
     private fun extractCandidates(text: String): Set<String> {
         val candidates = mutableSetOf<String>()
         for (i in text.indices) {
-            if (!JapaneseTextUtil.containsKanji(text[i].toString())) continue
-            for (len in 1..MAX_WORD_LEN.coerceAtMost(text.length - i)) {
+            val ch = text[i].code
+            // Fast char-code check for CJK Unified Ideographs + Extension A
+            if (ch !in 0x4E00..0x9FFF && ch !in 0x3400..0x4DBF) continue
+            // Start at len=2: single kanji rarely have standalone JMDict entries
+            for (len in 2..MAX_WORD_LEN.coerceAtMost(text.length - i)) {
                 candidates.add(text.substring(i, i + len))
+                if (candidates.size >= 150) return candidates
             }
         }
         return candidates
