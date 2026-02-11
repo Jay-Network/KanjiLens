@@ -1,5 +1,6 @@
 package com.jworks.kanjilens.ui.camera
 
+import android.content.Context
 import android.graphics.Rect
 import android.util.Log
 import android.util.Size
@@ -7,12 +8,15 @@ import androidx.camera.core.ImageProxy
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.mlkit.vision.common.InputImage
+import com.jworks.kanjilens.data.subscription.SubscriptionManager
 import com.jworks.kanjilens.domain.models.AppSettings
 import com.jworks.kanjilens.domain.models.DetectedText
 import com.jworks.kanjilens.domain.repository.SettingsRepository
 import com.jworks.kanjilens.domain.usecases.EnrichWithFuriganaUseCase
 import com.jworks.kanjilens.domain.usecases.ProcessCameraFrameUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -25,13 +29,15 @@ import javax.inject.Inject
 class CameraViewModel @Inject constructor(
     private val processCameraFrame: ProcessCameraFrameUseCase,
     private val enrichWithFurigana: EnrichWithFuriganaUseCase,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val subscriptionManager: SubscriptionManager
 ) : ViewModel() {
 
     companion object {
         private const val TAG = "CameraVM"
         private const val STATS_WINDOW = 30 // rolling average over N frames
         private const val PERSIST_FRAMES = 3 // Keep previous results for N sparse frames
+        const val FREE_SCAN_DURATION_SECONDS = 60
     }
 
     val settings: StateFlow<AppSettings> = settingsRepository.settings
@@ -63,6 +69,67 @@ class CameraViewModel @Inject constructor(
 
     private val _ocrStats = MutableStateFlow(OCRStats())
     val ocrStats: StateFlow<OCRStats> = _ocrStats.asStateFlow()
+
+    // Scan session state (free-tier limits)
+    private val _scanTimerSeconds = MutableStateFlow(FREE_SCAN_DURATION_SECONDS)
+    val scanTimerSeconds: StateFlow<Int> = _scanTimerSeconds.asStateFlow()
+
+    private val _isScanActive = MutableStateFlow(false)
+    val isScanActive: StateFlow<Boolean> = _isScanActive.asStateFlow()
+
+    private val _showPaywall = MutableStateFlow(false)
+    val showPaywall: StateFlow<Boolean> = _showPaywall.asStateFlow()
+
+    val isPremium: StateFlow<Boolean> = subscriptionManager.isPremiumFlow
+
+    private var timerJob: Job? = null
+
+    fun startScan(context: Context, allowPaywall: Boolean = true) {
+        if (subscriptionManager.isPremium()) {
+            // Premium: no limits
+            _isScanActive.value = true
+            _isPaused.value = false
+            return
+        }
+
+        if (!subscriptionManager.canScan(context)) {
+            _isScanActive.value = false
+            _isPaused.value = allowPaywall
+            if (allowPaywall) {
+                _showPaywall.value = true
+            }
+            return
+        }
+
+        subscriptionManager.incrementScanCount(context)
+        _isScanActive.value = true
+        _isPaused.value = false
+        _scanTimerSeconds.value = FREE_SCAN_DURATION_SECONDS
+
+        timerJob?.cancel()
+        timerJob = viewModelScope.launch {
+            while (_scanTimerSeconds.value > 0) {
+                delay(1000)
+                _scanTimerSeconds.value = _scanTimerSeconds.value - 1
+            }
+            // Timer expired
+            _isScanActive.value = false
+            _isPaused.value = true
+        }
+    }
+
+    fun stopScan() {
+        timerJob?.cancel()
+        _isScanActive.value = false
+    }
+
+    fun dismissPaywall() {
+        _showPaywall.value = false
+    }
+
+    fun dismissScanOverlay() {
+        _isPaused.value = false
+    }
 
     private var frameCount = 0
     private val recentTimings = ArrayDeque<Long>(STATS_WINDOW)
@@ -101,7 +168,7 @@ class CameraViewModel @Inject constructor(
             _detectedTexts.value = emptyList()
 
             // Pause processing for 15 frames (~0.5 seconds) to let UI settle
-            modeSwitchPauseFrames.set(15)
+            modeSwitchPauseFrames.set(8)
 
             // Update settings
             val updated = settings.value.copy(partialModeBoundaryRatio = ratio)
@@ -116,7 +183,7 @@ class CameraViewModel @Inject constructor(
     fun updateVerticalModeAndBoundary(verticalMode: Boolean, ratio: Float) {
         viewModelScope.launch {
             _detectedTexts.value = emptyList()
-            modeSwitchPauseFrames.set(15)
+            modeSwitchPauseFrames.set(8)
 
             val updated = settings.value.copy(
                 verticalTextMode = verticalMode,
@@ -127,8 +194,8 @@ class CameraViewModel @Inject constructor(
     }
 
     fun processFrame(imageProxy: ImageProxy) {
-        // Skip all processing when paused (keep previous results frozen)
-        if (_isPaused.value) {
+        // Skip all processing when paused or scan not active (keep previous results frozen)
+        if (_isPaused.value || !_isScanActive.value) {
             imageProxy.close()
             return
         }
@@ -213,7 +280,15 @@ class CameraViewModel @Inject constructor(
                         }
                     }
 
-                    result2
+                    // Fallback: if OCR found elements but partial-region filter removed all,
+                    // prefer showing unfiltered results to avoid "no recognition" on
+                    // device-specific aspect-ratio/rotation mapping edge cases.
+                    if (totalBefore > 0 && totalAfter == 0) {
+                        Log.w(TAG, "Filter fallback triggered: preserving $totalBefore OCR elements")
+                        enriched
+                    } else {
+                        result2
+                    }
                 } else {
                     enriched.also { _visibleRegion.value = null }
                 }
@@ -229,7 +304,7 @@ class CameraViewModel @Inject constructor(
                 // so OCR results are inherently intermittent — use longer persistence
                 val isVerticalPartial = settings.value.verticalTextMode &&
                         settings.value.partialModeBoundaryRatio < 0.99f
-                val persistThreshold = if (isVerticalPartial) PERSIST_FRAMES * 3 else PERSIST_FRAMES
+                val persistThreshold = if (isVerticalPartial) PERSIST_FRAMES * 2 else PERSIST_FRAMES
 
                 val prevCount = _detectedTexts.value.sumOf { it.elements.size }
                 val newCount = sorted.sumOf { it.elements.size }

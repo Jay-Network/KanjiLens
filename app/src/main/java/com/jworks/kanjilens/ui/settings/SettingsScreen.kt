@@ -58,9 +58,11 @@ private val COLOR_PRESETS = listOf(
 @Composable
 fun SettingsScreen(
     onBackClick: () -> Unit,
+    onLogout: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val settings by viewModel.settings.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
@@ -207,6 +209,40 @@ fun SettingsScreen(
                     checked = settings.showDebugHud,
                     onCheckedChange = viewModel::updateShowDebugHud
                 )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+            SectionHeader("Subscription")
+
+            androidx.compose.material3.OutlinedButton(
+                onClick = {
+                    val intent = android.content.Intent(
+                        android.content.Intent.ACTION_VIEW,
+                        android.net.Uri.parse("https://play.google.com/store/account/subscriptions")
+                    )
+                    context.startActivity(intent)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("Manage Subscription on Google Play")
+            }
+
+            if (onLogout != null) {
+                Spacer(modifier = Modifier.height(24.dp))
+                SectionHeader("Account")
+
+                androidx.compose.material3.OutlinedButton(
+                    onClick = onLogout,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color.Red
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.Red.copy(alpha = 0.5f)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Sign Out", color = Color.Red)
+                }
             }
 
             Spacer(modifier = Modifier.height(32.dp))

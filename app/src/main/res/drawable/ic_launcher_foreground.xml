@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Outer lens ring -->
+    <path
+        android:pathData="M54,48.6m-27,0a27,27 0,1 1,54 0a27,27 0,1 1,-54 0"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.7"
+        android:strokeAlpha="0.9"
+        android:fillColor="@android:color/transparent"/>
+
+    <!-- Inner lens ring -->
+    <path
+        android:pathData="M54,48.6m-19.8,0a19.8,19.8 0,1 1,39.6 0a19.8,19.8 0,1 1,-39.6 0"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.35"
+        android:strokeAlpha="0.4"
+        android:fillColor="@android:color/transparent"/>
+
+    <!-- Center lens fill -->
+    <path
+        android:pathData="M54,48.6m-14.4,0a14.4,14.4 0,1 1,28.8 0a14.4,14.4 0,1 1,-28.8 0"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.1"/>
+
+    <!-- Crosshair - top -->
+    <path
+        android:pathData="M54,32.4L54,25.2"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeAlpha="0.6"/>
+
+    <!-- Crosshair - bottom -->
+    <path
+        android:pathData="M54,72L54,64.8"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeAlpha="0.6"/>
+
+    <!-- Crosshair - left -->
+    <path
+        android:pathData="M30.6,48.6L37.8,48.6"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeAlpha="0.6"/>
+
+    <!-- Crosshair - right -->
+    <path
+        android:pathData="M70.2,48.6L77.4,48.6"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.8"
+        android:strokeAlpha="0.6"/>
+
+    <!-- Scan lines at bottom -->
+    <path
+        android:pathData="M27,84.6L81,84.6"
+        android:strokeColor="#A7F3D0"
+        android:strokeWidth="1.8"
+        android:strokeAlpha="0.5"
+        android:strokeLineCap="round"/>
+
+    <path
+        android:pathData="M34.2,90L73.8,90"
+        android:strokeColor="#A7F3D0"
+        android:strokeWidth="1.8"
+        android:strokeAlpha="0.3"
+        android:strokeLineCap="round"/>
+</vector>

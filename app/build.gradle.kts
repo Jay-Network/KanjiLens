@@ -1,8 +1,11 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("com.google.dagger.hilt.android")
     kotlin("kapt")
+    kotlin("plugin.serialization") version "1.9.22"
 }
 
 android {
@@ -13,8 +16,8 @@ android {
         applicationId = "com.jworks.kanjilens"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 3
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -22,9 +25,23 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            val localPropertiesFile = rootProject.file("local.properties")
+            val localProperties = Properties().apply {
+                if (localPropertiesFile.exists()) load(localPropertiesFile.inputStream())
+            }
+            storeFile = file(localProperties.getProperty("RELEASE_STORE_FILE", "../keystore/kanjilens-release.jks"))
+            storePassword = localProperties.getProperty("RELEASE_STORE_PASSWORD", "")
+            keyAlias = localProperties.getProperty("RELEASE_KEY_ALIAS", "kanjilens")
+            keyPassword = localProperties.getProperty("RELEASE_KEY_PASSWORD", "")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -43,6 +60,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     composeOptions {
@@ -98,6 +116,9 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
+    // Navigation
+    implementation("androidx.navigation:navigation-compose:2.7.7")
+
     // Hilt (dependency injection)
     implementation("com.google.dagger:hilt-android:2.50")
     kapt("com.google.dagger:hilt-compiler:2.50")
@@ -112,6 +133,28 @@ dependencies {
 
     // Accompanist (permissions)
     implementation("com.google.accompanist:accompanist-permissions:0.34.0")
+
+    // Google Sign-In
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
+
+    // Supabase
+    implementation("io.github.jan-tennert.supabase:gotrue-kt:2.1.5")
+    implementation("io.github.jan-tennert.supabase:postgrest-kt:2.1.5")
+    implementation("io.github.jan-tennert.supabase:functions-kt:2.1.5")
+    implementation("io.ktor:ktor-client-android:2.3.8")
+
+    // Google Play Billing
+    implementation("com.android.billingclient:billing-ktx:6.1.0")
+
+    // WorkManager (offline J Coin sync)
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
+
+    // Firebase Cloud Messaging for feedback push notifications
+    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+    implementation("com.google.firebase:firebase-messaging-ktx")
+
+    // Serialization
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
 
     // Testing
     testImplementation("junit:junit:4.13.2")

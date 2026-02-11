@@ -41,9 +41,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -95,12 +97,14 @@ fun CameraScreen(
     onSettingsClick: () -> Unit,
     onRewardsClick: () -> Unit = {},
     onPaywallNeeded: () -> Unit = {},
+    onProfileClick: () -> Unit = {},
+    onFeedbackClick: () -> Unit = {},
     viewModel: CameraViewModel = hiltViewModel()
 ) {
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
 
     if (cameraPermissionState.status.isGranted) {
-        CameraContent(viewModel, onSettingsClick, onRewardsClick)
+        CameraContent(viewModel, onSettingsClick, onRewardsClick, onPaywallNeeded, onProfileClick, onFeedbackClick)
     } else {
         CameraPermissionRequest(
             showRationale = cameraPermissionState.status.shouldShowRationale,
@@ -113,8 +117,12 @@ fun CameraScreen(
 private fun CameraContent(
     viewModel: CameraViewModel,
     onSettingsClick: () -> Unit,
-    onRewardsClick: () -> Unit
+    onRewardsClick: () -> Unit,
+    onPaywallNeeded: () -> Unit,
+    onProfileClick: () -> Unit,
+    onFeedbackClick: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val detectedTexts by viewModel.detectedTexts.collectAsState()
     val sourceImageSize by viewModel.sourceImageSize.collectAsState()
     val rotationDegrees by viewModel.rotationDegrees.collectAsState()
@@ -124,8 +132,33 @@ private fun CameraContent(
     val ocrStats by viewModel.ocrStats.collectAsState()
     val visibleRegion by viewModel.visibleRegion.collectAsState()
     val settings by viewModel.settings.collectAsState()
+    val scanTimerSeconds by viewModel.scanTimerSeconds.collectAsState()
+    val isScanActive by viewModel.isScanActive.collectAsState()
+    val showPaywall by viewModel.showPaywall.collectAsState()
+    val isPremium by viewModel.isPremium.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
+
+    // Auto-start scan when entering camera
+    LaunchedEffect(Unit) {
+        // Avoid immediate paywall loop when free scans are exhausted.
+        viewModel.startScan(context, allowPaywall = false)
+    }
+
+    // Navigate to paywall when triggered
+    LaunchedEffect(showPaywall) {
+        if (showPaywall) {
+            viewModel.dismissPaywall()
+            onPaywallNeeded()
+        }
+    }
+
+    // Re-check premium status when returning (e.g. from paywall purchase)
+    LaunchedEffect(isPremium) {
+        if (isPremium && !isScanActive) {
+            viewModel.startScan(context)
+        }
+    }
 
     val cameraExecutor: ExecutorService = remember { Executors.newSingleThreadExecutor() }
     var camera by remember { mutableStateOf<Camera?>(null) }
@@ -158,6 +191,7 @@ private fun CameraContent(
     var modeBtnOffset by remember { mutableStateOf(Offset.Zero) }
     var verticalBtnOffset by remember { mutableStateOf(Offset.Zero) }
     var pauseBtnOffset by remember { mutableStateOf(Offset.Zero) }
+    var profileBtnOffset by remember { mutableStateOf(Offset.Zero) }
     var buttonsInitialized by remember { mutableStateOf(false) }
 
     // Bottom pad in vertical partial mode (ratio of screen height: 0.5 = pad covers bottom half)
@@ -194,20 +228,24 @@ private fun CameraContent(
         val isHorizontalPartial = isPartial && !settings.verticalTextMode
         val btnGap = 12f
         val rightMargin = 16f
-        val bottomFooterPadding = 160f  // Space for phone's navigation bar
+        val topMargin = statusBarPx + 12f
+        val sharedBottomPaddingPx = with(density) { 40.dp.toPx() }
 
         if (!buttonsInitialized) {
-            // 2x2 grid + pause button: bottom-right corner
+            // Compact 2x3 cluster anchored at bottom-right above phone footer/nav area.
             val col2 = maxWidthPx - btnSizePx - rightMargin
             val col1 = col2 - btnSizePx - btnGap
-            val row2 = maxHeightPx - btnSizePx - bottomFooterPadding
-            val row1 = row2 - btnSizePx - btnGap
-            val row0 = row1 - btnSizePx - btnGap
+            // Bottom row aligned horizontally with the feedback button.
+            val row2 = (maxHeightPx - sharedBottomPaddingPx - btnSizePx).coerceAtLeast(topMargin)
+            val row1 = (row2 - btnSizePx - btnGap).coerceAtLeast(topMargin)
+            val row0 = (row1 - btnSizePx - btnGap).coerceAtLeast(topMargin)
+
+            pauseBtnOffset = Offset(col1, row0)
+            profileBtnOffset = Offset(col2, row0)
             settingsBtnOffset = Offset(col1, row1)
             flashBtnOffset = Offset(col2, row1)
             modeBtnOffset = Offset(col1, row2)
             verticalBtnOffset = Offset(col2, row2)
-            pauseBtnOffset = Offset(col2, row0)
             buttonsInitialized = true
         }
 
@@ -465,10 +503,13 @@ private fun CameraContent(
                     maxHeight = maxHeightPx,
                     btnSize = btnSizePx
                 ) {
-                    Text(
-                        if (isFlashOn) "ON" else "OFF",
-                        color = if (isFlashOn) Color.Yellow else Color.White,
-                        fontSize = 11.sp
+                    Icon(
+                        painter = painterResource(
+                            id = if (isFlashOn) R.drawable.ic_flashlight_on else R.drawable.ic_flashlight_off
+                        ),
+                        contentDescription = if (isFlashOn) "Flash On" else "Flash Off",
+                        tint = if (isFlashOn) Color.Yellow else Color.White,
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
@@ -550,23 +591,76 @@ private fun CameraContent(
             )
         }
 
-        // Version label (bottom-left)
+        // Version label (bottom-left, above feedback button)
         Text(
             text = "v${com.jworks.kanjilens.BuildConfig.VERSION_NAME}",
             color = Color.White.copy(alpha = 0.5f),
             fontSize = 9.sp,
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(start = 8.dp, bottom = 8.dp)
+                .padding(start = 14.dp, bottom = 60.dp)
         )
 
-        // Layer 10: J Coin rewards button (top-right)
+        // Feedback button (bottom-left)
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 12.dp, bottom = 40.dp)
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(Color(0xFF66BB6A).copy(alpha = 0.85f))
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val down = awaitPointerEvent()
+                            val change = down.changes.firstOrNull() ?: continue
+                            if (!change.pressed) continue
+                            change.consume()
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                val up = event.changes.firstOrNull() ?: break
+                                if (!up.pressed) {
+                                    up.consume()
+                                    onFeedbackClick()
+                                    break
+                                }
+                            }
+                        }
+                    }
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_email),
+                contentDescription = "Send Feedback",
+                tint = Color.White,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+
+        // Layer 11: Profile button (in 2x3 control grid)
+        DraggableFloatingButton(
+            offset = profileBtnOffset,
+            onOffsetChange = { profileBtnOffset = it },
+            onClick = onProfileClick,
+            maxWidth = maxWidthPx,
+            maxHeight = maxHeightPx,
+            btnSize = btnSizePx
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_person),
+                contentDescription = "Profile",
+                tint = Color.White,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+
+        // Layer 12: J Coin rewards button (bottom-left, above feedback)
         // Uses pointerInput to consume touch before AndroidView's tap-to-focus
         Box(
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .statusBarsPadding()
-                .padding(end = 12.dp, top = 12.dp)
+                .align(Alignment.BottomStart)
+                .padding(start = 12.dp, bottom = 96.dp)
                 .size(44.dp)
                 .clip(CircleShape)
                 .background(Color(0xFFFFB74D).copy(alpha = 0.85f))
@@ -598,6 +692,81 @@ private fun CameraContent(
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
             )
+        }
+
+        // Layer 11: Scan timer pill (free users only)
+        if (!isPremium && isScanActive) {
+            val timerColor = if (scanTimerSeconds <= 10) Color(0xFFFF5252) else Color.White
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .statusBarsPadding()
+                    .padding(top = 12.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .padding(horizontal = 16.dp, vertical = 6.dp)
+            ) {
+                Text(
+                    text = "${scanTimerSeconds / 60}:${String.format("%02d", scanTimerSeconds % 60)}",
+                    color = timerColor,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+
+        // Layer 12: Scan-expired overlay (free users, timer hit 0)
+        if (!isPremium && !isScanActive && isPaused) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.7f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Text(
+                        text = "Scan Complete",
+                        color = Color.White,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Button(
+                        onClick = { viewModel.startScan(context) },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF4FC3F7)
+                        ),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
+                        Text(
+                            text = "Start New Scan",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                        )
+                    }
+
+                    TextButton(onClick = { viewModel.dismissScanOverlay() }) {
+                        Text(
+                            text = "Back to Camera",
+                            color = Color.White.copy(alpha = 0.8f),
+                            fontSize = 14.sp
+                        )
+                    }
+
+                    TextButton(onClick = onPaywallNeeded) {
+                        Text(
+                            text = "Upgrade to Premium - No Limits",
+                            color = Color(0xFF4FC3F7),
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            }
         }
     }
 }

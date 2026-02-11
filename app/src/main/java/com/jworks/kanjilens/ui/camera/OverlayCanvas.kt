@@ -226,7 +226,8 @@ private fun DrawScope.drawKanjiSegments(
                 furiganaStyle = furiganaStyle,
                 labelBg = labelBg,
                 cachedCharW = cachedCharW,
-                cachedCharH = cachedCharH
+                cachedCharH = cachedCharH,
+                measureCache = measureCache
             )
         }
     } else {
@@ -403,7 +404,8 @@ private fun DrawScope.drawVerticalFurigana(
     furiganaStyle: TextStyle,
     labelBg: Color,
     cachedCharW: Float = -1f,
-    cachedCharH: Float = -1f
+    cachedCharH: Float = -1f,
+    measureCache: HashMap<String, androidx.compose.ui.text.TextLayoutResult>? = null
 ) {
     if (reading.isEmpty()) return
 
@@ -454,8 +456,11 @@ private fun DrawScope.drawVerticalFurigana(
         val charTop = textTopStart + i * charH
         if (charTop + charH > size.height) break
 
-        // Measure individual char for proper centering (varying widths)
-        val charMeasured = textMeasurer.measure(reading[i].toString(), furiganaStyle)
+        // Measure individual char for proper centering (varying widths) — cached
+        val charStr = reading[i].toString()
+        val charMeasured = measureCache?.getOrPut(charStr) {
+            textMeasurer.measure(charStr, furiganaStyle)
+        } ?: textMeasurer.measure(charStr, furiganaStyle)
         val actualCharW = charMeasured.size.width.toFloat()
         val charLeft = textLeft + (charW - actualCharW) / 2f  // Center within column
 

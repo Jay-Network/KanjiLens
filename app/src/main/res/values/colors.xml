@@ -5,6 +5,6 @@
     <color name="overlay_background">#B3000000</color>
     <color name="overlay_text">#FFFFFFFF</color>
     <color name="bounding_box">#FF4CAF50</color>
-    <color name="ic_launcher_background">#FF1B1B1B</color>
-    <color name="ic_launcher_foreground">#FF4CAF50</color>
+    <color name="ic_launcher_background">#FF0D9488</color>
+    <color name="ic_launcher_foreground">#FF10B981</color>
 </resources>

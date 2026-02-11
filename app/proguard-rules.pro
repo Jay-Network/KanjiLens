@@ -14,3 +14,9 @@
 # Keep Hilt generated classes
 -keep class dagger.hilt.** { *; }
 -keep class * extends dagger.hilt.android.internal.managers.ViewComponentManager$FragmentContextWrapper { *; }
+
+# Google Play Billing
+-keep class com.android.vending.billing.** { *; }
+
+# SLF4J (optional logging backend)
+-dontwarn org.slf4j.impl.StaticLoggerBinder
