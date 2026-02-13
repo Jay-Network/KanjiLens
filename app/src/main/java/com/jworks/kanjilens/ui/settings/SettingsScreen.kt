@@ -59,6 +59,7 @@ private val COLOR_PRESETS = listOf(
 fun SettingsScreen(
     onBackClick: () -> Unit,
     onLogout: (() -> Unit)? = null,
+    onHelpClick: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val settings by viewModel.settings.collectAsState()
@@ -217,6 +218,22 @@ fun SettingsScreen(
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text("Sign Out", color = Color.Red)
+                }
+            }
+
+            if (onHelpClick != null) {
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onHelpClick() }
+                        .padding(vertical = 12.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Help & About", style = MaterialTheme.typography.bodyMedium)
+                    Text(">", style = MaterialTheme.typography.bodyLarge, color = Color.Gray)
                 }
             }
 

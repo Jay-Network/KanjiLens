@@ -24,11 +24,14 @@ import com.jworks.kanjilens.data.auth.AuthState
 import com.jworks.kanjilens.data.billing.BillingManager
 import com.jworks.kanjilens.data.jcoin.JCoinClient
 import com.jworks.kanjilens.data.jcoin.JCoinEarnRules
+import com.jworks.kanjilens.data.preferences.SettingsDataStore
 import com.jworks.kanjilens.data.subscription.SubscriptionManager
 import com.jworks.kanjilens.ui.auth.AuthScreen
 import com.jworks.kanjilens.ui.camera.CameraScreen
 import com.jworks.kanjilens.ui.feedback.FeedbackDialog
 import com.jworks.kanjilens.ui.feedback.FeedbackViewModel
+import com.jworks.kanjilens.ui.help.HelpScreen
+import com.jworks.kanjilens.ui.onboarding.OnboardingScreen
 import com.jworks.kanjilens.ui.paywall.PaywallScreen
 import com.jworks.kanjilens.ui.profile.ProfileScreen
 import com.jworks.kanjilens.ui.rewards.RewardsScreen
@@ -47,6 +50,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var billingManager: BillingManager
     @Inject lateinit var jCoinClient: JCoinClient
     @Inject lateinit var jCoinEarnRules: JCoinEarnRules
+    @Inject lateinit var settingsDataStore: SettingsDataStore
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,20 +64,31 @@ class MainActivity : ComponentActivity() {
                 var hasSkippedAuth by remember { mutableStateOf(false) }
                 val feedbackViewModel: FeedbackViewModel = hiltViewModel()
                 val feedbackUiState by feedbackViewModel.uiState.collectAsState()
+                val hasSeenOnboarding by settingsDataStore.hasSeenOnboardingFlow
+                    .collectAsState(initial = true) // Default true to prevent flash
 
                 // Check auth state on launch
                 LaunchedEffect(Unit) {
                     authRepository.refreshAuthState()
                 }
 
+                // Redirect to onboarding if first launch
+                LaunchedEffect(hasSeenOnboarding) {
+                    if (!hasSeenOnboarding) {
+                        if (navController.currentDestination?.route == "auth") {
+                            navController.navigate("onboarding")
+                        }
+                    }
+                }
+
                 // Sync auth metadata and auto-navigate when session is restored
-                LaunchedEffect(authState) {
+                LaunchedEffect(authState, hasSeenOnboarding) {
                     val prefs = getSharedPreferences("kanjilens_prefs", Context.MODE_PRIVATE)
                     when (val state = authState) {
                         is AuthState.SignedIn -> {
                             prefs.edit().putString("user_email", state.user.email).apply()
-                            // Auto-navigate to camera if still on auth screen (session restored)
-                            if (navController.currentDestination?.route == "auth") {
+                            // Auto-navigate to camera if on auth screen and onboarding done
+                            if (hasSeenOnboarding && navController.currentDestination?.route == "auth") {
                                 navController.navigate("camera") {
                                     popUpTo("auth") { inclusive = true }
                                 }
@@ -93,6 +108,19 @@ class MainActivity : ComponentActivity() {
                         navController = navController,
                         startDestination = "auth"
                     ) {
+                        composable("onboarding") {
+                            OnboardingScreen(
+                                onComplete = {
+                                    lifecycleScope.launch {
+                                        settingsDataStore.setOnboardingSeen()
+                                    }
+                                    navController.navigate("auth") {
+                                        popUpTo("onboarding") { inclusive = true }
+                                    }
+                                }
+                            )
+                        }
+
                         composable("auth") {
                             if (hasSkippedAuth) {
                                 LaunchedEffect(Unit) {
@@ -139,6 +167,17 @@ class MainActivity : ComponentActivity() {
                                             popUpTo(0) { inclusive = true }
                                         }
                                     }
+                                },
+                                onHelpClick = { navController.navigate("help") }
+                            )
+                        }
+
+                        composable("help") {
+                            HelpScreen(
+                                onBackClick = { navController.popBackStack() },
+                                onFeedbackClick = {
+                                    navController.popBackStack()
+                                    feedbackViewModel.openDialog()
                                 }
                             )
                         }

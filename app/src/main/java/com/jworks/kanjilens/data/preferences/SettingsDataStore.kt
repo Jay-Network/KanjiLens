@@ -30,6 +30,7 @@ class SettingsDataStore(private val context: Context) {
         val FURIGANA_USE_WHITE_TEXT = booleanPreferencesKey("furigana_use_white_text")
         val PARTIAL_MODE_BOUNDARY_RATIO = floatPreferencesKey("partial_mode_boundary_ratio")
         val VERTICAL_TEXT_MODE = booleanPreferencesKey("vertical_text_mode")
+        val HAS_SEEN_ONBOARDING = booleanPreferencesKey("has_seen_onboarding")
     }
 
     private val defaults = AppSettings()
@@ -49,6 +50,16 @@ class SettingsDataStore(private val context: Context) {
             partialModeBoundaryRatio = defaults.partialModeBoundaryRatio,  // Always start FULL — don't persist mode across restarts
             verticalTextMode = prefs[Keys.VERTICAL_TEXT_MODE] ?: defaults.verticalTextMode
         )
+    }
+
+    val hasSeenOnboardingFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[Keys.HAS_SEEN_ONBOARDING] ?: false
+    }
+
+    suspend fun setOnboardingSeen() {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.HAS_SEEN_ONBOARDING] = true
+        }
     }
 
     suspend fun updateSettings(settings: AppSettings) {
