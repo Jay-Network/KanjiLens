@@ -6,11 +6,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
@@ -34,9 +34,7 @@ fun TextOverlay(
 ) {
     val textMeasurer = rememberTextMeasurer()
     val kanjiColor = remember(settings.kanjiColor) { Color(settings.kanjiColor) }
-    val labelBg = remember(settings.labelBackgroundAlpha) {
-        Color.Black.copy(alpha = settings.labelBackgroundAlpha)
-    }
+    val outlineStroke = remember { Stroke(width = 3f, join = StrokeJoin.Round) }
     val furiganaStyle = remember(settings.labelFontSize, settings.furiganaIsBold, settings.furiganaUseWhiteText) {
         TextStyle(
             color = if (settings.furiganaUseWhiteText) Color.White else Color.Black,
@@ -100,7 +98,7 @@ fun TextOverlay(
                     drawKanjiSegments(
                         bounds, element.text.length, element.kanjiSegments,
                         scale, cropOffsetX, cropOffsetY, kanjiColor, settings.strokeWidth,
-                        textMeasurer, furiganaStyle, labelBg, settings.showBoxes,
+                        textMeasurer, furiganaStyle, outlineStroke, settings.showBoxes,
                         isVerticalMode, clipLeftEdge, clipBottomEdge,
                         cachedCharW, cachedCharH, measureCache
                     )
@@ -116,7 +114,7 @@ fun TextOverlay(
                     }
                     drawFuriganaLabel(
                         bounds, element.reading, scale, cropOffsetX, cropOffsetY,
-                        kanjiColor, textMeasurer, furiganaStyle, labelBg,
+                        kanjiColor, textMeasurer, furiganaStyle, outlineStroke,
                         isVerticalMode, cachedCharW, cachedCharH
                     )
                 }
@@ -165,7 +163,7 @@ private fun DrawScope.drawKanjiSegments(
     strokeWidth: Float,
     textMeasurer: TextMeasurer,
     furiganaStyle: TextStyle,
-    labelBg: Color,
+    outlineStroke: Stroke,
     showBoxes: Boolean,
     isVerticalMode: Boolean = false,
     clipLeftEdge: Float = 0f,
@@ -216,7 +214,7 @@ private fun DrawScope.drawKanjiSegments(
                 )
             }
 
-            // Vertical furigana pill to the RIGHT of this segment
+            // Vertical outlined furigana to the RIGHT of this segment
             drawVerticalFurigana(
                 reading = segment.reading,
                 anchorLeft = elemLeft + elemWidth + 2f,
@@ -224,7 +222,7 @@ private fun DrawScope.drawKanjiSegments(
                 anchorHeight = segHeight,
                 textMeasurer = textMeasurer,
                 furiganaStyle = furiganaStyle,
-                labelBg = labelBg,
+                outlineStroke = outlineStroke,
                 cachedCharW = cachedCharW,
                 cachedCharH = cachedCharH,
                 measureCache = measureCache
@@ -257,50 +255,25 @@ private fun DrawScope.drawKanjiSegments(
                 )
             }
 
-            // Furigana pill above this segment (use cache to avoid re-measuring same reading)
+            // Furigana above this segment — outlined text (stroke + fill)
             val measured = measureCache?.getOrPut(segment.reading) {
                 textMeasurer.measure(segment.reading, furiganaStyle)
             } ?: textMeasurer.measure(segment.reading, furiganaStyle)
             val furiganaWidth = measured.size.width.toFloat()
             val furiganaHeight = measured.size.height.toFloat()
 
-            val padH = 6f
-            val padV = 3f
-            val bgWidth = furiganaWidth + padH * 2
-            val bgHeight = furiganaHeight + padV * 2
-            val bgLeft = segLeft + (segWidth - bgWidth) / 2f
-            val bgTop = (elemTop - bgHeight - 2f).coerceAtLeast(0f)
+            val textLeft = segLeft + (segWidth - furiganaWidth) / 2f
+            val textTop = (elemTop - furiganaHeight - 2f).coerceAtLeast(0f)
 
-            // Quick validation and coercion
-            if (bgWidth <= 0 || bgHeight <= 0 || bgLeft.isNaN() || bgTop.isNaN()) continue
-            if (bgLeft + bgWidth < -50 || bgTop > size.height + 50) continue  // Off-screen
+            // Quick validation
+            if (textLeft.isNaN() || textTop.isNaN()) continue
+            if (textLeft + furiganaWidth < -50 || textTop > size.height + 50) continue
 
-            val safeBgWidth = bgWidth.coerceAtLeast(0.1f)
-            val safeBgHeight = bgHeight.coerceAtLeast(0.1f)
-
-            // Skip text if it would create invalid constraints
-            val textLeft = bgLeft + padH
-            val textTop = bgTop + padV
-            if (textLeft < 0 || textTop < 0) continue
-            if (textLeft >= size.width || textTop >= size.height) continue
-            // Ensure there's enough space for text to render without negative constraints
-            val availableWidth = (size.width - textLeft).coerceAtLeast(0f)
-            val availableHeight = (size.height - textTop).coerceAtLeast(0f)
-            if (availableWidth < 10f || availableHeight < 10f) continue
-
-            drawRoundRect(
-                color = labelBg,
-                topLeft = Offset(bgLeft, bgTop),
-                size = Size(safeBgWidth, safeBgHeight),
-                cornerRadius = CornerRadius(4f, 4f)
-            )
-
-            drawText(
-                textMeasurer = textMeasurer,
-                text = segment.reading,
-                topLeft = Offset(textLeft, textTop),
-                style = furiganaStyle
-            )
+            // Outlined furigana: stroke in contrast color, fill in style color
+            val fillColor = furiganaStyle.color
+            val strokeColor = if (fillColor == Color.White) Color.Black else Color.White
+            drawText(measured, color = strokeColor, topLeft = Offset(textLeft, textTop), drawStyle = outlineStroke)
+            drawText(measured, color = fillColor, topLeft = Offset(textLeft, textTop))
         }
     }
 }
@@ -314,7 +287,7 @@ private fun DrawScope.drawFuriganaLabel(
     color: Color,
     textMeasurer: TextMeasurer,
     furiganaStyle: TextStyle,
-    labelBg: Color,
+    outlineStroke: Stroke,
     isVerticalMode: Boolean = false,
     cachedCharW: Float = -1f,
     cachedCharH: Float = -1f
@@ -338,61 +311,34 @@ private fun DrawScope.drawFuriganaLabel(
             anchorHeight = elemHeight,
             textMeasurer = textMeasurer,
             furiganaStyle = furiganaStyle,
-            labelBg = labelBg,
+            outlineStroke = outlineStroke,
             cachedCharW = cachedCharW,
             cachedCharH = cachedCharH
         )
         return
     }
 
-    // Horizontal mode: furigana centered ABOVE element
+    // Horizontal mode: outlined furigana centered ABOVE element
     val measured = textMeasurer.measure(reading, furiganaStyle)
     val furiganaWidth = measured.size.width.toFloat()
     val furiganaHeight = measured.size.height.toFloat()
 
-    val padH = 6f
-    val padV = 3f
-    val bgWidth = furiganaWidth + padH * 2
-    val bgHeight = furiganaHeight + padV * 2
-    val bgLeft = elemLeft + (elemWidth - bgWidth) / 2f
-    val bgTop = (elemTop - bgHeight - 2f).coerceAtLeast(0f)
+    val textLeft = elemLeft + (elemWidth - furiganaWidth) / 2f
+    val textTop = (elemTop - furiganaHeight - 2f).coerceAtLeast(0f)
 
-    // Quick validation and coercion
-    if (bgWidth <= 0 || bgHeight <= 0 || bgLeft.isNaN() || bgTop.isNaN()) return
-    if (bgLeft + bgWidth < -50 || bgTop > size.height + 50) return  // Off-screen
+    // Quick validation
+    if (textLeft.isNaN() || textTop.isNaN()) return
+    if (textLeft + furiganaWidth < -50 || textTop > size.height + 50) return
 
-    val safeBgWidth = bgWidth.coerceAtLeast(0.1f)
-    val safeBgHeight = bgHeight.coerceAtLeast(0.1f)
-
-    // Skip text if it would create invalid constraints
-    val textLeft = bgLeft + padH
-    val textTop = bgTop + padV
-    if (textLeft < 0 || textTop < 0) return
-    if (textLeft >= size.width || textTop >= size.height) return
-    // Ensure there's enough space for text to render without negative constraints
-    val availableWidth = (size.width - textLeft).coerceAtLeast(0f)
-    val availableHeight = (size.height - textTop).coerceAtLeast(0f)
-    if (availableWidth < 10f || availableHeight < 10f) return
-
-    // Background pill
-    drawRoundRect(
-        color = labelBg,
-        topLeft = Offset(bgLeft, bgTop),
-        size = Size(safeBgWidth, safeBgHeight),
-        cornerRadius = CornerRadius(4f, 4f)
-    )
-
-    // Furigana text
-    drawText(
-        textMeasurer = textMeasurer,
-        text = reading,
-        topLeft = Offset(textLeft, textTop),
-        style = furiganaStyle
-    )
+    // Outlined furigana: stroke in contrast color, fill in style color
+    val fillColor = furiganaStyle.color
+    val strokeColor = if (fillColor == Color.White) Color.Black else Color.White
+    drawText(measured, color = strokeColor, topLeft = Offset(textLeft, textTop), drawStyle = outlineStroke)
+    drawText(measured, color = fillColor, topLeft = Offset(textLeft, textTop))
 }
 
 /**
- * Draw furigana text vertically: each character stacked top-to-bottom in a tall narrow pill,
+ * Draw furigana text vertically: each character stacked top-to-bottom with outlined text,
  * positioned to the right of the kanji and vertically centered on the anchor region.
  */
 private fun DrawScope.drawVerticalFurigana(
@@ -402,7 +348,7 @@ private fun DrawScope.drawVerticalFurigana(
     anchorHeight: Float,
     textMeasurer: TextMeasurer,
     furiganaStyle: TextStyle,
-    labelBg: Color,
+    outlineStroke: Stroke,
     cachedCharW: Float = -1f,
     cachedCharH: Float = -1f,
     measureCache: HashMap<String, androidx.compose.ui.text.TextLayoutResult>? = null
@@ -421,40 +367,25 @@ private fun DrawScope.drawVerticalFurigana(
         charH = sampleMeasured.size.height.toFloat()
     }
 
-    val padH = 4f
-    val padV = 3f
     val charCount = reading.length
-    val bgWidth = charW + padH * 2
-    val bgHeight = charH * charCount + padV * 2
-
-    val bgLeft = anchorLeft
-    val bgTop = (anchorTop + (anchorHeight - bgHeight) / 2f).coerceIn(0f, (size.height - bgHeight).coerceAtLeast(0f))
+    val totalHeight = charH * charCount
 
     // Quick validation — skip if off-screen
-    if (bgWidth <= 0 || bgHeight <= 0 || bgLeft.isNaN() || bgTop.isNaN()) return
-    if (bgLeft + bgWidth < -50 || bgLeft > size.width + 50) return  // Off-screen horizontally
-    if (bgTop + bgHeight < -50 || bgTop > size.height + 50) return  // Off-screen vertically
+    if (anchorLeft.isNaN() || anchorTop.isNaN()) return
+    if (anchorLeft > size.width + 50) return
+    if (anchorTop + anchorHeight < -50 || anchorTop > size.height + 50) return
 
-    val textLeft = bgLeft + padH
-    val textTopStart = bgTop + padV
-    if (textLeft < 0 || textTopStart < 0) return
-    if (textLeft >= size.width || textTopStart >= size.height) return
-    val availableWidth = (size.width - textLeft).coerceAtLeast(0f)
-    val availableHeight = (size.height - textTopStart).coerceAtLeast(0f)
-    if (availableWidth < 10f || availableHeight < 10f) return
+    // Compute colors once outside loop
+    val fillColor = furiganaStyle.color
+    val strokeColor = if (fillColor == Color.White) Color.Black else Color.White
 
-    // Background pill
-    drawRoundRect(
-        color = labelBg,
-        topLeft = Offset(bgLeft, bgTop),
-        size = Size(bgWidth.coerceAtLeast(0.1f), bgHeight.coerceAtLeast(0.1f)),
-        cornerRadius = CornerRadius(4f, 4f)
-    )
-
-    // Draw each character stacked vertically
+    // Draw each character stacked vertically — outlined text (stroke + fill)
     for (i in reading.indices) {
-        val charTop = textTopStart + i * charH
-        if (charTop + charH > size.height) break
+        val charTop = anchorTop + (anchorHeight - totalHeight) / 2f + i * charH
+        if (charTop + charH < 0) continue
+        if (charTop > size.height) break
+
+        val charLeft = anchorLeft + 2f  // Small gap from kanji
 
         // Measure individual char for proper centering (varying widths) — cached
         val charStr = reading[i].toString()
@@ -462,13 +393,9 @@ private fun DrawScope.drawVerticalFurigana(
             textMeasurer.measure(charStr, furiganaStyle)
         } ?: textMeasurer.measure(charStr, furiganaStyle)
         val actualCharW = charMeasured.size.width.toFloat()
-        val charLeft = textLeft + (charW - actualCharW) / 2f  // Center within column
+        val centeredLeft = charLeft + (charW - actualCharW) / 2f  // Center within column
 
-        drawText(
-            textMeasurer = textMeasurer,
-            text = reading[i].toString(),
-            topLeft = Offset(charLeft, charTop),
-            style = furiganaStyle
-        )
+        drawText(charMeasured, color = strokeColor, topLeft = Offset(centeredLeft, charTop), drawStyle = outlineStroke)
+        drawText(charMeasured, color = fillColor, topLeft = Offset(centeredLeft, charTop))
     }
 }

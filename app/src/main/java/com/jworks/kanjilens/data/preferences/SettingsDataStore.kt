@@ -46,7 +46,7 @@ class SettingsDataStore(private val context: Context) {
             showBoxes = prefs[Keys.SHOW_BOXES] ?: defaults.showBoxes,
             furiganaIsBold = prefs[Keys.FURIGANA_IS_BOLD] ?: defaults.furiganaIsBold,
             furiganaUseWhiteText = prefs[Keys.FURIGANA_USE_WHITE_TEXT] ?: defaults.furiganaUseWhiteText,
-            partialModeBoundaryRatio = prefs[Keys.PARTIAL_MODE_BOUNDARY_RATIO] ?: defaults.partialModeBoundaryRatio,
+            partialModeBoundaryRatio = defaults.partialModeBoundaryRatio,  // Always start FULL — don't persist mode across restarts
             verticalTextMode = prefs[Keys.VERTICAL_TEXT_MODE] ?: defaults.verticalTextMode
         )
     }

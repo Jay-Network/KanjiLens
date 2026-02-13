@@ -1,7 +1,7 @@
 # KanjiLens TODO & Future Enhancements
 
-**Last Updated**: 2026-02-05
-**Current Phase**: Phase 1 Polish
+**Last Updated**: 2026-02-13
+**Current Phase**: Pre-Launch
 
 ---
 
@@ -145,27 +145,59 @@ ML Kit OCR fails to recognize traditional/old kanji forms (kyūjitai 旧字体):
 - [x] Bug fixes (Compose BOM, division-by-zero, empty bounds)
 - [x] Testing on Z Flip 7
 
-### 🚀 Phase 1 Polish (IN PROGRESS)
-- [ ] Settings UI (text size, colors, overlay options)
-- [ ] UX improvements (animations, feedback, visual polish)
-- [ ] Performance optimization (battery, frame rate)
+### ✅ Phase 1 Polish (COMPLETE)
+- [x] Settings UI (text size, colors, overlay options)
+- [x] UX improvements (animations, feedback, visual polish)
+- [x] Performance optimization (battery, frame rate)
 - [ ] Onboarding tutorial
 - [ ] Help/About screen
 
-**Estimated**: 1-2 weeks (30-50 hours)
+### ✅ Phase 2: Furigana Integration (COMPLETE)
+- [x] Download and prepare JMDict database (215K entries, 12.5MB)
+- [x] Integrate JMDict SQLite (Room createFromAsset)
+- [x] Build Kuroshiro backend service (Node.js + Express)
+- [x] Implement furigana lookup logic (line-context enrichment → greedy match)
+- [x] Overlay furigana above detected kanji (per-kanji-segment rendering)
+- [x] Caching and optimization
+- [x] Testing on real Japanese text (Z Flip 7 + Pixel 10 Pro)
+- [x] Jitter stabilization (spatial matching, freeze/blend thresholds)
+- [x] Partial mode (dual-filter, per-segment clipping)
 
-### 📖 Phase 2: Furigana Integration (NEXT)
-- [ ] Download and prepare JMDict database
-- [ ] Integrate JMDict SQLite (local lookup)
-- [ ] Build Kuroshiro backend service (Node.js)
-- [ ] Implement furigana lookup logic
-- [ ] Overlay furigana above detected kanji
-- [ ] Caching and optimization
-- [ ] Testing on real Japanese text
+### ✅ Phase 3: Monetization & Auth (COMPLETE)
+- [x] Google Sign-In → Supabase auth
+- [x] Google Play Billing (billing-ktx:6.1.0)
+- [x] Subscription tiers: $2.99/mo, $14.99/yr
+- [x] Free tier: 5 scans/day, 60s each, timer UI
+- [x] Paywall screen
 
-**Estimated**: 2-3 weeks (50-70 hours)
+### ✅ Phase 3b: UI Enhancements (COMPLETE)
+- [x] Flash icons (vector drawables, yellow tint)
+- [x] Feedback system (Supabase edge functions)
+- [x] Profile screen (user info, ecosystem links)
+- [x] Admin toggle (developer role override)
+- [x] App icon (adaptive, lens+crosshair+scan lines)
+- [x] Draggable floating buttons (8 buttons, bottom-right cluster)
 
-### 🎨 Phase 3: Advanced Features
+### ✅ Phase 3c: Native Dictionary (COMPLETE)
+- [x] Enriched JMDict database (221K entries with English definitions)
+- [x] Room schema v2 (DictionaryEntry entity + DAO)
+- [x] Domain layer (DictionaryResult, DictionaryRepository)
+- [x] Native Compose dictionary view (replaces WebView/jisho.org)
+- [x] Offline lookup with LRU cache
+- [x] POS tag labels, kanji breakdown, Jisho.org fallback link
+
+### 🪙 Phase 3d: J Coin Integration (TODO)
+- [ ] Wire earning triggers (rules defined but not called)
+- [ ] daily_scan: 10 coins — first scan of the day
+- [ ] scan_streak_3: 25 coins — 3 consecutive scan days
+- [ ] scan_streak_7: 100 coins — 7-day scan streak
+- [ ] vocab_lookup: 5 coins — dictionary lookup reward
+- [ ] first_100_kanji: 50 coins — scan 100 unique kanji
+- [ ] share_result: 15 coins — share a scan result
+- [ ] Display coin balance in profile screen
+- [ ] Earn notification toast/animation
+
+### 🎨 Phase 4: Advanced Features
 - [ ] **Option A**: Kanji variant dictionary (traditional→modern) ⭐
 - [ ] **Option B**: Hybrid OCR with Cloud Vision (test viability)
 - [ ] Screenshot/save mode
@@ -175,12 +207,18 @@ ML Kit OCR fails to recognize traditional/old kanji forms (kyūjitai 旧字体):
 
 **Estimated**: 2-4 weeks
 
-### 🚀 Phase 4: Production Ready
-- [ ] **Option C**: Full traditional kanji solution (if needed)
-- [ ] Play Store optimization
-- [ ] Privacy policy
+### 🚀 Phase 5: Production Ready (PRE-LAUNCH)
+- [ ] Set SupabaseConfig.kt values (URL + anon key)
+- [ ] Set Google OAuth client ID
+- [ ] Create Play Console account ($25)
+- [ ] Create subscription products in Play Console
+- [ ] Privacy policy (drafted: docs/privacy-policy.md)
+- [ ] Play Store listing (drafted: docs/play-store-listing.md)
+- [ ] Create `user_roles` table in Supabase
+- [ ] QA testing (checklist: docs/qa-testing-checklist.md)
 - [ ] Beta testing program
-- [ ] Marketing materials
+- [ ] Marketing materials (docs/video-production-checklist.md)
+- [ ] Upload signed AAB to Play Store
 - [ ] Launch on Google Play Store
 
 **Estimated**: 1-2 weeks

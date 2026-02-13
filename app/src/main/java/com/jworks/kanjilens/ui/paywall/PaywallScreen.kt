@@ -55,7 +55,7 @@ fun PaywallScreen(
     val monthlyDetails = productDetails[BillingManager.PRODUCT_MONTHLY]
     val annualDetails = productDetails[BillingManager.PRODUCT_ANNUAL]
     val monthlyPrice = monthlyDetails?.subscriptionOfferDetails?.firstOrNull()
-        ?.pricingPhases?.pricingPhaseList?.firstOrNull()?.formattedPrice ?: "$1.99"
+        ?.pricingPhases?.pricingPhaseList?.firstOrNull()?.formattedPrice ?: "$2.99"
     val annualPrice = annualDetails?.subscriptionOfferDetails?.firstOrNull()
         ?.pricingPhases?.pricingPhaseList?.firstOrNull()?.formattedPrice ?: "$14.99"
 

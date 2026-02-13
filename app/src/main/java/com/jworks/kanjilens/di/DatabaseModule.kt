@@ -2,6 +2,7 @@ package com.jworks.kanjilens.di
 
 import android.content.Context
 import androidx.room.Room
+import com.jworks.kanjilens.data.local.DictionaryDao
 import com.jworks.kanjilens.data.local.JMDictDao
 import com.jworks.kanjilens.data.local.JMDictDatabase
 import dagger.Module
@@ -22,12 +23,21 @@ object DatabaseModule {
             context,
             JMDictDatabase::class.java,
             "jmdict.db"
-        ).createFromAsset("jmdict.db").build()
+        )
+            .createFromAsset("jmdict.db")
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides
     @Singleton
     fun provideJMDictDao(database: JMDictDatabase): JMDictDao {
         return database.jmDictDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideDictionaryDao(database: JMDictDatabase): DictionaryDao {
+        return database.dictionaryDao()
     }
 }

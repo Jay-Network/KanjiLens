@@ -2,6 +2,7 @@ package com.jworks.kanjilens.data.auth
 
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
@@ -45,13 +46,48 @@ class AuthRepository @Inject constructor(
     val isAdminOrDeveloper: StateFlow<Boolean> = _isAdminOrDeveloper.asStateFlow()
 
     private var googleSignInClient: GoogleSignInClient? = null
+    private var sessionPrefs: SharedPreferences? = null
+
+    companion object {
+        private const val PREFS_NAME = "kanjilens_session"
+        private const val KEY_USER_ID = "user_id"
+        private const val KEY_EMAIL = "email"
+        private const val KEY_DISPLAY_NAME = "display_name"
+        private const val KEY_AVATAR_URL = "avatar_url"
+    }
 
     fun initGoogleSignIn(context: Context) {
+        sessionPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(SupabaseConfig.GOOGLE_WEB_CLIENT_ID)
             .requestEmail()
             .build()
         googleSignInClient = GoogleSignIn.getClient(context, gso)
+    }
+
+    private fun saveSession(user: AuthUser) {
+        sessionPrefs?.edit()?.apply {
+            putString(KEY_USER_ID, user.id)
+            putString(KEY_EMAIL, user.email)
+            putString(KEY_DISPLAY_NAME, user.displayName)
+            putString(KEY_AVATAR_URL, user.avatarUrl)
+            apply()
+        }
+    }
+
+    private fun loadSavedSession(): AuthUser? {
+        val prefs = sessionPrefs ?: return null
+        val userId = prefs.getString(KEY_USER_ID, null) ?: return null
+        return AuthUser(
+            id = userId,
+            email = prefs.getString(KEY_EMAIL, null),
+            displayName = prefs.getString(KEY_DISPLAY_NAME, null),
+            avatarUrl = prefs.getString(KEY_AVATAR_URL, null)
+        )
+    }
+
+    private fun clearSavedSession() {
+        sessionPrefs?.edit()?.clear()?.apply()
     }
 
     fun getSignInIntent(): Intent? {
@@ -70,6 +106,11 @@ class AuthRepository @Inject constructor(
                     this.idToken = idToken
                 }
                 refreshAuthState()
+                // Persist session to SharedPreferences
+                val state = _authState.value
+                if (state is AuthState.SignedIn) {
+                    saveSession(state.user)
+                }
             } else {
                 _authState.value = AuthState.Error("No ID token received from Google")
             }
@@ -86,22 +127,35 @@ class AuthRepository @Inject constructor(
             if (session != null) {
                 val user = session.user
                 if (user != null) {
-                    _authState.value = AuthState.SignedIn(
-                        AuthUser(
-                            id = user.id,
-                            email = user.email,
-                            displayName = user.userMetadata?.get("full_name")?.toString()?.trim('"'),
-                            avatarUrl = user.userMetadata?.get("avatar_url")?.toString()?.trim('"')
-                        )
+                    val authUser = AuthUser(
+                        id = user.id,
+                        email = user.email,
+                        displayName = user.userMetadata?.get("full_name")?.toString()?.trim('"'),
+                        avatarUrl = user.userMetadata?.get("avatar_url")?.toString()?.trim('"')
                     )
-                    // Fetch user role in background
+                    _authState.value = AuthState.SignedIn(authUser)
+                    saveSession(authUser)
                     fetchUserRole(user.id)
                     return
                 }
             }
+            // Supabase session expired/missing — try saved session
+            val saved = loadSavedSession()
+            if (saved != null) {
+                android.util.Log.d("AuthRepository", "Restored session from SharedPreferences: ${saved.email}")
+                _authState.value = AuthState.SignedIn(saved)
+                fetchUserRole(saved.id)
+                return
+            }
             _authState.value = AuthState.SignedOut
             _isAdminOrDeveloper.value = false
         } catch (e: Exception) {
+            // On error, still try saved session
+            val saved = loadSavedSession()
+            if (saved != null) {
+                _authState.value = AuthState.SignedIn(saved)
+                return
+            }
             _authState.value = AuthState.SignedOut
             _isAdminOrDeveloper.value = false
         }
@@ -138,6 +192,7 @@ class AuthRepository @Inject constructor(
             supabaseClient.auth.signOut()
             googleSignInClient?.signOut()
         } catch (_: Exception) { }
+        clearSavedSession()
         _authState.value = AuthState.SignedOut
     }
 

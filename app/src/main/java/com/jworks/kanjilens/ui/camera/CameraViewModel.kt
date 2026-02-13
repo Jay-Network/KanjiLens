@@ -11,6 +11,8 @@ import com.google.mlkit.vision.common.InputImage
 import com.jworks.kanjilens.data.subscription.SubscriptionManager
 import com.jworks.kanjilens.domain.models.AppSettings
 import com.jworks.kanjilens.domain.models.DetectedText
+import com.jworks.kanjilens.domain.models.DictionaryResult
+import com.jworks.kanjilens.domain.repository.DictionaryRepository
 import com.jworks.kanjilens.domain.repository.SettingsRepository
 import com.jworks.kanjilens.domain.usecases.EnrichWithFuriganaUseCase
 import com.jworks.kanjilens.domain.usecases.ProcessCameraFrameUseCase
@@ -30,7 +32,8 @@ class CameraViewModel @Inject constructor(
     private val processCameraFrame: ProcessCameraFrameUseCase,
     private val enrichWithFurigana: EnrichWithFuriganaUseCase,
     private val settingsRepository: SettingsRepository,
-    private val subscriptionManager: SubscriptionManager
+    private val subscriptionManager: SubscriptionManager,
+    private val dictionaryRepository: DictionaryRepository
 ) : ViewModel() {
 
     companion object {
@@ -38,6 +41,10 @@ class CameraViewModel @Inject constructor(
         private const val STATS_WINDOW = 30 // rolling average over N frames
         private const val PERSIST_FRAMES = 3 // Keep previous results for N sparse frames
         const val FREE_SCAN_DURATION_SECONDS = 60
+        private const val JITTER_FREEZE_PX = 8f
+        private const val JITTER_SIZE_FREEZE_PX = 8f
+        private const val JITTER_BLEND_DISTANCE_PX = 30f
+        private const val JITTER_NEW_WEIGHT = 0.20f
     }
 
     val settings: StateFlow<AppSettings> = settingsRepository.settings
@@ -81,6 +88,29 @@ class CameraViewModel @Inject constructor(
     val showPaywall: StateFlow<Boolean> = _showPaywall.asStateFlow()
 
     val isPremium: StateFlow<Boolean> = subscriptionManager.isPremiumFlow
+
+    private val _dictionaryResult = MutableStateFlow<DictionaryResult?>(null)
+    val dictionaryResult: StateFlow<DictionaryResult?> = _dictionaryResult.asStateFlow()
+
+    private val _isDictionaryLoading = MutableStateFlow(false)
+    val isDictionaryLoading: StateFlow<Boolean> = _isDictionaryLoading.asStateFlow()
+
+    fun lookupWord(word: String) {
+        viewModelScope.launch {
+            _isDictionaryLoading.value = true
+            _dictionaryResult.value = try {
+                dictionaryRepository.lookup(word)
+            } catch (e: Exception) {
+                Log.w(TAG, "Dictionary lookup failed for '$word'", e)
+                null
+            }
+            _isDictionaryLoading.value = false
+        }
+    }
+
+    fun clearDictionaryResult() {
+        _dictionaryResult.value = null
+    }
 
     private var timerJob: Job? = null
 
@@ -298,6 +328,7 @@ class CameraViewModel @Inject constructor(
                     { it.bounds?.top ?: Int.MAX_VALUE },
                     { it.bounds?.left ?: Int.MAX_VALUE }
                 ))
+                val stabilized = stabilizeDetections(sorted, _detectedTexts.value)
 
                 // Persist previous results when current frame has fewer elements (reduces flicker)
                 // Vertical partial mode has a very narrow detection area (~110px in image space)
@@ -307,17 +338,17 @@ class CameraViewModel @Inject constructor(
                 val persistThreshold = if (isVerticalPartial) PERSIST_FRAMES * 2 else PERSIST_FRAMES
 
                 val prevCount = _detectedTexts.value.sumOf { it.elements.size }
-                val newCount = sorted.sumOf { it.elements.size }
+                val newCount = stabilized.sumOf { it.elements.size }
                 if (newCount >= prevCount || emptyFrameCount >= persistThreshold) {
                     // Good frame (same or more elements) or waited long enough — accept
-                    _detectedTexts.value = sorted
+                    _detectedTexts.value = stabilized
                     emptyFrameCount = if (newCount < prevCount) 1 else 0
                 } else {
                     // Sparse frame — keep previous results a bit longer
                     emptyFrameCount++
                 }
                 _sourceImageSize.value = result.imageSize
-                updateStats(result.processingTimeMs, sorted.size)
+                updateStats(result.processingTimeMs, stabilized.size)
             } catch (_: Exception) {
                 // OCR failed for this frame, keep previous results
             } finally {
@@ -413,6 +444,84 @@ class CameraViewModel @Inject constructor(
         if (frameCount % (frameSkip * 10) == 0) {
             Log.d(TAG, "OCR stats: avg=${avgMs}ms, last=${processingTimeMs}ms, lines=$lineCount")
         }
+    }
+
+    private fun stabilizeDetections(
+        current: List<DetectedText>,
+        previous: List<DetectedText>
+    ): List<DetectedText> {
+        if (previous.isEmpty()) return current
+
+        return current.map { line ->
+            // Spatial matching: find closest previous line with same/similar text
+            val prevLine = previous.minByOrNull { prev ->
+                spatialTextDistance(line, prev)
+            }?.takeIf { spatialTextDistance(line, it) < 200f }
+
+            val stabilizedLineBounds = stabilizeRect(line.bounds, prevLine?.bounds)
+
+            val stabilizedElements = line.elements.map { element ->
+                // Find closest previous element with matching text (spatial, not index-based)
+                val prevElement = prevLine?.elements?.minByOrNull { prev ->
+                    if (prev.text != element.text) Float.MAX_VALUE
+                    else rectDistance(element.bounds, prev.bounds)
+                }?.takeIf { it.text == element.text }
+
+                element.copy(bounds = stabilizeRect(element.bounds, prevElement?.bounds))
+            }
+
+            line.copy(
+                bounds = stabilizedLineBounds,
+                elements = stabilizedElements
+            )
+        }
+    }
+
+    private fun spatialTextDistance(a: DetectedText, b: DetectedText): Float {
+        val centerDist = rectDistance(a.bounds, b.bounds)
+        val textPenalty = if (a.text == b.text) 0f else 100f
+        return centerDist + textPenalty
+    }
+
+    private fun rectDistance(a: android.graphics.Rect?, b: android.graphics.Rect?): Float {
+        if (a == null || b == null) return Float.MAX_VALUE
+        val dx = (a.centerX() - b.centerX()).toFloat()
+        val dy = (a.centerY() - b.centerY()).toFloat()
+        return kotlin.math.sqrt(dx * dx + dy * dy)
+    }
+
+    private fun stabilizeRect(current: Rect?, previous: Rect?): Rect? {
+        if (current == null) return null
+        if (previous == null || previous.isEmpty) return Rect(current)
+
+        val centerDx = kotlin.math.abs(current.centerX() - previous.centerX()).toFloat()
+        val centerDy = kotlin.math.abs(current.centerY() - previous.centerY()).toFloat()
+        val widthDiff = kotlin.math.abs(current.width() - previous.width()).toFloat()
+        val heightDiff = kotlin.math.abs(current.height() - previous.height()).toFloat()
+
+        if (centerDx <= JITTER_FREEZE_PX &&
+            centerDy <= JITTER_FREEZE_PX &&
+            widthDiff <= JITTER_SIZE_FREEZE_PX &&
+            heightDiff <= JITTER_SIZE_FREEZE_PX
+        ) {
+            return Rect(previous)
+        }
+
+        if (centerDx <= JITTER_BLEND_DISTANCE_PX && centerDy <= JITTER_BLEND_DISTANCE_PX) {
+            return Rect(
+                lerp(previous.left, current.left, JITTER_NEW_WEIGHT),
+                lerp(previous.top, current.top, JITTER_NEW_WEIGHT),
+                lerp(previous.right, current.right, JITTER_NEW_WEIGHT),
+                lerp(previous.bottom, current.bottom, JITTER_NEW_WEIGHT)
+            )
+        }
+
+        return Rect(current)
+    }
+
+    private fun lerp(oldValue: Int, newValue: Int, newWeight: Float): Int {
+        val oldWeight = 1f - newWeight
+        return (oldValue * oldWeight + newValue * newWeight).toInt()
     }
 
 }

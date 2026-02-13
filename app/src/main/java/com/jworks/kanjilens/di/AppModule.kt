@@ -7,8 +7,10 @@ import com.google.mlkit.vision.text.japanese.JapaneseTextRecognizerOptions
 import android.os.Build
 import com.jworks.kanjilens.data.preferences.SettingsDataStore
 import com.jworks.kanjilens.data.remote.KuroshiroApi
+import com.jworks.kanjilens.data.repository.DictionaryRepositoryImpl
 import com.jworks.kanjilens.data.repository.FuriganaRepositoryImpl
 import com.jworks.kanjilens.data.repository.SettingsRepositoryImpl
+import com.jworks.kanjilens.domain.repository.DictionaryRepository
 import com.jworks.kanjilens.domain.repository.FuriganaRepository
 import com.jworks.kanjilens.domain.repository.SettingsRepository
 import dagger.Module
@@ -67,6 +69,12 @@ object AppModule {
     @Provides
     @Singleton
     fun provideSettingsRepository(impl: SettingsRepositoryImpl): SettingsRepository {
+        return impl
+    }
+
+    @Provides
+    @Singleton
+    fun provideDictionaryRepository(impl: DictionaryRepositoryImpl): DictionaryRepository {
         return impl
     }
 }

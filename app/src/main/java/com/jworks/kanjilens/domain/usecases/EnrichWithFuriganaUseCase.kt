@@ -4,7 +4,9 @@ import android.util.Log
 import com.jworks.kanjilens.data.nlp.KuromojiTokenizer
 import com.jworks.kanjilens.domain.models.DetectedText
 import com.jworks.kanjilens.domain.models.JapaneseTextUtil
+import com.jworks.kanjilens.domain.models.JapaneseToken
 import com.jworks.kanjilens.domain.models.KanjiSegment
+import com.jworks.kanjilens.domain.models.TextElement
 import com.jworks.kanjilens.domain.repository.FuriganaRepository
 import javax.inject.Inject
 
@@ -15,6 +17,21 @@ class EnrichWithFuriganaUseCase @Inject constructor(
     companion object {
         private const val TAG = "FuriganaEnrich"
         private const val MAX_WORD_LEN = 6
+
+        // Counter suffix readings when preceded by a digit (number + kanji compound)
+        private val COUNTER_READINGS = mapOf(
+            "月" to "がつ", "日" to "にち", "年" to "ねん",
+            "時" to "じ", "分" to "ふん", "秒" to "びょう",
+            "回" to "かい", "階" to "かい", "歳" to "さい",
+            "才" to "さい", "円" to "えん", "個" to "こ",
+            "本" to "ほん", "冊" to "さつ", "枚" to "まい",
+            "台" to "だい", "匹" to "ひき", "頭" to "とう",
+            "羽" to "わ", "杯" to "はい", "件" to "けん",
+            "号" to "ごう", "巻" to "かん", "週" to "しゅう",
+        )
+
+        private fun isDigitChar(ch: Char): Boolean =
+            ch in '0'..'9' || ch in '０'..'９'
     }
 
     suspend fun execute(detectedTexts: List<DetectedText>): List<DetectedText> {
@@ -43,12 +60,17 @@ class EnrichWithFuriganaUseCase @Inject constructor(
 
             if (kanjiTokens.isEmpty()) return@map detected
 
-            detected.copy(
-                elements = detected.elements.map { element ->
-                    if (!element.containsKanji) return@map element
+            val elementSpans = buildElementSpans(detected.text, detected.elements)
 
-                    // Find kanji tokens that overlap with this element's text
-                    val segments = resolveElementFromTokens(element.text, detected.text, lineTokens)
+            detected.copy(
+                elements = detected.elements.mapIndexed { index, element ->
+                    if (!element.containsKanji) return@mapIndexed element
+
+                    // Map context-aware line tokens to this element using deterministic OCR span mapping.
+                    val (elemStart, elemEnd) = elementSpans.getOrNull(index)
+                        ?: return@mapIndexed element
+                    val rawSegments = resolveElementFromTokens(element.text, elemStart, elemEnd, lineTokens)
+                    val segments = fixCounterReadings(element.text, rawSegments)
                     val reading = buildPositionalReading(element.text, segments)
                     element.copy(reading = reading, kanjiSegments = segments)
                 }
@@ -57,24 +79,54 @@ class EnrichWithFuriganaUseCase @Inject constructor(
     }
 
     /**
-     * Find the element's text within the line, then map Kuromoji tokens to element positions.
+     * Build element spans in line order, handling repeated OCR text deterministically.
+     */
+    private fun buildElementSpans(
+        lineText: String,
+        elements: List<TextElement>
+    ): List<Pair<Int, Int>> {
+        val spans = mutableListOf<Pair<Int, Int>>()
+        var cursor = 0
+
+        for (element in elements) {
+            val text = element.text
+            if (text.isEmpty()) {
+                spans.add(cursor to cursor)
+                continue
+            }
+
+            // Primary: find from current cursor to preserve left-to-right occurrence mapping.
+            val idxFromCursor = lineText.indexOf(text, cursor)
+            val idx = if (idxFromCursor >= 0) {
+                idxFromCursor
+            } else {
+                // Fallback: global search when OCR element text has small spacing/punctuation mismatch.
+                lineText.indexOf(text).takeIf { it >= 0 } ?: cursor
+            }
+            val end = (idx + text.length).coerceAtMost(lineText.length)
+            spans.add(idx to end)
+            cursor = end
+        }
+
+        return spans
+    }
+
+    /**
+     * Map Kuromoji tokens that are fully inside this element span.
      */
     private fun resolveElementFromTokens(
         elementText: String,
-        lineText: String,
-        lineTokens: List<com.jworks.kanjilens.domain.models.JapaneseToken>
+        elemStart: Int,
+        elemEnd: Int,
+        lineTokens: List<JapaneseToken>
     ): List<KanjiSegment> {
-        // Find where this element appears in the line
-        val elemStart = lineText.indexOf(elementText)
-        if (elemStart < 0) return emptyList()
-        val elemEnd = elemStart + elementText.length
-
         val segments = mutableListOf<KanjiSegment>()
         for (token in lineTokens) {
             if (!token.containsKanji) continue
+            if (token.reading.isBlank() || token.reading == "*") continue
             val tokenEnd = token.startIndex + token.surface.length
 
-            // Check if this token overlaps with the element
+            // Keep tokens that lie completely in this element span.
             if (token.startIndex >= elemStart && tokenEnd <= elemEnd) {
                 val localStart = token.startIndex - elemStart
                 val localEnd = localStart + token.surface.length
@@ -108,6 +160,25 @@ class EnrichWithFuriganaUseCase @Inject constructor(
         return result.toString().trimEnd('\u3000').ifEmpty { null }
     }
 
+    /**
+     * Fix counter suffix readings: when a single kanji is preceded by a digit,
+     * apply the counter reading (e.g., 月→がつ not つき, 日→にち not ひ).
+     */
+    private fun fixCounterReadings(text: String, segments: List<KanjiSegment>): List<KanjiSegment> {
+        return segments.map { segment ->
+            if (segment.text.length == 1 && segment.startIndex > 0) {
+                val prevChar = text[segment.startIndex - 1]
+                if (isDigitChar(prevChar)) {
+                    val counterReading = COUNTER_READINGS[segment.text]
+                    if (counterReading != null && counterReading != segment.reading) {
+                        Log.d(TAG, "Counter fix: ${segment.text} ${segment.reading}→$counterReading (after $prevChar)")
+                        segment.copy(reading = counterReading)
+                    } else segment
+                } else segment
+            } else segment
+        }
+    }
+
     // ========== JMDict fallback (existing logic) ==========
 
     private suspend fun enrichWithJMDict(
@@ -138,8 +209,10 @@ class EnrichWithFuriganaUseCase @Inject constructor(
             detected.copy(
                 elements = detected.elements.map { element ->
                     if (element.containsKanji) {
-                        val (reading, segments) = resolveElement(element.text, wordMap)
-                        element.copy(reading = reading, kanjiSegments = segments)
+                        val (reading, rawSegments) = resolveElement(element.text, wordMap)
+                        val segments = fixCounterReadings(element.text, rawSegments)
+                        val fixedReading = buildPositionalReading(element.text, segments)
+                        element.copy(reading = fixedReading, kanjiSegments = segments)
                     } else {
                         element
                     }

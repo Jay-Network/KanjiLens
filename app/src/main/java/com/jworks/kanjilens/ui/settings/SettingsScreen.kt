@@ -94,14 +94,6 @@ fun SettingsScreen(
             )
 
             SliderSetting(
-                label = "Box border width",
-                value = settings.strokeWidth,
-                valueLabel = "${String.format("%.1f", settings.strokeWidth)}px",
-                range = 1f..6f,
-                onValueChange = viewModel::updateStrokeWidth
-            )
-
-            SliderSetting(
                 label = "Label opacity",
                 value = settings.labelBackgroundAlpha,
                 valueLabel = "${(settings.labelBackgroundAlpha * 100).roundToInt()}%",
@@ -152,23 +144,6 @@ fun SettingsScreen(
                 Switch(
                     checked = settings.showBoxes,
                     onCheckedChange = viewModel::updateShowBoxes
-                )
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-            SectionHeader("Detection")
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("Vertical text mode (縦書き)", style = MaterialTheme.typography.bodyMedium)
-                Switch(
-                    checked = settings.verticalTextMode,
-                    onCheckedChange = viewModel::updateVerticalTextMode
                 )
             }
 

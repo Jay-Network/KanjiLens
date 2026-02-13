@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import com.jworks.kanjilens.BuildConfig
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,7 +24,7 @@ class SubscriptionManager @Inject constructor(
         const val SCAN_DATE_KEY = "daily_scan_date"
     }
 
-    private val _premiumOverride = MutableStateFlow<Boolean?>(null)
+    private val _premiumOverride = MutableStateFlow<Boolean?>(if (BuildConfig.DEBUG) true else null)
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 

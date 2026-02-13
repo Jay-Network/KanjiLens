@@ -66,18 +66,23 @@ class MainActivity : ComponentActivity() {
                     authRepository.refreshAuthState()
                 }
 
-                // Sync auth metadata only; do not auto-navigate from login screen.
+                // Sync auth metadata and auto-navigate when session is restored
                 LaunchedEffect(authState) {
                     val prefs = getSharedPreferences("kanjilens_prefs", Context.MODE_PRIVATE)
                     when (val state = authState) {
                         is AuthState.SignedIn -> {
                             prefs.edit().putString("user_email", state.user.email).apply()
+                            // Auto-navigate to camera if still on auth screen (session restored)
+                            if (navController.currentDestination?.route == "auth") {
+                                navController.navigate("camera") {
+                                    popUpTo("auth") { inclusive = true }
+                                }
+                            }
                         }
                         else -> {
                             prefs.edit().remove("user_email").apply()
                         }
                     }
-
                 }
 
                 Surface(
