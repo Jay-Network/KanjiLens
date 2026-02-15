@@ -1,6 +1,7 @@
 package com.jworks.kanjilens.ui.camera
 
 import android.graphics.Rect
+import android.graphics.RectF
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -12,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -84,6 +86,34 @@ fun TextOverlay(
         // Per-frame measurement cache (avoids re-measuring same reading string within one frame)
         val measureCache = HashMap<String, androidx.compose.ui.text.TextLayoutResult>()
 
+        // Pre-pass: collect screen-space rects for neighbor-gap computation
+        val elemScreenRects = mutableListOf<RectF>()
+        for (detected in detectedTexts) {
+            if (!detected.containsKanji) continue
+            for (element in detected.elements) {
+                if (!element.containsKanji) continue
+                val bounds = element.bounds ?: continue
+                if (bounds.isEmpty) continue
+                elemScreenRects.add(RectF(
+                    bounds.left * scale - cropOffsetX,
+                    bounds.top * scale - cropOffsetY,
+                    bounds.right * scale - cropOffsetX,
+                    bounds.bottom * scale - cropOffsetY
+                ))
+            }
+        }
+
+        // Canvas-level clip for partial modes: prevents ANY rendering below boundary
+        // This is the definitive fix — furigana drawn above text that's below the boundary
+        // gets clipped even if per-element checks miss edge cases
+        if (isPartial && clipBottomEdge > 0f) {
+            val clipLeft = if (isVerticalMode) {
+                size.width * (1f - PartialModeConstants.VERT_CAMERA_WIDTH_RATIO)
+            } else 0f
+            drawContext.canvas.nativeCanvas.save()
+            drawContext.canvas.nativeCanvas.clipRect(clipLeft, 0f, size.width, clipBottomEdge)
+        }
+
         // Only render kanji elements that have readings
         for (detected in detectedTexts) {
             if (!detected.containsKanji) continue
@@ -94,20 +124,31 @@ fun TextOverlay(
                 if (bounds.isEmpty) continue
 
                 if (element.kanjiSegments.isNotEmpty()) {
+                    // Compute available inter-line gap for furigana sizing
+                    val scrLeft = bounds.left * scale - cropOffsetX
+                    val scrTop = bounds.top * scale - cropOffsetY
+                    val scrRight = bounds.right * scale - cropOffsetX
+                    val scrBottom = bounds.bottom * scale - cropOffsetY
+                    val gapAbove = computeGapAbove(scrTop, scrLeft, scrRight, elemScreenRects)
+                    val gapRight = computeGapRight(scrRight, scrTop, scrBottom, elemScreenRects)
+
                     // Per-segment rendering: individual boxes + furigana per kanji word
                     drawKanjiSegments(
                         bounds, element.text.length, element.kanjiSegments,
                         scale, cropOffsetX, cropOffsetY, kanjiColor, settings.strokeWidth,
                         textMeasurer, furiganaStyle, outlineStroke, settings.showBoxes,
                         isVerticalMode, clipLeftEdge, clipBottomEdge,
-                        cachedCharW, cachedCharH, measureCache
+                        cachedCharW, cachedCharH, measureCache,
+                        maxFuriganaHeight = gapAbove,
+                        maxFuriganaWidth = gapRight
                     )
                 } else if (element.reading != null) {
                     // Fallback: element-level rendering
                     val elemLeft = bounds.left * scale - cropOffsetX
                     val elemTop = bounds.top * scale - cropOffsetY
+                    val elemH = bounds.height() * scale
                     if (clipLeftEdge > 0f && elemLeft < clipLeftEdge) continue
-                    if (clipBottomEdge > 0f && elemTop > clipBottomEdge) continue
+                    if (clipBottomEdge > 0f && elemTop + elemH > clipBottomEdge - elemH * 0.3f) continue
 
                     if (settings.showBoxes) {
                         drawBoundingBox(bounds, scale, cropOffsetX, cropOffsetY, kanjiColor, settings.strokeWidth)
@@ -119,6 +160,11 @@ fun TextOverlay(
                     )
                 }
             }
+        }
+
+        // Restore canvas state after partial mode clipping
+        if (isPartial && clipBottomEdge > 0f) {
+            drawContext.canvas.nativeCanvas.restore()
         }
     }
 }
@@ -170,7 +216,9 @@ private fun DrawScope.drawKanjiSegments(
     clipBottomEdge: Float = 0f,
     cachedCharW: Float = -1f,
     cachedCharH: Float = -1f,
-    measureCache: HashMap<String, androidx.compose.ui.text.TextLayoutResult>? = null
+    measureCache: HashMap<String, androidx.compose.ui.text.TextLayoutResult>? = null,
+    maxFuriganaHeight: Float = Float.MAX_VALUE,
+    maxFuriganaWidth: Float = Float.MAX_VALUE
 ) {
     val elemLeft = elementBounds.left * scale - cropOffsetX
     val elemTop = elementBounds.top * scale - cropOffsetY
@@ -191,6 +239,10 @@ private fun DrawScope.drawKanjiSegments(
         // Vertical mode: characters stacked top-to-bottom, furigana to the RIGHT
         val charHeight = elemHeight / textLength.toFloat()
 
+        // Neighbor-aware: hide furigana if gap to right is too tight
+        val availFuriganaWidth = (maxFuriganaWidth - 4f).coerceAtLeast(0f)
+        val hideFurigana = availFuriganaWidth < cachedCharW || availFuriganaWidth < 6f
+
         for (segment in segments) {
             val segTop = elemTop + segment.startIndex * charHeight
             val segHeight = (segment.endIndex - segment.startIndex) * charHeight
@@ -198,8 +250,10 @@ private fun DrawScope.drawKanjiSegments(
             // Quick validation
             if (segHeight <= 0 || segTop + segHeight < -50 || segTop > size.height + 50) continue
 
-            // Per-segment clip: skip segments that extend into the pad/panel area
-            if (clipBottomEdge > 0f && segTop + segHeight > clipBottomEdge) continue
+            // Per-segment clip: skip segments near or past the panel boundary
+            // 30% margin prevents furigana for partially-visible kanji
+            val vMargin = charHeight * 0.3f
+            if (clipBottomEdge > 0f && segTop + segHeight > clipBottomEdge - vMargin) continue
 
             val safeSegHeight = segHeight.coerceAtLeast(0.1f)
             val safeElemWidth = elemWidth.coerceAtLeast(0.1f)
@@ -215,25 +269,34 @@ private fun DrawScope.drawKanjiSegments(
             }
 
             // Vertical outlined furigana to the RIGHT of this segment
-            drawVerticalFurigana(
-                reading = segment.reading,
-                anchorLeft = elemLeft + elemWidth + 2f,
-                anchorTop = segTop,
-                anchorHeight = segHeight,
-                textMeasurer = textMeasurer,
-                furiganaStyle = furiganaStyle,
-                outlineStroke = outlineStroke,
-                cachedCharW = cachedCharW,
-                cachedCharH = cachedCharH,
-                measureCache = measureCache
-            )
+            if (!hideFurigana) {
+                drawVerticalFurigana(
+                    reading = segment.reading,
+                    anchorLeft = elemLeft + elemWidth + 2f,
+                    anchorTop = segTop,
+                    anchorHeight = segHeight,
+                    textMeasurer = textMeasurer,
+                    furiganaStyle = furiganaStyle,
+                    outlineStroke = outlineStroke,
+                    cachedCharW = cachedCharW,
+                    cachedCharH = cachedCharH,
+                    measureCache = measureCache
+                )
+            }
         }
     } else {
         // Horizontal mode: characters laid out left-to-right, furigana ABOVE
-        // All segments share the same Y — skip entire element if bottom is clipped by panel
-        if (clipBottomEdge > 0f && elemTop + elemHeight > clipBottomEdge) return
+        // Skip element if kanji would be partially clipped by panel boundary.
+        // Use 30% margin so half-visible kanji don't get floating furigana above them.
+        val hMargin = elemHeight * 0.3f
+        if (clipBottomEdge > 0f && elemTop + elemHeight > clipBottomEdge - hMargin) return
 
         val charWidth = elemWidth / textLength.toFloat()
+
+        // Neighbor-aware: hide furigana if gap above is too tight
+        val sampleH = measureCache?.get("\u3042")?.size?.height?.toFloat() ?: cachedCharH
+        val availFuriganaHeight = (maxFuriganaHeight - 2f).coerceAtLeast(0f)
+        val hideFurigana = availFuriganaHeight < sampleH || availFuriganaHeight < 6f
 
         for (segment in segments) {
             val segLeft = elemLeft + segment.startIndex * charWidth
@@ -254,6 +317,9 @@ private fun DrawScope.drawKanjiSegments(
                     style = Stroke(width = strokeWidth)
                 )
             }
+
+            // Skip furigana if lines are too dense
+            if (hideFurigana) continue
 
             // Furigana above this segment — outlined text (stroke + fill)
             val measured = measureCache?.getOrPut(segment.reading) {
@@ -398,4 +464,28 @@ private fun DrawScope.drawVerticalFurigana(
         drawText(charMeasured, color = strokeColor, topLeft = Offset(centeredLeft, charTop), drawStyle = outlineStroke)
         drawText(charMeasured, color = fillColor, topLeft = Offset(centeredLeft, charTop))
     }
+}
+
+/** Compute gap above an element to its nearest horizontally-overlapping neighbor. */
+private fun computeGapAbove(myTop: Float, myLeft: Float, myRight: Float, allRects: List<RectF>): Float {
+    var nearestBottom = Float.NEGATIVE_INFINITY
+    for (rect in allRects) {
+        if (rect.bottom <= myTop && rect.bottom > nearestBottom
+            && rect.right > myLeft && rect.left < myRight) {
+            nearestBottom = rect.bottom
+        }
+    }
+    return if (nearestBottom == Float.NEGATIVE_INFINITY) Float.MAX_VALUE else myTop - nearestBottom
+}
+
+/** Compute gap to the right of an element to its nearest vertically-overlapping neighbor. */
+private fun computeGapRight(myRight: Float, myTop: Float, myBottom: Float, allRects: List<RectF>): Float {
+    var nearestLeft = Float.POSITIVE_INFINITY
+    for (rect in allRects) {
+        if (rect.left >= myRight && rect.left < nearestLeft
+            && rect.bottom > myTop && rect.top < myBottom) {
+            nearestLeft = rect.left
+        }
+    }
+    return if (nearestLeft == Float.POSITIVE_INFINITY) Float.MAX_VALUE else nearestLeft - myRight
 }
