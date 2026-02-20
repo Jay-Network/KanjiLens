@@ -23,8 +23,6 @@ class SettingsViewModel @Inject constructor(
 
     fun updateLabelFontSize(value: Float) = updateSettings { it.copy(labelFontSize = value) }
 
-    fun updateLabelBackgroundAlpha(value: Float) = updateSettings { it.copy(labelBackgroundAlpha = value) }
-
     fun updateFrameSkip(value: Int) = updateSettings { it.copy(frameSkip = value) }
 
     fun updateShowDebugHud(value: Boolean) = updateSettings { it.copy(showDebugHud = value) }
@@ -37,14 +35,20 @@ class SettingsViewModel @Inject constructor(
 
     fun updateVerticalTextMode(value: Boolean) = updateSettings { it.copy(verticalTextMode = value) }
 
+    fun updateFuriganaAdaptiveColor(value: Boolean) = updateSettings { it.copy(furiganaAdaptiveColor = value) }
+
     fun applyColorPreset(kanjiColor: Long, kanaColor: Long) = updateSettings {
         it.copy(kanjiColor = kanjiColor, kanaColor = kanaColor)
     }
 
     private fun updateSettings(transform: (AppSettings) -> AppSettings) {
         viewModelScope.launch {
-            val updated = transform(settings.value)
-            settingsRepository.updateSettings(updated)
+            try {
+                val updated = transform(settings.value)
+                settingsRepository.updateSettings(updated)
+            } catch (e: Exception) {
+                android.util.Log.w("SettingsVM", "Failed to update settings", e)
+            }
         }
     }
 }

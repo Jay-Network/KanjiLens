@@ -70,7 +70,7 @@ class EnrichWithFuriganaUseCase @Inject constructor(
                     val (elemStart, elemEnd) = elementSpans.getOrNull(index)
                         ?: return@mapIndexed element
                     val rawSegments = resolveElementFromTokens(element.text, elemStart, elemEnd, lineTokens)
-                    val segments = fixCounterReadings(element.text, rawSegments)
+                    val segments = fixCounterReadings(element.text, rawSegments).map { stripOkurigana(it) }
                     val reading = buildPositionalReading(element.text, segments)
                     element.copy(reading = reading, kanjiSegments = segments)
                 }
@@ -179,6 +179,68 @@ class EnrichWithFuriganaUseCase @Inject constructor(
         }
     }
 
+    /**
+     * Strip okurigana from a KanjiSegment so furigana only covers kanji characters.
+     * e.g. 送り(おくり) → 送(おく), 新しい(あたらしい) → 新(あたら)
+     */
+    private fun stripOkurigana(segment: KanjiSegment): KanjiSegment {
+        val text = segment.text
+        val reading = segment.reading
+        if (text.isEmpty() || reading.isEmpty()) return segment
+
+        // Strip trailing okurigana (送り→送, 新しい→新, 食べた→食)
+        var trailCount = 0
+        for (i in text.length - 1 downTo 0) {
+            if (isKanjiChar(text[i])) break
+            trailCount++
+        }
+
+        var strippedText = text
+        var strippedReading = reading
+        var endAdjust = 0
+
+        if (trailCount > 0) {
+            val suffix = text.substring(text.length - trailCount)
+            if (strippedReading.endsWith(suffix)) {
+                strippedText = text.substring(0, text.length - trailCount)
+                strippedReading = strippedReading.substring(0, strippedReading.length - suffix.length)
+                endAdjust = trailCount
+            }
+        }
+
+        // Strip leading okurigana (お見舞い→見舞い after trailing strip)
+        var leadCount = 0
+        for (ch in strippedText) {
+            if (isKanjiChar(ch)) break
+            leadCount++
+        }
+
+        var startAdjust = 0
+        if (leadCount > 0) {
+            val prefix = strippedText.substring(0, leadCount)
+            if (strippedReading.startsWith(prefix)) {
+                strippedText = strippedText.substring(leadCount)
+                strippedReading = strippedReading.substring(prefix.length)
+                startAdjust = leadCount
+            }
+        }
+
+        if (strippedText.isEmpty() || strippedReading.isEmpty()) return segment
+        if (startAdjust == 0 && endAdjust == 0) return segment
+
+        return segment.copy(
+            text = strippedText,
+            reading = strippedReading,
+            startIndex = segment.startIndex + startAdjust,
+            endIndex = segment.endIndex - endAdjust
+        )
+    }
+
+    private fun isKanjiChar(ch: Char): Boolean {
+        val code = ch.code
+        return code in 0x4E00..0x9FFF || code in 0x3400..0x4DBF
+    }
+
     // ========== JMDict fallback (existing logic) ==========
 
     private suspend fun enrichWithJMDict(
@@ -210,7 +272,7 @@ class EnrichWithFuriganaUseCase @Inject constructor(
                 elements = detected.elements.map { element ->
                     if (element.containsKanji) {
                         val (reading, rawSegments) = resolveElement(element.text, wordMap)
-                        val segments = fixCounterReadings(element.text, rawSegments)
+                        val segments = fixCounterReadings(element.text, rawSegments).map { stripOkurigana(it) }
                         val fixedReading = buildPositionalReading(element.text, segments)
                         element.copy(reading = fixedReading, kanjiSegments = segments)
                     } else {

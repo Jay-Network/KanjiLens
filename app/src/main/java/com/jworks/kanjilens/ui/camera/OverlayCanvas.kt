@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import com.jworks.kanjilens.domain.models.AppSettings
 import com.jworks.kanjilens.domain.models.DetectedText
 import com.jworks.kanjilens.domain.models.KanjiSegment
+import com.jworks.kanjilens.domain.models.TextElement
 
 @Composable
 fun TextOverlay(
@@ -114,6 +115,10 @@ fun TextOverlay(
             drawContext.canvas.nativeCanvas.clipRect(clipLeft, 0f, size.width, clipBottomEdge)
         }
 
+        // Default fill/stroke when adaptive color is off
+        val defaultFill = if (settings.furiganaUseWhiteText) Color.White else Color.Black
+        val defaultStroke = if (defaultFill == Color.White) Color.Black else Color.White
+
         // Only render kanji elements that have readings
         for (detected in detectedTexts) {
             if (!detected.containsKanji) continue
@@ -122,6 +127,11 @@ fun TextOverlay(
                 if (!element.containsKanji) continue
                 val bounds = element.bounds ?: continue
                 if (bounds.isEmpty) continue
+
+                // Per-element adaptive color from background luminance
+                val (elemFillColor, elemStrokeColor) = computeElementColors(
+                    element, settings.furiganaAdaptiveColor, defaultFill, defaultStroke
+                )
 
                 if (element.kanjiSegments.isNotEmpty()) {
                     // Compute available inter-line gap for furigana sizing
@@ -140,7 +150,9 @@ fun TextOverlay(
                         isVerticalMode, clipLeftEdge, clipBottomEdge,
                         cachedCharW, cachedCharH, measureCache,
                         maxFuriganaHeight = gapAbove,
-                        maxFuriganaWidth = gapRight
+                        maxFuriganaWidth = gapRight,
+                        fillColor = elemFillColor,
+                        strokeColor = elemStrokeColor
                     )
                 } else if (element.reading != null) {
                     // Fallback: element-level rendering
@@ -156,7 +168,9 @@ fun TextOverlay(
                     drawFuriganaLabel(
                         bounds, element.reading, scale, cropOffsetX, cropOffsetY,
                         kanjiColor, textMeasurer, furiganaStyle, outlineStroke,
-                        isVerticalMode, cachedCharW, cachedCharH
+                        isVerticalMode, cachedCharW, cachedCharH,
+                        fillColor = elemFillColor,
+                        strokeColor = elemStrokeColor
                     )
                 }
             }
@@ -218,7 +232,9 @@ private fun DrawScope.drawKanjiSegments(
     cachedCharH: Float = -1f,
     measureCache: HashMap<String, androidx.compose.ui.text.TextLayoutResult>? = null,
     maxFuriganaHeight: Float = Float.MAX_VALUE,
-    maxFuriganaWidth: Float = Float.MAX_VALUE
+    maxFuriganaWidth: Float = Float.MAX_VALUE,
+    fillColor: Color = furiganaStyle.color,
+    strokeColor: Color = if (furiganaStyle.color == Color.White) Color.Black else Color.White
 ) {
     val elemLeft = elementBounds.left * scale - cropOffsetX
     val elemTop = elementBounds.top * scale - cropOffsetY
@@ -242,6 +258,10 @@ private fun DrawScope.drawKanjiSegments(
         // Neighbor-aware: hide furigana if gap to right is too tight
         val availFuriganaWidth = (maxFuriganaWidth - 4f).coerceAtLeast(0f)
         val hideFurigana = availFuriganaWidth < cachedCharW || availFuriganaWidth < 6f
+
+        // Overlap prevention: track bottom edge cursor for greedy top-to-bottom placement
+        var bottomEdgeCursor = Float.NEGATIVE_INFINITY
+        val furiganaVGap = 2f
 
         for (segment in segments) {
             val segTop = elemTop + segment.startIndex * charHeight
@@ -270,6 +290,15 @@ private fun DrawScope.drawKanjiSegments(
 
             // Vertical outlined furigana to the RIGHT of this segment
             if (!hideFurigana) {
+                // Greedy placement: ideal center, but shift down if it would overlap previous
+                val charCount = segment.reading.length
+                val totalFH = cachedCharH * charCount
+                var furiganaTop = segTop + (segHeight - totalFH) / 2f
+                if (furiganaTop < bottomEdgeCursor + furiganaVGap) {
+                    furiganaTop = bottomEdgeCursor + furiganaVGap
+                }
+                bottomEdgeCursor = furiganaTop + totalFH
+
                 drawVerticalFurigana(
                     reading = segment.reading,
                     anchorLeft = elemLeft + elemWidth + 2f,
@@ -280,7 +309,10 @@ private fun DrawScope.drawKanjiSegments(
                     outlineStroke = outlineStroke,
                     cachedCharW = cachedCharW,
                     cachedCharH = cachedCharH,
-                    measureCache = measureCache
+                    measureCache = measureCache,
+                    fillColor = fillColor,
+                    strokeColor = strokeColor,
+                    overrideStartTop = furiganaTop
                 )
             }
         }
@@ -297,6 +329,18 @@ private fun DrawScope.drawKanjiSegments(
         val sampleH = measureCache?.get("\u3042")?.size?.height?.toFloat() ?: cachedCharH
         val availFuriganaHeight = (maxFuriganaHeight - 2f).coerceAtLeast(0f)
         val hideFurigana = availFuriganaHeight < sampleH || availFuriganaHeight < 6f
+
+        // Phase 1: Measure + greedy left-to-right placement to prevent overlap
+        data class FuriganaPlacement(
+            val measured: androidx.compose.ui.text.TextLayoutResult,
+            val textLeft: Float,
+            val textTop: Float,
+            val segLeft: Float,
+            val segWidth: Float
+        )
+        val placements = mutableListOf<FuriganaPlacement>()
+        var rightEdgeCursor = Float.NEGATIVE_INFINITY
+        val furiganaGap = 2f
 
         for (segment in segments) {
             val segLeft = elemLeft + segment.startIndex * charWidth
@@ -321,25 +365,32 @@ private fun DrawScope.drawKanjiSegments(
             // Skip furigana if lines are too dense
             if (hideFurigana) continue
 
-            // Furigana above this segment — outlined text (stroke + fill)
+            // Measure furigana text
             val measured = measureCache?.getOrPut(segment.reading) {
                 textMeasurer.measure(segment.reading, furiganaStyle)
             } ?: textMeasurer.measure(segment.reading, furiganaStyle)
-            val furiganaWidth = measured.size.width.toFloat()
-            val furiganaHeight = measured.size.height.toFloat()
+            val fw = measured.size.width.toFloat()
+            val fh = measured.size.height.toFloat()
 
-            val textLeft = segLeft + (segWidth - furiganaWidth) / 2f
-            val textTop = (elemTop - furiganaHeight - 2f).coerceAtLeast(0f)
+            // Greedy placement: ideal center, but shift right if it would overlap previous
+            var textLeft = segLeft + (segWidth - fw) / 2f
+            if (textLeft < rightEdgeCursor + furiganaGap) {
+                textLeft = rightEdgeCursor + furiganaGap
+            }
+            val textTop = (elemTop - fh - 2f).coerceAtLeast(0f)
+            rightEdgeCursor = textLeft + fw
 
             // Quick validation
             if (textLeft.isNaN() || textTop.isNaN()) continue
-            if (textLeft + furiganaWidth < -50 || textTop > size.height + 50) continue
+            if (textLeft + fw < -50 || textTop > size.height + 50) continue
 
-            // Outlined furigana: stroke in contrast color, fill in style color
-            val fillColor = furiganaStyle.color
-            val strokeColor = if (fillColor == Color.White) Color.Black else Color.White
-            drawText(measured, color = strokeColor, topLeft = Offset(textLeft, textTop), drawStyle = outlineStroke)
-            drawText(measured, color = fillColor, topLeft = Offset(textLeft, textTop))
+            placements.add(FuriganaPlacement(measured, textLeft, textTop, segLeft, segWidth))
+        }
+
+        // Phase 2: Draw all furigana placements
+        for (p in placements) {
+            drawText(p.measured, color = strokeColor, topLeft = Offset(p.textLeft, p.textTop), drawStyle = outlineStroke)
+            drawText(p.measured, color = fillColor, topLeft = Offset(p.textLeft, p.textTop))
         }
     }
 }
@@ -356,7 +407,9 @@ private fun DrawScope.drawFuriganaLabel(
     outlineStroke: Stroke,
     isVerticalMode: Boolean = false,
     cachedCharW: Float = -1f,
-    cachedCharH: Float = -1f
+    cachedCharH: Float = -1f,
+    fillColor: Color = furiganaStyle.color,
+    strokeColor: Color = if (furiganaStyle.color == Color.White) Color.Black else Color.White
 ) {
     val elemLeft = bounds.left * scale - cropOffsetX
     val elemTop = bounds.top * scale - cropOffsetY
@@ -379,7 +432,9 @@ private fun DrawScope.drawFuriganaLabel(
             furiganaStyle = furiganaStyle,
             outlineStroke = outlineStroke,
             cachedCharW = cachedCharW,
-            cachedCharH = cachedCharH
+            cachedCharH = cachedCharH,
+            fillColor = fillColor,
+            strokeColor = strokeColor
         )
         return
     }
@@ -396,9 +451,7 @@ private fun DrawScope.drawFuriganaLabel(
     if (textLeft.isNaN() || textTop.isNaN()) return
     if (textLeft + furiganaWidth < -50 || textTop > size.height + 50) return
 
-    // Outlined furigana: stroke in contrast color, fill in style color
-    val fillColor = furiganaStyle.color
-    val strokeColor = if (fillColor == Color.White) Color.Black else Color.White
+    // Outlined furigana: stroke in contrast color, fill in adaptive/manual color
     drawText(measured, color = strokeColor, topLeft = Offset(textLeft, textTop), drawStyle = outlineStroke)
     drawText(measured, color = fillColor, topLeft = Offset(textLeft, textTop))
 }
@@ -417,7 +470,10 @@ private fun DrawScope.drawVerticalFurigana(
     outlineStroke: Stroke,
     cachedCharW: Float = -1f,
     cachedCharH: Float = -1f,
-    measureCache: HashMap<String, androidx.compose.ui.text.TextLayoutResult>? = null
+    measureCache: HashMap<String, androidx.compose.ui.text.TextLayoutResult>? = null,
+    fillColor: Color = furiganaStyle.color,
+    strokeColor: Color = if (furiganaStyle.color == Color.White) Color.Black else Color.White,
+    overrideStartTop: Float? = null
 ) {
     if (reading.isEmpty()) return
 
@@ -441,13 +497,13 @@ private fun DrawScope.drawVerticalFurigana(
     if (anchorLeft > size.width + 50) return
     if (anchorTop + anchorHeight < -50 || anchorTop > size.height + 50) return
 
-    // Compute colors once outside loop
-    val fillColor = furiganaStyle.color
-    val strokeColor = if (fillColor == Color.White) Color.Black else Color.White
-
     // Draw each character stacked vertically — outlined text (stroke + fill)
     for (i in reading.indices) {
-        val charTop = anchorTop + (anchorHeight - totalHeight) / 2f + i * charH
+        val charTop = if (overrideStartTop != null) {
+            overrideStartTop + i * charH
+        } else {
+            anchorTop + (anchorHeight - totalHeight) / 2f + i * charH
+        }
         if (charTop + charH < 0) continue
         if (charTop > size.height) break
 
@@ -464,6 +520,24 @@ private fun DrawScope.drawVerticalFurigana(
         drawText(charMeasured, color = strokeColor, topLeft = Offset(centeredLeft, charTop), drawStyle = outlineStroke)
         drawText(charMeasured, color = fillColor, topLeft = Offset(centeredLeft, charTop))
     }
+}
+
+/** Compute per-element fill/stroke colors from background luminance or manual setting. */
+private fun computeElementColors(
+    element: TextElement,
+    adaptiveEnabled: Boolean,
+    defaultFill: Color,
+    defaultStroke: Color
+): Pair<Color, Color> {
+    if (adaptiveEnabled && element.backgroundLuminance != null) {
+        val lum = element.backgroundLuminance
+        val inv = 255 - lum
+        return Pair(
+            Color(inv / 255f, inv / 255f, inv / 255f),
+            Color(lum / 255f, lum / 255f, lum / 255f)
+        )
+    }
+    return Pair(defaultFill, defaultStroke)
 }
 
 /** Compute gap above an element to its nearest horizontally-overlapping neighbor. */

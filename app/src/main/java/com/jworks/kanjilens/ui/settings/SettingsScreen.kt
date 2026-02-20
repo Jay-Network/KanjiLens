@@ -38,6 +38,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.jworks.kanjilens.R
+import com.jworks.kanjilens.data.auth.AuthRepository
+import com.jworks.kanjilens.data.auth.AuthState
 import com.jworks.kanjilens.domain.models.AppSettings
 import kotlin.math.roundToInt
 
@@ -60,9 +62,13 @@ fun SettingsScreen(
     onBackClick: () -> Unit,
     onLogout: (() -> Unit)? = null,
     onHelpClick: (() -> Unit)? = null,
+    onLinkAccountClick: (() -> Unit)? = null,
+    authRepository: AuthRepository? = null,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val settings by viewModel.settings.collectAsState()
+    val authState = authRepository?.authState?.collectAsState()
+    val isAnonymous = (authState?.value as? AuthState.SignedIn)?.isAnonymous ?: true
     val context = androidx.compose.ui.platform.LocalContext.current
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -94,14 +100,6 @@ fun SettingsScreen(
                 onValueChange = viewModel::updateLabelFontSize
             )
 
-            SliderSetting(
-                label = "Label opacity",
-                value = settings.labelBackgroundAlpha,
-                valueLabel = "${(settings.labelBackgroundAlpha * 100).roundToInt()}%",
-                range = 0f..1f,
-                onValueChange = viewModel::updateLabelBackgroundAlpha
-            )
-
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(
@@ -125,10 +123,31 @@ fun SettingsScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("White furigana text", style = MaterialTheme.typography.bodyMedium)
+                Text("Adaptive furigana color", style = MaterialTheme.typography.bodyMedium)
+                Switch(
+                    checked = settings.furiganaAdaptiveColor,
+                    onCheckedChange = viewModel::updateFuriganaAdaptiveColor
+                )
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "White furigana text",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (settings.furiganaAdaptiveColor)
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    else MaterialTheme.colorScheme.onSurface
+                )
                 Switch(
                     checked = settings.furiganaUseWhiteText,
-                    onCheckedChange = viewModel::updateFuriganaUseWhiteText
+                    onCheckedChange = viewModel::updateFuriganaUseWhiteText,
+                    enabled = !settings.furiganaAdaptiveColor
                 )
             }
 
@@ -204,10 +223,35 @@ fun SettingsScreen(
                 Text("Manage Subscription on Google Play")
             }
 
-            if (onLogout != null) {
-                Spacer(modifier = Modifier.height(24.dp))
-                SectionHeader("Account")
+            Spacer(modifier = Modifier.height(24.dp))
+            SectionHeader("Account")
 
+            if (isAnonymous && onLinkAccountClick != null) {
+                // Anonymous user — offer to link an account
+                androidx.compose.material3.OutlinedButton(
+                    onClick = onLinkAccountClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Sign In / Link Account")
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Sign in to sync across devices and earn J Coins",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else if (!isAnonymous && onLogout != null) {
+                // Linked user — show sign out
+                val email = (authState?.value as? AuthState.SignedIn)?.user?.email ?: ""
+                if (email.isNotEmpty()) {
+                    Text(
+                        text = "Signed in as $email",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                }
                 androidx.compose.material3.OutlinedButton(
                     onClick = onLogout,
                     modifier = Modifier.fillMaxWidth(),

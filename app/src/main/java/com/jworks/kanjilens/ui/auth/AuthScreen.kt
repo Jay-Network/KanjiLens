@@ -47,7 +47,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun AuthScreen(
     authRepository: AuthRepository,
-    onSkip: () -> Unit,
+    onBackClick: () -> Unit = {},
     onSignedIn: () -> Unit
 ) {
     val authState by authRepository.authState.collectAsState()
@@ -85,6 +85,20 @@ fun AuthScreen(
                 )
             )
     ) {
+        // Back button
+        TextButton(
+            onClick = onBackClick,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "\u2190 Back",
+                color = Color.White.copy(alpha = 0.7f),
+                fontSize = 16.sp
+            )
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -92,31 +106,36 @@ fun AuthScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // App title
+            // Title
             Text(
-                text = "漢字",
-                fontSize = 64.sp,
-                color = Color(0xFF4FC3F7),
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = "KanjiLens",
-                fontSize = 32.sp,
+                text = "Link Account",
+                fontSize = 28.sp,
                 color = Color.White,
                 fontWeight = FontWeight.Bold
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Point your camera at Japanese text\nfor instant reading assistance",
+                text = "Link a Google account to sync your data\nacross devices and earn J Coins",
                 color = Color.White.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center,
-                fontSize = 16.sp,
-                lineHeight = 24.sp
+                fontSize = 15.sp,
+                lineHeight = 22.sp
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Privacy note
+            Text(
+                text = "Only your email address is collected.\nYour name and photo are not stored.",
+                color = Color(0xFF4FC3F7).copy(alpha = 0.8f),
+                textAlign = TextAlign.Center,
+                fontSize = 13.sp,
+                lineHeight = 18.sp
+            )
+
+            Spacer(modifier = Modifier.height(40.dp))
 
             // Google Sign-In button
             Button(
@@ -147,7 +166,6 @@ fun AuthScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        // Google "G" text (in lieu of logo drawable)
                         Text(
                             text = "G",
                             fontSize = 20.sp,
@@ -156,7 +174,7 @@ fun AuthScreen(
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = "Sign in with Google",
+                            text = "Continue with Google",
                             color = Color(0xFF333333),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium
@@ -176,34 +194,23 @@ fun AuthScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Skip button
-            TextButton(onClick = onSkip) {
-                Text(
-                    text = "Continue without account",
-                    color = Color.White.copy(alpha = 0.6f),
-                    fontSize = 14.sp
-                )
-            }
-
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Benefits of signing in
+            // Benefits of linking
             Column(
                 horizontalAlignment = Alignment.Start,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "Sign in to unlock:",
+                    text = "Why link an account?",
                     color = Color.White.copy(alpha = 0.7f),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 BenefitItem("Earn J Coins with every scan")
-                BenefitItem("Sync favorites across devices")
-                BenefitItem("Unlock premium features")
+                BenefitItem("Sync bookmarks across devices")
+                BenefitItem("Recover your data if you switch phones")
                 BenefitItem("Connect with KanjiQuest")
             }
         }

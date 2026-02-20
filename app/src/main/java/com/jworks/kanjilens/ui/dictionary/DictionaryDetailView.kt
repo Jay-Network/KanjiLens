@@ -40,6 +40,8 @@ import androidx.compose.ui.unit.sp
 import com.jworks.kanjilens.R
 import com.jworks.kanjilens.domain.models.DictionaryResult
 
+private val KanjiQuestGreen = Color(0xFF4CAF50)
+
 private val TanBar = Color(0xFFD4B896)
 private val CreamBg = Color(0xFFF5E6D3)
 private val DarkText = Color(0xFF2C2C2C)
@@ -102,8 +104,17 @@ fun DictionaryDetailView(
     result: DictionaryResult?,
     isLoading: Boolean,
     onBackClick: () -> Unit,
+    wordText: String = "",
+    wordReading: String = "",
+    isWordBookmarked: Boolean = false,
+    onWordBookmarkToggle: () -> Unit = {},
+    bookmarkedKanji: Set<String> = emptySet(),
+    onKanjiClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val displayWord = result?.word ?: wordText
+    val displayReading = result?.reading ?: wordReading
+
     Column(modifier = modifier.background(CreamBg)) {
         // Header bar
         Row(
@@ -123,20 +134,22 @@ fun DictionaryDetailView(
             )
             Spacer(modifier = Modifier.width(12.dp))
 
-            if (result != null) {
+            if (displayWord.isNotEmpty()) {
                 Text(
-                    text = result.word,
+                    text = displayWord,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = result.reading,
-                    fontSize = 16.sp,
-                    color = Color.White.copy(alpha = 0.85f)
-                )
-                if (result.isCommon) {
+                if (displayReading.isNotEmpty()) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = displayReading,
+                        fontSize = 16.sp,
+                        color = Color.White.copy(alpha = 0.85f)
+                    )
+                }
+                if (result?.isCommon == true) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Box(
                         modifier = Modifier
@@ -152,6 +165,19 @@ fun DictionaryDetailView(
                         )
                     }
                 }
+                Spacer(modifier = Modifier.weight(1f))
+                Icon(
+                    painter = painterResource(
+                        id = if (isWordBookmarked) R.drawable.ic_bookmark_filled
+                        else R.drawable.ic_bookmark_border
+                    ),
+                    contentDescription = if (isWordBookmarked) "Remove bookmark" else "Bookmark word",
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clickable { onWordBookmarkToggle() }
+                        .padding(2.dp),
+                    tint = if (isWordBookmarked) Color(0xFFFFD54F) else Color.White
+                )
             } else {
                 Text(
                     text = "Dictionary",
@@ -175,14 +201,78 @@ fun DictionaryDetailView(
                 )
             }
         } else if (result == null) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(24.dp),
-                contentAlignment = Alignment.Center
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp)
             ) {
                 Text(
                     text = "No definition found",
                     fontSize = 16.sp,
                     color = MutedText
+                )
+
+                // Still show kanji breakdown for words without dictionary entries
+                val fallbackKanji = displayWord.filter { c ->
+                    c.code in 0x4E00..0x9FFF || c.code in 0x3400..0x4DBF
+                }
+                if (fallbackKanji.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(20.dp))
+                    Text(
+                        text = "Kanji",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MutedText,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        fallbackKanji.forEach { ch ->
+                            val kanjiStr = ch.toString()
+                            val isSaved = kanjiStr in bookmarkedKanji
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isSaved) Color(0xFFFFF3E0) else KanjiCardBg)
+                                    .clickable { onKanjiClick(kanjiStr) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = kanjiStr,
+                                    fontSize = 26.sp,
+                                    color = if (isSaved) Color(0xFFBF6900) else DarkText,
+                                    fontWeight = if (isSaved) FontWeight.Bold else FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // KanjiQuest promo for kanji practice
+                if (fallbackKanji.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    KanjiQuestPracticeButton(kanji = fallbackKanji.first().toString())
+                }
+
+                // Jisho.org link
+                Spacer(modifier = Modifier.height(24.dp))
+                val context = LocalContext.current
+                Text(
+                    text = "Search on Jisho.org",
+                    fontSize = 13.sp,
+                    color = Color(0xFF1976D2),
+                    fontStyle = FontStyle.Italic,
+                    modifier = Modifier.clickable {
+                        val intent = Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse("https://jisho.org/search/${displayWord}")
+                        )
+                        context.startActivity(intent)
+                    }
                 )
             }
         } else {
@@ -247,7 +337,7 @@ fun DictionaryDetailView(
                 val kanjiChars = result.word.filter { c ->
                     c.code in 0x4E00..0x9FFF || c.code in 0x3400..0x4DBF
                 }
-                if (kanjiChars.length > 1) {
+                if (kanjiChars.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(20.dp))
                     Text(
                         text = "Kanji",
@@ -261,22 +351,31 @@ fun DictionaryDetailView(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         kanjiChars.forEach { ch ->
+                            val kanjiStr = ch.toString()
+                            val isSaved = kanjiStr in bookmarkedKanji
                             Box(
                                 modifier = Modifier
-                                    .size(44.dp)
+                                    .size(48.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(KanjiCardBg),
+                                    .background(if (isSaved) Color(0xFFFFF3E0) else KanjiCardBg)
+                                    .clickable { onKanjiClick(kanjiStr) },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
-                                    text = ch.toString(),
-                                    fontSize = 24.sp,
-                                    color = DarkText,
-                                    fontWeight = FontWeight.Medium
+                                    text = kanjiStr,
+                                    fontSize = 26.sp,
+                                    color = if (isSaved) Color(0xFFBF6900) else DarkText,
+                                    fontWeight = if (isSaved) FontWeight.Bold else FontWeight.Medium
                                 )
                             }
                         }
                     }
+                }
+
+                // KanjiQuest promo for kanji practice
+                if (kanjiChars.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    KanjiQuestPracticeButton(kanji = kanjiChars.first().toString())
                 }
 
                 // Jisho.org link
@@ -297,5 +396,45 @@ fun DictionaryDetailView(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun KanjiQuestPracticeButton(kanji: String) {
+    val context = LocalContext.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(KanjiQuestGreen)
+            .clickable {
+                val intent = Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse("https://play.google.com/store/apps/details?id=com.jworks.kanjiquest")
+                )
+                context.startActivity(intent)
+            }
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "Practice writing $kanji in KanjiQuest",
+                fontSize = 14.sp,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = "AI checks your handwriting",
+                fontSize = 11.sp,
+                color = Color.White.copy(alpha = 0.8f)
+            )
+        }
+        Text(
+            text = ">",
+            fontSize = 20.sp,
+            color = Color.White,
+            fontWeight = FontWeight.Bold
+        )
     }
 }

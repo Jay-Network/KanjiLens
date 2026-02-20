@@ -166,7 +166,7 @@ ML Kit OCR fails to recognize traditional/old kanji forms (kyūjitai 旧字体):
 ### ✅ Phase 3: Monetization & Auth (COMPLETE)
 - [x] Google Sign-In → Supabase auth
 - [x] Google Play Billing (billing-ktx:6.1.0)
-- [x] Subscription tiers: $2.99/mo, $14.99/yr
+- [x] Subscription tiers: $1.99/mo, $14.99/yr
 - [x] Free tier: 5 scans/day, 60s each, timer UI
 - [x] Paywall screen
 

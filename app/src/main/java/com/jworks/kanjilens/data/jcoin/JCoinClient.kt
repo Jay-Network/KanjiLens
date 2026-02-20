@@ -8,6 +8,7 @@ import io.ktor.http.HttpHeaders
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -32,6 +33,12 @@ class JCoinClient @Inject constructor(
 ) {
     private val json = Json { ignoreUnknownKeys = true }
 
+    /** Unwrap the { success, data } envelope from Edge Functions */
+    private fun unwrapData(body: String): kotlinx.serialization.json.JsonElement {
+        val root = json.parseToJsonElement(body).jsonObject
+        return root["data"] ?: throw Exception("Response missing 'data' field: $body")
+    }
+
     suspend fun getBalance(accessToken: String): Result<JCoinBalance> {
         return try {
             val response = supabaseClient.functions.invoke(
@@ -44,7 +51,8 @@ class JCoinClient @Inject constructor(
                 }
             )
             val body = response.body<String>()
-            Result.success(json.decodeFromString<JCoinBalance>(body))
+            val data = unwrapData(body)
+            Result.success(json.decodeFromString<JCoinBalance>(data.toString()))
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -72,7 +80,8 @@ class JCoinClient @Inject constructor(
                 }
             )
             val body = response.body<String>()
-            Result.success(json.decodeFromString<JCoinEarnResponse>(body))
+            val data = unwrapData(body)
+            Result.success(json.decodeFromString<JCoinEarnResponse>(data.toString()))
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -98,7 +107,8 @@ class JCoinClient @Inject constructor(
                 }
             )
             val body = response.body<String>()
-            Result.success(json.decodeFromString<JCoinEarnResponse>(body))
+            val data = unwrapData(body)
+            Result.success(json.decodeFromString<JCoinEarnResponse>(data.toString()))
         } catch (e: Exception) {
             Result.failure(e)
         }

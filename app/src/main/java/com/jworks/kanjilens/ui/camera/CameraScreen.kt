@@ -1,7 +1,6 @@
 package com.jworks.kanjilens.ui.camera
 
 import android.Manifest
-import android.graphics.Bitmap
 import android.view.MotionEvent
 import androidx.activity.compose.BackHandler
 import androidx.camera.core.Camera
@@ -17,13 +16,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -38,14 +35,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Divider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -64,13 +58,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -82,12 +76,15 @@ import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import com.jworks.kanjilens.R
 import com.jworks.kanjilens.ui.dictionary.DictionaryDetailView
+import com.jworks.kanjilens.ui.dictionary.KanjiDetailView
+import com.jworks.kanjilens.ui.theme.KanjiLensColors
 
+import android.content.res.Configuration
+import androidx.compose.ui.platform.LocalConfiguration
 import kotlinx.coroutines.launch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import kotlin.math.roundToInt
 
 // Data class for jukugo with reading
 private data class JukugoEntry(val text: String, val reading: String)
@@ -100,6 +97,7 @@ fun CameraScreen(
     onPaywallNeeded: () -> Unit = {},
     onProfileClick: () -> Unit = {},
     onFeedbackClick: () -> Unit = {},
+    onBookmarksClick: () -> Unit = {},
     viewModel: CameraViewModel = hiltViewModel()
 ) {
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
@@ -108,7 +106,7 @@ fun CameraScreen(
     BackHandler { /* consume back press — camera is the main screen */ }
 
     if (cameraPermissionState.status.isGranted) {
-        CameraContent(viewModel, onSettingsClick, onRewardsClick, onPaywallNeeded, onProfileClick, onFeedbackClick)
+        CameraContent(viewModel, onSettingsClick, onRewardsClick, onPaywallNeeded, onProfileClick, onFeedbackClick, onBookmarksClick)
     } else {
         CameraPermissionRequest(
             showRationale = cameraPermissionState.status.shouldShowRationale,
@@ -124,7 +122,8 @@ private fun CameraContent(
     onRewardsClick: () -> Unit,
     onPaywallNeeded: () -> Unit,
     onProfileClick: () -> Unit,
-    onFeedbackClick: () -> Unit
+    onFeedbackClick: () -> Unit,
+    onBookmarksClick: () -> Unit
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val detectedTexts by viewModel.detectedTexts.collectAsState()
@@ -147,6 +146,10 @@ private fun CameraContent(
     LaunchedEffect(Unit) {
         // Avoid immediate paywall loop when free scans are exhausted.
         viewModel.startScan(context, allowPaywall = false)
+        // Auto-start a scan challenge if none active
+        if (viewModel.scanChallenge.value == null) {
+            viewModel.startNewChallenge()
+        }
     }
 
     // Navigate to paywall when triggered
@@ -198,10 +201,38 @@ private fun CameraContent(
     var profileBtnOffset by remember { mutableStateOf(Offset.Zero) }
     var feedbackBtnOffset by remember { mutableStateOf(Offset.Zero) }
     var jcoinBtnOffset by remember { mutableStateOf(Offset.Zero) }
+    var bookmarkBtnOffset by remember { mutableStateOf(Offset.Zero) }
     var buttonsInitialized by remember { mutableStateOf(false) }
+    var lastLayoutWidth by remember { mutableFloatStateOf(0f) }
+    var lastLayoutHeight by remember { mutableFloatStateOf(0f) }
 
     // Bottom pad in vertical partial mode (ratio of screen height: 0.5 = pad covers bottom half)
     val verticalPadTopRatio = PartialModeConstants.VERT_PAD_TOP_RATIO
+
+    // Auto-toggle vertical/horizontal mode on orientation change
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    var lastOrientation by remember { mutableStateOf(configuration.orientation) }
+    LaunchedEffect(configuration.orientation) {
+        if (configuration.orientation != lastOrientation) {
+            val wasLandscape = lastOrientation == Configuration.ORIENTATION_LANDSCAPE
+            val nowLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+            if (wasLandscape != nowLandscape) {
+                // Swap mode: portrait vertical ↔ landscape horizontal
+                val newVertical = !settings.verticalTextMode
+                if (settings.partialModeBoundaryRatio < CameraDimens.FULL_MODE_THRESHOLD) {
+                    val newRatio = if (newVertical) CameraDimens.VERTICAL_PARTIAL_RATIO else CameraDimens.HORIZONTAL_PARTIAL_RATIO
+                    viewModel.updateVerticalModeAndBoundary(newVertical, newRatio)
+                    boundaryAnim.snapTo(newRatio)
+                } else {
+                    viewModel.updateVerticalTextMode(newVertical)
+                }
+            }
+            lastOrientation = configuration.orientation
+            // Reset button positions for new screen dimensions
+            buttonsInitialized = false
+        }
+    }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -218,8 +249,8 @@ private fun CameraContent(
         val density = LocalDensity.current
         val maxHeightPx = with(density) { maxHeight.toPx() }
         val maxWidthPx = with(density) { maxWidth.toPx() }
-        val statusBarPx = with(density) { 48.dp.toPx() }
-        val btnSizePx = with(density) { 44.dp.toPx() }
+        val statusBarPx = with(density) { CameraDimens.STATUS_BAR_ESTIMATE_DP.dp.toPx() }
+        val btnSizePx = with(density) { CameraDimens.BUTTON_SIZE.toPx() }
 
         // Report canvas size to ViewModel
         LaunchedEffect(maxWidthPx, maxHeightPx) {
@@ -227,40 +258,34 @@ private fun CameraContent(
         }
 
         // Fixed split ratios: camera portion of screen
-        val isPartial = displayBoundary < 0.99f
+        val isPartial = displayBoundary < CameraDimens.FULL_MODE_THRESHOLD
         val vertCameraRatio = PartialModeConstants.VERT_CAMERA_WIDTH_RATIO
         val horizCameraRatio = PartialModeConstants.HORIZ_CAMERA_HEIGHT_RATIO
         val isVerticalPartial = isPartial && settings.verticalTextMode
         val isHorizontalPartial = isPartial && !settings.verticalTextMode
-        val btnGap = 12f
-        val rightMargin = 24f
-        val leftMarginDp = 18.dp
-        val topMargin = statusBarPx + 12f
-        val sharedBottomPaddingPx = with(density) { 40.dp.toPx() }
+        val leftMarginDp = CameraDimens.LEFT_MARGIN
+        val topMargin = statusBarPx + CameraDimens.TOP_MARGIN_EXTRA_PX
+        val rightMargin = if (isLandscape) with(density) { CameraDimens.RIGHT_MARGIN_LANDSCAPE_DP.dp.toPx() } else CameraDimens.RIGHT_MARGIN_PORTRAIT_PX
+        val bottomPadding = if (isLandscape) CameraDimens.BOTTOM_PADDING_LANDSCAPE_PX else with(density) { CameraDimens.BOTTOM_PADDING_PORTRAIT_DP.dp.toPx() }
+
+        // Reset button grid when screen dimensions change (e.g. rotation)
+        if (maxWidthPx != lastLayoutWidth || maxHeightPx != lastLayoutHeight) {
+            buttonsInitialized = false
+            lastLayoutWidth = maxWidthPx
+            lastLayoutHeight = maxHeightPx
+        }
 
         if (!buttonsInitialized) {
-            // All 8 buttons in bottom-right: bottom row (feedback + J Coin),
-            // gap, then 2x3 grid above.
-            val col2 = maxWidthPx - btnSizePx - rightMargin
-            val col1 = col2 - btnSizePx - btnGap
-            val groupGap = 24f // gap between bottom pair and 2x3 grid
-
-            // Bottom pair: feedback (right) + J Coin (left)
-            val bottomRow = (maxHeightPx - sharedBottomPaddingPx - btnSizePx).coerceAtLeast(topMargin)
-            feedbackBtnOffset = Offset(col2, bottomRow)
-            jcoinBtnOffset = Offset(col1, bottomRow)
-
-            // 2x3 grid above with gap
-            val row2 = (bottomRow - btnSizePx - groupGap).coerceAtLeast(topMargin)
-            val row1 = (row2 - btnSizePx - btnGap).coerceAtLeast(topMargin)
-            val row0 = (row1 - btnSizePx - btnGap).coerceAtLeast(topMargin)
-
-            pauseBtnOffset = Offset(col1, row0)
-            profileBtnOffset = Offset(col2, row0)
-            settingsBtnOffset = Offset(col1, row1)
-            flashBtnOffset = Offset(col2, row1)
-            modeBtnOffset = Offset(col1, row2)
-            verticalBtnOffset = Offset(col2, row2)
+            val offsets = calculateButtonGrid(maxWidthPx, maxHeightPx, btnSizePx, rightMargin, bottomPadding, topMargin)
+            modeBtnOffset = offsets.mode
+            verticalBtnOffset = offsets.vertical
+            pauseBtnOffset = offsets.pause
+            flashBtnOffset = offsets.flash
+            settingsBtnOffset = offsets.settings
+            profileBtnOffset = offsets.profile
+            bookmarkBtnOffset = offsets.bookmark
+            jcoinBtnOffset = offsets.jcoin
+            feedbackBtnOffset = offsets.feedback
             buttonsInitialized = true
         }
 
@@ -342,13 +367,17 @@ private fun CameraContent(
         // Layer 3: Panel area with jukugo list
         // Vertical mode: LEFT 75% panel, RIGHT 25% camera
         // Horizontal mode: TOP 25% camera, BOTTOM 75% panel
-        if (displayBoundary < 0.99f) {
+        if (isPartial) {
             // Jukugo collection state (1-second refresh)
             // Key on verticalTextMode AND boundary ratio so state resets on any mode change
             val modeKey = Pair(settings.verticalTextMode, displayBoundary)
             var jukugoList by remember(modeKey) { mutableStateOf<List<JukugoEntry>>(emptyList()) }
             var jukugoAccumulator by remember(modeKey) { mutableStateOf<Map<String, String>>(emptyMap()) }
             var selectedJukugo by remember(modeKey) { mutableStateOf<JukugoEntry?>(null) }
+            var selectedKanji by remember(modeKey) { mutableStateOf<String?>(null) }
+
+            // Load all bookmarked kanji for highlighting in jukugo list
+            LaunchedEffect(modeKey) { viewModel.refreshAllBookmarkedKanji() }
 
             // Accumulate jukugo from current frame (skip when paused)
             // Key on modeKey so LaunchedEffect restarts with fresh state refs after mode switch
@@ -364,25 +393,68 @@ private fun CameraContent(
                 val effW = if (isRotated) imgH else imgW
                 val effH = if (isRotated) imgW else imgH
                 val scale = if (effW > 0 && effH > 0) maxOf(maxWidthPx / effW, maxHeightPx / effH) else 1f
+                val cropOffsetX = (effW * scale - maxWidthPx) / 2f
                 val cropOffsetY = (effH * scale - maxHeightPx) / 2f
 
                 // Screen-space Y boundary: top 25% for horizontal, top 50% for vertical
-                val screenBoundary = if (settings.verticalTextMode) {
+                val screenYBoundary = if (settings.verticalTextMode) {
                     maxHeightPx * PartialModeConstants.VERT_PAD_TOP_RATIO
                 } else {
                     maxHeightPx * PartialModeConstants.HORIZ_CAMERA_HEIGHT_RATIO
                 }
 
+                // Screen-space X boundary: right 40% for vertical mode
+                val screenXBoundary = if (settings.verticalTextMode) {
+                    maxWidthPx * (1f - PartialModeConstants.VERT_CAMERA_WIDTH_RATIO)
+                } else {
+                    0f  // Horizontal mode: no X filtering needed
+                }
+
                 val newJukugo = detectedTexts.flatMap { detected ->
                     detected.elements.flatMap { element ->
                         val bounds = element.bounds
+                        val elemTextLen = element.text.length
                         element.kanjiSegments
                             .filter { segment ->
                                 if (segment.text.length <= 1) return@filter false
-                                if (bounds == null || effW <= 0) return@filter true
-                                // Convert element center to screen-space Y
-                                val screenY = bounds.centerY() * scale - cropOffsetY
-                                screenY <= screenBoundary
+                                if (bounds == null || effW <= 0 || elemTextLen <= 0) return@filter true
+
+                                if (settings.verticalTextMode) {
+                                    // Vertical: chars stacked top-to-bottom, per-segment Y
+                                    val charHeight = bounds.height().toFloat() / elemTextLen
+                                    val segTopImg = bounds.top + segment.startIndex * charHeight
+                                    val segBottomImg = bounds.top + segment.endIndex * charHeight
+                                    val segTopScreen = segTopImg * scale - cropOffsetY
+                                    val segBottomScreen = segBottomImg * scale - cropOffsetY
+
+                                    // Y: segment must be fully within camera strip
+                                    val yOk = segBottomScreen <= screenYBoundary && segTopScreen >= 0
+
+                                    // X: element center must be in camera strip (all segs share X)
+                                    val elemCenterXScreen = bounds.centerX() * scale - cropOffsetX
+                                    val xOk = elemCenterXScreen >= screenXBoundary
+
+                                    yOk && xOk
+                                } else {
+                                    // Horizontal: chars left-to-right, all segs share same Y
+                                    val charWidth = bounds.width().toFloat() / elemTextLen
+                                    val segLeftImg = bounds.left + segment.startIndex * charWidth
+                                    val segRightImg = bounds.left + segment.endIndex * charWidth
+                                    val segLeftScreen = segLeftImg * scale - cropOffsetX
+                                    val segRightScreen = segRightImg * scale - cropOffsetX
+
+                                    // Y: element bottom must be within camera strip
+                                    // (matches OverlayCanvas boundary check)
+                                    val elemBottomScreen = bounds.bottom * scale - cropOffsetY
+                                    val yOk = elemBottomScreen <= screenYBoundary
+
+                                    // X: segment must be fully on-screen (cutoff protection)
+                                    val edgeMargin = charWidth * scale * 0.5f
+                                    val notCutoff = segLeftScreen >= -edgeMargin &&
+                                            segRightScreen <= maxWidthPx + edgeMargin
+
+                                    yOk && notCutoff
+                                }
                             }
                             .map { it.text to it.reading }
                     }
@@ -411,8 +483,9 @@ private fun CameraContent(
                     .width(panelWidthDp)
                     .fillMaxHeight()
                     .align(Alignment.CenterStart)
-                    .background(Color(0xFFF5E6D3))
-                    .border(width = 2.dp, color = Color(0xFFD4B896))
+                    .background(KanjiLensColors.PanelBackground)
+                    .border(width = 2.dp, color = KanjiLensColors.PanelBorder)
+                    .statusBarsPadding()
             } else {
                 // Horizontal mode: panel on the BOTTOM (75% height)
                 val whiteHeightDp = with(density) { (maxHeightPx * (1f - horizCameraRatio)).toDp() }
@@ -420,21 +493,72 @@ private fun CameraContent(
                     .fillMaxWidth()
                     .height(whiteHeightDp)
                     .align(Alignment.BottomCenter)
-                    .background(Color(0xFFF5E6D3))
-                    .border(width = 2.dp, color = Color(0xFFD4B896))
+                    .background(KanjiLensColors.PanelBackground)
+                    .border(width = 2.dp, color = KanjiLensColors.PanelBorder)
             }
 
             // Dictionary state
             val dictionaryResult by viewModel.dictionaryResult.collectAsState()
             val isDictionaryLoading by viewModel.isDictionaryLoading.collectAsState()
+            val bookmarkedKanji by viewModel.bookmarkedKanji.collectAsState()
+            val isWordBookmarked by viewModel.isWordBookmarked.collectAsState()
+            val allBookmarkedKanji by viewModel.allBookmarkedKanji.collectAsState()
+            val kanjiInfo by viewModel.kanjiInfo.collectAsState()
+            val isKanjiInfoLoading by viewModel.isKanjiInfoLoading.collectAsState()
 
             // Trigger lookup when a jukugo is selected
             LaunchedEffect(selectedJukugo) {
-                selectedJukugo?.let { viewModel.lookupWord(it.text) }
+                selectedJukugo?.let { viewModel.lookupWord(it.text, context) }
+            }
+
+            // Trigger kanji info lookup when a kanji is selected
+            LaunchedEffect(selectedKanji) {
+                if (selectedKanji != null) {
+                    viewModel.loadKanjiInfo(selectedKanji!!)
+                } else {
+                    viewModel.clearKanjiInfo()
+                }
             }
 
             Box(modifier = panelModifier) {
-                if (selectedJukugo == null) {
+                if (selectedKanji != null) {
+                    // Kanji detail page — matches KanjiQuest design
+                    val kanjiStr = selectedKanji!!
+                    val isKanjiBM = kanjiStr in bookmarkedKanji
+                    KanjiDetailView(
+                        kanji = kanjiStr,
+                        kanjiInfo = kanjiInfo,
+                        isLoading = isKanjiInfoLoading,
+                        isBookmarked = isKanjiBM,
+                        onBackClick = { selectedKanji = null },
+                        onBookmarkToggle = {
+                            viewModel.toggleKanjiBookmark(kanjiStr)
+                            viewModel.refreshAllBookmarkedKanji()
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else if (selectedJukugo != null) {
+                    DictionaryDetailView(
+                        result = dictionaryResult,
+                        isLoading = isDictionaryLoading,
+                        onBackClick = {
+                            selectedJukugo = null
+                            viewModel.clearDictionaryResult()
+                        },
+                        wordText = selectedJukugo?.text ?: "",
+                        wordReading = selectedJukugo?.reading ?: "",
+                        isWordBookmarked = isWordBookmarked,
+                        onWordBookmarkToggle = {
+                            val entry = selectedJukugo ?: return@DictionaryDetailView
+                            viewModel.toggleWordBookmark(entry.text, entry.reading)
+                        },
+                        bookmarkedKanji = bookmarkedKanji,
+                        onKanjiClick = { kanji ->
+                            selectedKanji = kanji
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
                     DetectedJukugoList(
                         jukugo = jukugoList,
                         onJukugoClick = { entry ->
@@ -443,20 +567,11 @@ private fun CameraContent(
                         onBackToCamera = {
                             // Collapse panel → full camera mode
                             scope.launch {
-                                boundaryAnim.animateTo(1f, spring(dampingRatio = 0.7f, stiffness = 300f))
+                                boundaryAnim.animateTo(1f, spring(dampingRatio = CameraDimens.SPRING_DAMPING, stiffness = CameraDimens.SPRING_STIFFNESS))
                             }
                             viewModel.updatePartialModeBoundaryRatio(1f)
                         },
-                        modifier = Modifier.fillMaxSize()
-                    )
-                } else {
-                    DictionaryDetailView(
-                        result = dictionaryResult,
-                        isLoading = isDictionaryLoading,
-                        onBackClick = {
-                            selectedJukugo = null
-                            viewModel.clearDictionaryResult()
-                        },
+                        bookmarkedKanji = allBookmarkedKanji,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -477,8 +592,8 @@ private fun CameraContent(
                     .height(padHeightDp)
                     .align(Alignment.BottomEnd)
                     .padding(start = panelWidthDp)
-                    .background(Color(0xFFF5E6D3))
-                    .border(width = 1.dp, color = Color(0xFFD4B896))
+                    .background(KanjiLensColors.PanelBackground)
+                    .border(width = 1.dp, color = KanjiLensColors.PanelBorder)
             )
 
         }
@@ -489,10 +604,10 @@ private fun CameraContent(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .statusBarsPadding()
-                    .padding(12.dp)
-                    .size(24.dp),
-                color = Color(0xFF4CAF50),
-                strokeWidth = 2.dp
+                    .padding(CameraDimens.PROCESSING_INDICATOR_PADDING)
+                    .size(CameraDimens.PROCESSING_INDICATOR_SIZE),
+                color = KanjiLensColors.ProcessingGreen,
+                strokeWidth = CameraDimens.PROCESSING_INDICATOR_STROKE_WIDTH.dp
             )
         }
 
@@ -518,7 +633,7 @@ private fun CameraContent(
             )
         }
 
-        // Layer 6: Draggable floating settings button
+        // Layer 6: Settings button (middle row, center)
         DraggableFloatingButton(
             offset = settingsBtnOffset,
             onOffsetChange = { settingsBtnOffset = it },
@@ -526,16 +641,9 @@ private fun CameraContent(
             maxWidth = maxWidthPx,
             maxHeight = maxHeightPx,
             btnSize = btnSizePx
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_settings),
-                contentDescription = "Settings",
-                tint = Color.White,
-                modifier = Modifier.size(22.dp)
-            )
-        }
+        ) { SettingsButtonContent() }
 
-        // Layer 7: Draggable floating flash button
+        // Layer 7: Flash button (middle row, left)
         camera?.let { cam ->
             if (cam.cameraInfo.hasFlashUnit()) {
                 DraggableFloatingButton(
@@ -545,33 +653,23 @@ private fun CameraContent(
                     maxWidth = maxWidthPx,
                     maxHeight = maxHeightPx,
                     btnSize = btnSizePx
-                ) {
-                    Icon(
-                        painter = painterResource(
-                            id = if (isFlashOn) R.drawable.ic_flashlight_on else R.drawable.ic_flashlight_off
-                        ),
-                        contentDescription = if (isFlashOn) "Flash On" else "Flash Off",
-                        tint = if (isFlashOn) Color.Yellow else Color.White,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
+                ) { FlashButtonContent(isFlashOn) }
             }
         }
 
-        // Layer 8: Mode toggle button (Full ↔ Partial)
+        // Layer 8: Mode toggle button (top row, left)
         DraggableFloatingButton(
             offset = modeBtnOffset,
             onOffsetChange = { modeBtnOffset = it },
             onClick = {
                 val currentMode = settings.partialModeBoundaryRatio
-                // Horizontal partial = 0.25, vertical partial = 0.40
-                val partialTarget = if (settings.verticalTextMode) 0.40f else 0.25f
-                val newMode = if (currentMode > 0.6f) partialTarget else 1f
+                val partialTarget = if (settings.verticalTextMode) CameraDimens.VERTICAL_PARTIAL_RATIO else CameraDimens.HORIZONTAL_PARTIAL_RATIO
+                val newMode = if (currentMode > CameraDimens.MODE_TOGGLE_THRESHOLD) partialTarget else 1f
 
                 scope.launch {
                     boundaryAnim.animateTo(
                         newMode,
-                        spring(dampingRatio = 0.7f, stiffness = 300f)
+                        spring(dampingRatio = CameraDimens.SPRING_DAMPING, stiffness = CameraDimens.SPRING_STIFFNESS)
                     )
                 }
                 viewModel.updatePartialModeBoundaryRatio(newMode)
@@ -579,27 +677,20 @@ private fun CameraContent(
             maxWidth = maxWidthPx,
             maxHeight = maxHeightPx,
             btnSize = btnSizePx
-        ) {
-            Text(
-                if (settings.partialModeBoundaryRatio > 0.6f) "FULL" else "25%",
-                color = Color.White,
-                fontSize = 10.sp
-            )
-        }
+        ) { ModeButtonContent(isFullMode = settings.partialModeBoundaryRatio > CameraDimens.MODE_TOGGLE_THRESHOLD) }
 
-        // Layer 9: Vertical/Horizontal text mode toggle button
+        // Layer 9: Vertical/Horizontal toggle (top row, center)
         DraggableFloatingButton(
             offset = verticalBtnOffset,
             onOffsetChange = { verticalBtnOffset = it },
             onClick = {
                 val goingVertical = !settings.verticalTextMode
-                if (settings.partialModeBoundaryRatio < 0.99f) {
-                    // In partial mode: update both atomically to avoid race condition
-                    val newRatio = if (goingVertical) 0.40f else 0.25f
+                if (settings.partialModeBoundaryRatio < CameraDimens.FULL_MODE_THRESHOLD) {
+                    val newRatio = if (goingVertical) CameraDimens.VERTICAL_PARTIAL_RATIO else CameraDimens.HORIZONTAL_PARTIAL_RATIO
                     scope.launch {
                         boundaryAnim.animateTo(
                             newRatio,
-                            spring(dampingRatio = 0.7f, stiffness = 300f)
+                            spring(dampingRatio = CameraDimens.SPRING_DAMPING, stiffness = CameraDimens.SPRING_STIFFNESS)
                         )
                     }
                     viewModel.updateVerticalModeAndBoundary(goingVertical, newRatio)
@@ -610,15 +701,9 @@ private fun CameraContent(
             maxWidth = maxWidthPx,
             maxHeight = maxHeightPx,
             btnSize = btnSizePx
-        ) {
-            Text(
-                if (settings.verticalTextMode) "縦" else "横",
-                color = if (settings.verticalTextMode) Color.Yellow else Color.White,
-                fontSize = 14.sp
-            )
-        }
+        ) { VerticalModeButtonContent(settings.verticalTextMode) }
 
-        // Layer 10: Pause/Play toggle button
+        // Layer 10: Pause/Play toggle (top row, right)
         DraggableFloatingButton(
             offset = pauseBtnOffset,
             onOffsetChange = { pauseBtnOffset = it },
@@ -626,13 +711,7 @@ private fun CameraContent(
             maxWidth = maxWidthPx,
             maxHeight = maxHeightPx,
             btnSize = btnSizePx
-        ) {
-            Text(
-                if (isPaused) "▶" else "⏸",
-                color = if (isPaused) Color.Yellow else Color.White,
-                fontSize = 14.sp
-            )
-        }
+        ) { PauseButtonContent(isPaused) }
 
         // Version label (bottom-left)
         Text(
@@ -641,10 +720,10 @@ private fun CameraContent(
             fontSize = 9.sp,
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(start = leftMarginDp, bottom = 40.dp)
+                .padding(start = leftMarginDp, bottom = CameraDimens.VERSION_LABEL_BOTTOM_PADDING)
         )
 
-        // Profile button (in 2x3 control grid)
+        // Profile button (middle row, right)
         DraggableFloatingButton(
             offset = profileBtnOffset,
             onOffsetChange = { profileBtnOffset = it },
@@ -652,16 +731,9 @@ private fun CameraContent(
             maxWidth = maxWidthPx,
             maxHeight = maxHeightPx,
             btnSize = btnSizePx
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_person),
-                contentDescription = "Profile",
-                tint = Color.White,
-                modifier = Modifier.size(22.dp)
-            )
-        }
+        ) { ProfileButtonContent() }
 
-        // J Coin rewards button (bottom-right pair, left)
+        // J Coin rewards button (bottom row, center)
         DraggableFloatingButton(
             offset = jcoinBtnOffset,
             onOffsetChange = { jcoinBtnOffset = it },
@@ -669,17 +741,10 @@ private fun CameraContent(
             maxWidth = maxWidthPx,
             maxHeight = maxHeightPx,
             btnSize = btnSizePx,
-            bgColor = Color(0xFFFFB74D).copy(alpha = 0.85f)
-        ) {
-            Text(
-                text = "J",
-                color = Color.White,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
+            bgColor = KanjiLensColors.JCoinButtonBg.copy(alpha = 0.85f)
+        ) { JCoinButtonContent() }
 
-        // Feedback button (bottom-right pair, right)
+        // Feedback button (bottom row, right)
         DraggableFloatingButton(
             offset = feedbackBtnOffset,
             onOffsetChange = { feedbackBtnOffset = it },
@@ -687,207 +752,80 @@ private fun CameraContent(
             maxWidth = maxWidthPx,
             maxHeight = maxHeightPx,
             btnSize = btnSizePx,
-            bgColor = Color(0xFF66BB6A).copy(alpha = 0.85f)
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_email),
-                contentDescription = "Send Feedback",
-                tint = Color.White,
-                modifier = Modifier.size(22.dp)
-            )
-        }
+            bgColor = KanjiLensColors.FeedbackButtonBg.copy(alpha = 0.85f)
+        ) { FeedbackButtonContent() }
+
+        // Bookmark button (bottom row, left)
+        DraggableFloatingButton(
+            offset = bookmarkBtnOffset,
+            onOffsetChange = { bookmarkBtnOffset = it },
+            onClick = onBookmarksClick,
+            maxWidth = maxWidthPx,
+            maxHeight = maxHeightPx,
+            btnSize = btnSizePx,
+            bgColor = KanjiLensColors.BookmarkButtonBg.copy(alpha = 0.85f)
+        ) { BookmarkButtonContent() }
 
         // Layer 11: Scan timer pill (free users only)
         if (!isPremium && isScanActive) {
-            val timerColor = if (scanTimerSeconds <= 10) Color(0xFFFF5252) else Color.White
-            Box(
+            ScanTimerPill(
+                scanTimerSeconds = scanTimerSeconds,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .statusBarsPadding()
                     .padding(top = 12.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color.Black.copy(alpha = 0.6f))
-                    .padding(horizontal = 16.dp, vertical = 6.dp)
-            ) {
-                Text(
-                    text = "${scanTimerSeconds / 60}:${String.format("%02d", scanTimerSeconds % 60)}",
-                    color = timerColor,
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-
-        // Layer 12: Scan-expired overlay (free users, timer hit 0)
-        if (!isPremium && !isScanActive && isPaused) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.7f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Text(
-                        text = "Scan Complete",
-                        color = Color.White,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Button(
-                        onClick = { viewModel.startScan(context) },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF4FC3F7)
-                        ),
-                        shape = RoundedCornerShape(24.dp)
-                    ) {
-                        Text(
-                            text = "Start New Scan",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
-                        )
-                    }
-
-                    TextButton(onClick = { viewModel.dismissScanOverlay() }) {
-                        Text(
-                            text = "Back to Camera",
-                            color = Color.White.copy(alpha = 0.8f),
-                            fontSize = 14.sp
-                        )
-                    }
-
-                    TextButton(onClick = onPaywallNeeded) {
-                        Text(
-                            text = "Upgrade to Premium - No Limits",
-                            color = Color(0xFF4FC3F7),
-                            fontSize = 14.sp
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun DraggableFloatingButton(
-    offset: Offset,
-    onOffsetChange: (Offset) -> Unit,
-    onClick: () -> Unit,
-    maxWidth: Float,
-    maxHeight: Float,
-    btnSize: Float,
-    bgColor: Color = Color.Black.copy(alpha = 0.4f),
-    content: @Composable () -> Unit
-) {
-    Box(
-        modifier = Modifier
-            .offset { IntOffset(offset.x.roundToInt(), offset.y.roundToInt()) }
-            .size(44.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(bgColor)
-            .pointerInput(Unit) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val down = awaitPointerEvent()
-                        val firstDown = down.changes.firstOrNull() ?: continue
-                        if (!firstDown.pressed) continue
-                        firstDown.consume()
-
-                        var totalDrag = Offset.Zero
-                        var wasDragged = false
-
-                        while (true) {
-                            val event = awaitPointerEvent()
-                            val change = event.changes.firstOrNull() ?: break
-                            if (!change.pressed) {
-                                change.consume()
-                                if (!wasDragged) onClick()
-                                break
-                            }
-                            val delta = change.positionChange()
-                            totalDrag += delta
-                            if (totalDrag.getDistance() > viewConfiguration.touchSlop) {
-                                wasDragged = true
-                            }
-                            if (wasDragged) {
-                                onOffsetChange(
-                                    Offset(
-                                        (offset.x + delta.x).coerceIn(0f, maxWidth - btnSize),
-                                        (offset.y + delta.y).coerceIn(0f, maxHeight - btnSize)
-                                    )
-                                )
-                            }
-                            change.consume()
-                        }
-                    }
-                }
-            },
-        contentAlignment = Alignment.Center
-    ) {
-        content()
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun DetectedKanjiList(kanji: List<Char>, modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp)
-    ) {
-        Text(
-            text = "Detected Kanji (${kanji.size})",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(bottom = 12.dp)
-        )
-
-        if (kanji.isEmpty()) {
-            Text(
-                text = "No kanji detected yet...",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray
             )
-        } else {
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                kanji.forEach { char ->
-                    Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFFF5F5F5))
-                            .clickable {
-                                // TODO: Show dictionary definition
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = char.toString(),
-                            fontSize = 24.sp,
-                            color = Color.Black
-                        )
-                    }
-                }
+        }
+
+        // Layer 12: Scan Challenge pill (bottom-right, above button grid)
+        val scanChallenge by viewModel.scanChallenge.collectAsState()
+        scanChallenge?.let { challenge ->
+            // Check if target kanji is in current detections
+            LaunchedEffect(detectedTexts) {
+                viewModel.checkChallengeInDetections(context)
             }
+
+            // Position: right-aligned with button grid, just above top row
+            val challengeEndPad = with(density) { (rightMargin).toDp() }
+            val challengeBottomPad = with(density) { (maxHeightPx - modeBtnOffset.y + CameraDimens.TOP_MARGIN_EXTRA_PX).toDp() }.coerceAtLeast(0.dp)
+            ScanChallengePill(
+                challenge = challenge,
+                onNextChallenge = { viewModel.startNewChallenge() },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = challengeEndPad, bottom = challengeBottomPad)
+            )
+        }
+
+        // Layer 13: J Coin reward toast
+        val coinToast by viewModel.coinRewardToast.collectAsState()
+        coinToast?.let { message ->
+            CoinRewardToast(
+                message = message,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = CameraDimens.COIN_TOAST_BOTTOM_PADDING)
+            )
+        }
+
+        // Layer 14: Scan-expired overlay (free users, timer hit 0)
+        if (!isPremium && !isScanActive && isPaused) {
+            ScanExpiredOverlay(
+                onStartNewScan = { viewModel.startScan(context) },
+                onBackToCamera = { viewModel.dismissScanOverlay() },
+                onUpgrade = onPaywallNeeded
+            )
         }
     }
 }
+
 
 @Composable
 private fun DetectedJukugoList(
     jukugo: List<JukugoEntry>,
     onJukugoClick: (JukugoEntry) -> Unit,
     onBackToCamera: () -> Unit,
+    bookmarkedKanji: Set<String> = emptySet(),
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
@@ -895,7 +833,7 @@ private fun DetectedJukugoList(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFFD4B896))
+                .background(KanjiLensColors.PanelBorder)
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -924,9 +862,15 @@ private fun DetectedJukugoList(
         ) {
             if (jukugo.isEmpty()) {
                 Text(
-                    text = "No jukugo detected yet...",
+                    text = "Point your camera at Japanese text",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
+                    color = KanjiLensColors.JukugoSecondary
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Detected words will appear here",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = KanjiLensColors.JukugoSecondary.copy(alpha = 0.7f)
                 )
             } else {
                 Column(
@@ -938,27 +882,39 @@ private fun DetectedJukugoList(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFFEDD9C0))
+                                .background(KanjiLensColors.PanelItemBackground)
                                 .clickable { onJukugoClick(entry) }
                                 .padding(horizontal = 16.dp, vertical = 14.dp),
                             horizontalArrangement = Arrangement.Start,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = entry.text,
+                                text = buildAnnotatedString {
+                                    entry.text.forEach { ch ->
+                                        val isKanjiBM = ch.toString() in bookmarkedKanji
+                                        if (isKanjiBM) {
+                                            withStyle(SpanStyle(
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = KanjiLensColors.BookmarkedKanjiHighlight
+                                            )) { append(ch) }
+                                        } else {
+                                            append(ch)
+                                        }
+                                    }
+                                },
                                 fontSize = 18.sp,
-                                color = Color(0xFF2C2C2C),
+                                color = KanjiLensColors.JukugoText,
                                 fontWeight = FontWeight.Medium
                             )
                             Text(
                                 text = " - ",
                                 fontSize = 14.sp,
-                                color = Color(0xFF666666)
+                                color = KanjiLensColors.JukugoSecondary
                             )
                             Text(
                                 text = entry.reading,
                                 fontSize = 14.sp,
-                                color = Color(0xFF666666),
+                                color = KanjiLensColors.JukugoSecondary,
                                 fontWeight = FontWeight.Normal
                             )
                         }
@@ -969,7 +925,7 @@ private fun DetectedJukugoList(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(1.dp)
-                                    .background(Color(0xFFD4B896).copy(alpha = 0.3f))
+                                    .background(KanjiLensColors.PanelBorder.copy(alpha = 0.3f))
                             )
                         }
                     }
@@ -1000,9 +956,9 @@ private fun DebugStatsHud(stats: OCRStats, modifier: Modifier = Modifier) {
         Text(
             text = "OCR: ${stats.avgFrameMs}ms avg",
             color = when {
-                stats.avgFrameMs < 200 -> Color(0xFF4CAF50)
-                stats.avgFrameMs < 400 -> Color(0xFFFF9800)
-                else -> Color(0xFFF44336)
+                stats.avgFrameMs < 200 -> KanjiLensColors.HudFast
+                stats.avgFrameMs < 400 -> KanjiLensColors.HudMedium
+                else -> KanjiLensColors.HudSlow
             },
             fontSize = 11.sp
         )
@@ -1028,14 +984,14 @@ private fun CameraPermissionRequest(
     ) {
         Text(
             text = if (showRationale) {
-                "KanjiLens needs camera access to detect and read Japanese text. Please grant the permission."
+                "KanjiLens uses your camera to detect Japanese text in real time. No photos are saved or uploaded."
             } else {
-                "Camera permission is required to use KanjiLens."
+                "To read Japanese text around you, KanjiLens needs access to your camera."
             },
             modifier = Modifier.padding(bottom = 16.dp)
         )
         Button(onClick = onRequestPermission) {
-            Text("Grant Camera Permission")
+            Text("Allow Camera Access")
         }
     }
 }

@@ -23,9 +23,10 @@ class ProcessCameraFrameUseCase @Inject constructor(
     suspend fun execute(inputImage: InputImage, imageSize: Size): OCRResult {
         val startTime = System.currentTimeMillis()
 
-        val visionText = withTimeoutOrNull(500L) {
+        val visionText = withTimeoutOrNull(3000L) {
             textRecognizer.process(inputImage).await()
-        } ?: return OCRResult(emptyList(), System.currentTimeMillis(), imageSize, 500L)
+        } ?: return OCRResult(emptyList(), System.currentTimeMillis(), imageSize,
+            System.currentTimeMillis() - startTime)
 
         val detectedTexts = visionText.textBlocks.flatMap { block ->
             block.lines.mapNotNull { line ->

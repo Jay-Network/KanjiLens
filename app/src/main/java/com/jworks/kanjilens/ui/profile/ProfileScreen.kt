@@ -24,7 +24,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -49,6 +49,7 @@ import com.jworks.kanjilens.BuildConfig
 import com.jworks.kanjilens.R
 import com.jworks.kanjilens.data.auth.AuthRepository
 import com.jworks.kanjilens.data.auth.AuthState
+import com.jworks.kanjilens.ui.auth.HandlePromptDialog
 import com.jworks.kanjilens.data.jcoin.JCoinClient
 import com.jworks.kanjilens.data.jcoin.JCoinEarnRules
 import com.jworks.kanjilens.data.subscription.SubscriptionManager
@@ -61,6 +62,7 @@ fun ProfileScreen(
     jCoinEarnRules: JCoinEarnRules,
     onBackClick: () -> Unit,
     onRewardsClick: () -> Unit,
+    onLinkAccountClick: () -> Unit = {},
     onSignOut: () -> Unit
 ) {
     val context = LocalContext.current
@@ -69,6 +71,7 @@ fun ProfileScreen(
     val isAdmin by authRepository.isAdminOrDeveloper.collectAsState()
     val showDeveloperTools = isAdmin || BuildConfig.DEBUG
     var premiumOverride by remember { mutableStateOf(subscriptionManager.getPremiumOverride() ?: false) }
+    var showHandleDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -120,16 +123,22 @@ fun ProfileScreen(
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val isAnonymous = (authState as? AuthState.SignedIn)?.isAnonymous ?: true
+                    val handle = (authState as? AuthState.SignedIn)?.user?.handle
+
                     // Avatar circle
                     Box(
                         modifier = Modifier
                             .size(56.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFF78909C)),
+                            .background(if (handle != null) Color(0xFF1976D2) else if (isAnonymous) Color(0xFF546E7A) else Color(0xFF78909C)),
                         contentAlignment = Alignment.Center
                     ) {
-                        val initial = when (val state = authState) {
-                            is AuthState.SignedIn -> state.user.displayName?.firstOrNull()?.uppercase() ?: "?"
+                        val initial = when {
+                            handle != null -> handle.first().uppercase()
+                            isAnonymous -> "G"
+                            authState is AuthState.SignedIn ->
+                                (authState as AuthState.SignedIn).user.email?.firstOrNull()?.uppercase() ?: "?"
                             else -> "?"
                         }
                         Text(
@@ -143,25 +152,32 @@ fun ProfileScreen(
                     Spacer(modifier = Modifier.width(16.dp))
 
                     Column(modifier = Modifier.weight(1f)) {
-                        val displayName = when (val state = authState) {
-                            is AuthState.SignedIn -> state.user.displayName ?: "User"
+                        // Primary display: handle > email > Guest
+                        val displayTitle = when {
+                            handle != null -> handle
+                            !isAnonymous -> (authState as? AuthState.SignedIn)?.user?.email ?: "Linked Account"
                             else -> "Guest"
                         }
-                        val email = when (val state = authState) {
-                            is AuthState.SignedIn -> state.user.email ?: ""
-                            else -> "Not signed in"
-                        }
-
                         Text(
-                            text = displayName,
+                            text = displayTitle,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
-                        Text(
-                            text = email,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        // Secondary info
+                        val subtitle = when {
+                            handle != null && !isAnonymous ->
+                                (authState as? AuthState.SignedIn)?.user?.email ?: ""
+                            handle != null -> "Tap to change display name"
+                            isAnonymous -> "No account linked"
+                            else -> ""
+                        }
+                        if (subtitle.isNotEmpty()) {
+                            Text(
+                                text = subtitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                         Spacer(modifier = Modifier.height(4.dp))
                         // Subscription badge
                         val badgeColor = if (isPremium) Color(0xFF4CAF50) else Color(0xFF9E9E9E)
@@ -174,6 +190,35 @@ fun ProfileScreen(
                         )
                     }
                 }
+            }
+
+            // Display name action
+            val currentHandle = (authState as? AuthState.SignedIn)?.user?.handle
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showHandleDialog = true }
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = if (currentHandle != null) "Change display name" else "Set display name",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        text = currentHandle ?: "Choose how you appear to others",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Text(
+                    text = ">",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
             // App Stats Card
@@ -227,7 +272,7 @@ fun ProfileScreen(
                         }
                     )
 
-                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
                     // TutoringJay
                     EcosystemAppRow(
@@ -239,13 +284,49 @@ fun ProfileScreen(
                         }
                     )
 
-                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
                     // J Coin
                     EcosystemAppRow(
                         name = "J Coin",
                         description = "Earn rewards across JWorks apps",
                         onClick = onRewardsClick
+                    )
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                    // Discord Community
+                    EcosystemAppRow(
+                        name = "Discord Community",
+                        description = "Join 100+ Japanese learners",
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://discord.gg/bwHQA6GC"))
+                            context.startActivity(intent)
+                        }
+                    )
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                    // JWorks AI
+                    EcosystemAppRow(
+                        name = "JWorks AI",
+                        description = "AI-powered tools by JWorks",
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://jworks-ai.com"))
+                            context.startActivity(intent)
+                        }
+                    )
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
+                    // Creator
+                    EcosystemAppRow(
+                        name = "Creator",
+                        description = "Made by Jay",
+                        onClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://jayismocking.com"))
+                            context.startActivity(intent)
+                        }
                     )
                 }
             }
@@ -334,8 +415,29 @@ fun ProfileScreen(
                 }
             }
 
-            // Sign Out
-            if (authState is AuthState.SignedIn) {
+            // Link Account / Sign Out
+            val isAnon = (authState as? AuthState.SignedIn)?.isAnonymous ?: true
+            if (isAnon) {
+                Button(
+                    onClick = onLinkAccountClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2)),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = "Sign In / Link Account",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                }
+                Text(
+                    text = "Sync across devices, earn J Coins, and back up your data",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            } else if (authState is AuthState.SignedIn) {
                 Button(
                     onClick = onSignOut,
                     modifier = Modifier.fillMaxWidth(),
@@ -353,6 +455,17 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
         }
+    }
+
+    // Handle prompt dialog
+    if (showHandleDialog) {
+        HandlePromptDialog(
+            onSave = { handle ->
+                authRepository.setHandle(handle)
+                showHandleDialog = false
+            },
+            onDismiss = { showHandleDialog = false }
+        )
     }
 }
 

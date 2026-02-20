@@ -8,15 +8,25 @@ import androidx.camera.core.ImageProxy
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.mlkit.vision.common.InputImage
+import com.jworks.kanjilens.data.auth.AuthRepository
+import com.jworks.kanjilens.data.jcoin.JCoinClient
+import com.jworks.kanjilens.data.jcoin.JCoinEarnRules
 import com.jworks.kanjilens.data.subscription.SubscriptionManager
 import com.jworks.kanjilens.domain.models.AppSettings
 import com.jworks.kanjilens.domain.models.DetectedText
+import com.jworks.kanjilens.domain.models.LuminanceSampler
 import com.jworks.kanjilens.domain.models.DictionaryResult
+import com.jworks.kanjilens.domain.models.KanjiInfo
+import com.jworks.kanjilens.domain.models.ScanChallenge
+import com.jworks.kanjilens.domain.models.ScanChallengeKanji
+import com.jworks.kanjilens.domain.repository.BookmarkRepository
 import com.jworks.kanjilens.domain.repository.DictionaryRepository
+import com.jworks.kanjilens.domain.repository.KanjiInfoRepository
 import com.jworks.kanjilens.domain.repository.SettingsRepository
 import com.jworks.kanjilens.domain.usecases.EnrichWithFuriganaUseCase
 import com.jworks.kanjilens.domain.usecases.ProcessCameraFrameUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +35,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
@@ -33,7 +44,12 @@ class CameraViewModel @Inject constructor(
     private val enrichWithFurigana: EnrichWithFuriganaUseCase,
     private val settingsRepository: SettingsRepository,
     private val subscriptionManager: SubscriptionManager,
-    private val dictionaryRepository: DictionaryRepository
+    private val dictionaryRepository: DictionaryRepository,
+    private val bookmarkRepository: BookmarkRepository,
+    private val kanjiInfoRepository: KanjiInfoRepository,
+    private val earnRules: JCoinEarnRules,
+    private val jCoinClient: JCoinClient,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
     companion object {
@@ -95,16 +111,272 @@ class CameraViewModel @Inject constructor(
     private val _isDictionaryLoading = MutableStateFlow(false)
     val isDictionaryLoading: StateFlow<Boolean> = _isDictionaryLoading.asStateFlow()
 
-    fun lookupWord(word: String) {
+    private val _bookmarkedKanji = MutableStateFlow<Set<String>>(emptySet())
+    val bookmarkedKanji: StateFlow<Set<String>> = _bookmarkedKanji.asStateFlow()
+
+    private val _isWordBookmarked = MutableStateFlow(false)
+    val isWordBookmarked: StateFlow<Boolean> = _isWordBookmarked.asStateFlow()
+
+    private val _kanjiInfo = MutableStateFlow<KanjiInfo?>(null)
+    val kanjiInfo: StateFlow<KanjiInfo?> = _kanjiInfo.asStateFlow()
+
+    private val _isKanjiInfoLoading = MutableStateFlow(false)
+    val isKanjiInfoLoading: StateFlow<Boolean> = _isKanjiInfoLoading.asStateFlow()
+
+    fun loadKanjiInfo(literal: String) {
+        viewModelScope.launch {
+            _isKanjiInfoLoading.value = true
+            _kanjiInfo.value = try {
+                kanjiInfoRepository.getKanji(literal)
+            } catch (e: Exception) {
+                Log.w(TAG, "Kanji info lookup failed for '$literal'", e)
+                null
+            }
+            _isKanjiInfoLoading.value = false
+        }
+    }
+
+    fun clearKanjiInfo() {
+        _kanjiInfo.value = null
+    }
+
+    // Scan Challenge state
+    private val _scanChallenge = MutableStateFlow<ScanChallenge?>(null)
+    val scanChallenge: StateFlow<ScanChallenge?> = _scanChallenge.asStateFlow()
+
+    // J Coin reward toast (shows "+X J" briefly)
+    private val _coinRewardToast = MutableStateFlow<String?>(null)
+    val coinRewardToast: StateFlow<String?> = _coinRewardToast.asStateFlow()
+
+    fun startNewChallenge() {
+        _scanChallenge.value = ScanChallengeKanji.getRandomChallenge()
+    }
+
+    fun dismissChallenge() {
+        _scanChallenge.value = null
+    }
+
+    fun dismissCoinToast() {
+        _coinRewardToast.value = null
+    }
+
+    private fun showCoinToast(coins: Int, reason: String) {
+        _coinRewardToast.value = "+$coins J ($reason)"
+        viewModelScope.launch {
+            delay(2500)
+            _coinRewardToast.value = null
+        }
+    }
+
+    fun lookupWord(word: String, context: Context? = null) {
         viewModelScope.launch {
             _isDictionaryLoading.value = true
-            _dictionaryResult.value = try {
+            val result = try {
                 dictionaryRepository.lookup(word)
             } catch (e: Exception) {
                 Log.w(TAG, "Dictionary lookup failed for '$word'", e)
                 null
             }
+            _dictionaryResult.value = result
+
+            // Check word-level bookmark status
+            _isWordBookmarked.value = try {
+                bookmarkRepository.isBookmarked(word)
+            } catch (e: Exception) { false }
+
+            // Check bookmark status for each kanji in the word
+            _bookmarkedKanji.value = try {
+                val kanjiChars = word.filter { c ->
+                    c.code in 0x4E00..0x9FFF || c.code in 0x3400..0x4DBF
+                }
+                kanjiChars.filter { bookmarkRepository.isBookmarked(it.toString()) }
+                    .map { it.toString() }.toSet()
+            } catch (e: Exception) {
+                emptySet()
+            }
+
+            // Award J Coin for dictionary lookup
+            if (result != null && context != null) {
+                awardDictionaryLookupCoin(context, word)
+            }
             _isDictionaryLoading.value = false
+        }
+    }
+
+    fun toggleKanjiBookmark(kanji: String) {
+        viewModelScope.launch {
+            try {
+                val nowBookmarked = bookmarkRepository.toggle(kanji, "")
+                _bookmarkedKanji.value = if (nowBookmarked) {
+                    _bookmarkedKanji.value + kanji
+                } else {
+                    _bookmarkedKanji.value - kanji
+                }
+                Log.d(TAG, "Kanji bookmark toggled: '$kanji' → $nowBookmarked")
+                // J Coin: award favorite coin when bookmarking
+                if (nowBookmarked) {
+                    awardFavoriteCoin(lastContext ?: return@launch, kanji)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to toggle kanji bookmark for '$kanji'", e)
+            }
+        }
+    }
+
+    fun toggleWordBookmark(word: String, reading: String) {
+        viewModelScope.launch {
+            try {
+                val nowBookmarked = bookmarkRepository.toggle(word, reading)
+                _isWordBookmarked.value = nowBookmarked
+                Log.d(TAG, "Word bookmark toggled: '$word' → $nowBookmarked")
+                // J Coin: award favorite coin when bookmarking
+                if (nowBookmarked) {
+                    awardFavoriteCoin(lastContext ?: return@launch, word)
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to toggle word bookmark for '$word'", e)
+            }
+        }
+    }
+
+    private suspend fun awardDictionaryLookupCoin(context: Context, word: String) {
+        val earnAction = earnRules.checkDictionaryLookup(context) ?: return
+        val token = authRepository.getAccessToken() ?: return
+        try {
+            jCoinClient.earn(
+                accessToken = token,
+                sourceType = earnAction.sourceType,
+                baseAmount = earnAction.coins,
+                metadata = mapOf("word" to word)
+            ).onSuccess {
+                Log.d(TAG, "Dictionary lookup coin awarded: ${it.coinsAwarded} for '$word'")
+                withContext(Dispatchers.Main) {
+                    showCoinToast(earnAction.coins, "lookup")
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to award dictionary lookup coin", e)
+        }
+    }
+
+    private suspend fun awardFirstScanCoin(context: Context) {
+        val earnAction = earnRules.checkFirstScan(context) ?: return
+        val token = authRepository.getAccessToken() ?: return
+        try {
+            jCoinClient.earn(
+                accessToken = token,
+                sourceType = earnAction.sourceType,
+                baseAmount = earnAction.coins
+            ).onSuccess {
+                Log.d(TAG, "First scan coin awarded: ${it.coinsAwarded}")
+                withContext(Dispatchers.Main) { showCoinToast(earnAction.coins, "first scan") }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to award first scan coin", e)
+        }
+    }
+
+    private suspend fun awardFavoriteCoin(context: Context, item: String) {
+        val earnAction = earnRules.checkFavorite(context) ?: return
+        val token = authRepository.getAccessToken() ?: return
+        try {
+            jCoinClient.earn(
+                accessToken = token,
+                sourceType = earnAction.sourceType,
+                baseAmount = earnAction.coins,
+                metadata = mapOf("item" to item)
+            ).onSuccess {
+                Log.d(TAG, "Favorite coin awarded: ${it.coinsAwarded} for '$item'")
+                withContext(Dispatchers.Main) { showCoinToast(earnAction.coins, "bookmark") }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to award favorite coin", e)
+        }
+    }
+
+    private suspend fun awardScanMilestoneCoin(context: Context) {
+        val earnAction = earnRules.checkScanMilestone(context) ?: return
+        val token = authRepository.getAccessToken() ?: return
+        try {
+            jCoinClient.earn(
+                accessToken = token,
+                sourceType = earnAction.sourceType,
+                baseAmount = earnAction.coins
+            ).onSuccess {
+                Log.d(TAG, "Scan milestone coin awarded: ${it.coinsAwarded}")
+                withContext(Dispatchers.Main) { showCoinToast(earnAction.coins, "10 scans!") }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to award scan milestone coin", e)
+        }
+    }
+
+    private suspend fun awardStreakCoin(context: Context) {
+        // Check all streak tiers (7, 30, 90 days)
+        val token = authRepository.getAccessToken() ?: return
+        earnRules.checkStreak(context)?.let { earnAction ->
+            try {
+                jCoinClient.earn(token, earnAction.sourceType, earnAction.coins).onSuccess {
+                    Log.d(TAG, "7-day streak coin awarded: ${it.coinsAwarded}")
+                    withContext(Dispatchers.Main) { showCoinToast(earnAction.coins, "7-day streak!") }
+                }
+            } catch (e: Exception) { Log.w(TAG, "Failed to award streak coin", e) }
+        }
+        earnRules.checkStreak30(context)?.let { earnAction ->
+            try {
+                jCoinClient.earn(token, earnAction.sourceType, earnAction.coins).onSuccess {
+                    Log.d(TAG, "30-day streak coin awarded: ${it.coinsAwarded}")
+                    withContext(Dispatchers.Main) { showCoinToast(earnAction.coins, "30-day streak!") }
+                }
+            } catch (e: Exception) { Log.w(TAG, "Failed to award 30-day streak coin", e) }
+        }
+        earnRules.checkStreak90(context)?.let { earnAction ->
+            try {
+                jCoinClient.earn(token, earnAction.sourceType, earnAction.coins).onSuccess {
+                    Log.d(TAG, "90-day streak coin awarded: ${it.coinsAwarded}")
+                    withContext(Dispatchers.Main) { showCoinToast(earnAction.coins, "90-day streak!") }
+                }
+            } catch (e: Exception) { Log.w(TAG, "Failed to award 90-day streak coin", e) }
+        }
+    }
+
+    fun checkChallengeInDetections(context: Context) {
+        val challenge = _scanChallenge.value ?: return
+        if (challenge.isCompleted) return
+
+        val texts = _detectedTexts.value
+        val found = texts.any { detected ->
+            detected.elements.any { element ->
+                element.text.contains(challenge.targetKanji) ||
+                element.kanjiSegments.any { it.text.contains(challenge.targetKanji) }
+            }
+        }
+
+        if (found) {
+            _scanChallenge.value = challenge.copy(isCompleted = true)
+            viewModelScope.launch {
+                awardScanChallengeCoin(context, challenge.targetKanji)
+            }
+        }
+    }
+
+    private suspend fun awardScanChallengeCoin(context: Context, kanji: String) {
+        val earnAction = earnRules.checkScanChallenge(context) ?: return
+        val token = authRepository.getAccessToken() ?: return
+        try {
+            jCoinClient.earn(
+                accessToken = token,
+                sourceType = earnAction.sourceType,
+                baseAmount = earnAction.coins,
+                metadata = mapOf("targetKanji" to kanji)
+            ).onSuccess {
+                Log.d(TAG, "Scan challenge coin awarded: ${it.coinsAwarded} for '$kanji'")
+                withContext(Dispatchers.Main) {
+                    showCoinToast(earnAction.coins, "challenge")
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to award scan challenge coin", e)
         }
     }
 
@@ -112,9 +384,41 @@ class CameraViewModel @Inject constructor(
         _dictionaryResult.value = null
     }
 
+    // All bookmarked kanji (for highlighting in jukugo list)
+    private val _allBookmarkedKanji = MutableStateFlow<Set<String>>(emptySet())
+    val allBookmarkedKanji: StateFlow<Set<String>> = _allBookmarkedKanji.asStateFlow()
+
+    fun refreshAllBookmarkedKanji() {
+        viewModelScope.launch {
+            try {
+                _allBookmarkedKanji.value = bookmarkRepository.getAll()
+                    .map { it.word }.toSet()
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to load bookmarked kanji", e)
+            }
+        }
+    }
+
     private var timerJob: Job? = null
+    private var lastContext: Context? = null
 
     fun startScan(context: Context, allowPaywall: Boolean = true) {
+        lastContext = context
+        // Track total scans for handle prompt
+        authRepository.incrementTotalScans()
+
+        // J Coin: record scan + check earn triggers
+        earnRules.recordScan(context)
+        viewModelScope.launch {
+            try {
+                awardFirstScanCoin(context)
+                awardScanMilestoneCoin(context)
+                awardStreakCoin(context)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to award scan coins", e)
+            }
+        }
+
         if (subscriptionManager.isPremium()) {
             // Premium: no limits
             _isScanActive.value = true
@@ -166,8 +470,16 @@ class CameraViewModel @Inject constructor(
     private val modeSwitchPauseFrames = java.util.concurrent.atomic.AtomicInteger(0)
     private var emptyFrameCount = 0  // Consecutive frames with fewer results than previous
     @Volatile private var cachedFrameSkip = 3
+    @Volatile private var processingStartTimeMs = 0L
 
     init {
+        // Always start in FULL mode on cold start (don't persist partial mode across restarts)
+        viewModelScope.launch {
+            val current = settings.value
+            if (current.partialModeBoundaryRatio < 0.99f) {
+                settingsRepository.updateSettings(current.copy(partialModeBoundaryRatio = 1f))
+            }
+        }
         viewModelScope.launch {
             settings.collect { cachedFrameSkip = it.frameSkip }
         }
@@ -240,9 +552,21 @@ class CameraViewModel @Inject constructor(
         }
 
         val frameSkip = cachedFrameSkip
-        if (frameCount % frameSkip != 0 || _isProcessing.value) {
+        if (frameCount % frameSkip != 0) {
             imageProxy.close()
             return
+        }
+
+        // Watchdog: if processing has been stuck for > 2 seconds, force-reset
+        if (_isProcessing.value) {
+            val elapsed = System.currentTimeMillis() - processingStartTimeMs
+            if (elapsed > 2000L) {
+                Log.w(TAG, "Processing watchdog: force-resetting after ${elapsed}ms")
+                _isProcessing.value = false
+            } else {
+                imageProxy.close()
+                return
+            }
         }
 
         val mediaImage = imageProxy.image
@@ -252,27 +576,48 @@ class CameraViewModel @Inject constructor(
         }
 
         _isProcessing.value = true
-        val rotation = imageProxy.imageInfo.rotationDegrees
-        _rotationDegrees.value = rotation
+        processingStartTimeMs = System.currentTimeMillis()
 
-        // Use MediaImage directly (simpler and faster)
-        val inputImage = InputImage.fromMediaImage(mediaImage, rotation)
-        val cropRect = mediaImage.cropRect
-        val imageSize = Size(cropRect.width(), cropRect.height())
+        // Prepare image for processing — protected so _isProcessing can't get stuck
+        val rotation: Int
+        val inputImage: InputImage
+        val imageSize: Size
+        try {
+            rotation = imageProxy.imageInfo.rotationDegrees
+            _rotationDegrees.value = rotation
+            inputImage = InputImage.fromMediaImage(mediaImage, rotation)
+            val cropRect = mediaImage.cropRect
+            imageSize = Size(cropRect.width(), cropRect.height())
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to prepare image for processing", e)
+            _isProcessing.value = false
+            imageProxy.close()
+            return
+        }
+
+        // Extract Y-plane data for luminance sampling (before coroutine — imageProxy still open)
+        val yPlaneData = try {
+            val plane = mediaImage.planes[0]
+            Triple(plane.buffer.asReadOnlyBuffer(), plane.rowStride, plane.pixelStride)
+        } catch (e: Exception) { null }
+        val sensorWidth = imageProxy.width
+        val sensorHeight = imageProxy.height
 
         // Debug: Log processing dimensions
         if (frameCount % (settings.value.frameSkip * 5) == 0) {
             Log.d(TAG, "Processing: ${imageSize.width}x${imageSize.height}, rotation=$rotation°, boundary=${settings.value.partialModeBoundaryRatio}")
         }
 
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.Default) {
             try {
                 val result = processCameraFrame.execute(inputImage, imageSize)
                 // Try to enrich with furigana, but fall back to raw OCR if it fails
                 val enriched = try {
                     enrichWithFurigana.execute(result.texts)
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
                 } catch (e: Exception) {
-                    android.util.Log.w("CameraVM", "Furigana enrichment failed, using raw OCR", e)
+                    Log.w(TAG, "Furigana enrichment failed, using raw OCR", e)
                     result.texts
                 }
 
@@ -310,21 +655,36 @@ class CameraViewModel @Inject constructor(
                         }
                     }
 
-                    // Fallback: if OCR found elements but partial-region filter removed all,
-                    // prefer showing unfiltered results to avoid "no recognition" on
-                    // device-specific aspect-ratio/rotation mapping edge cases.
+                    // No fallback — correctly show nothing when filter removes all elements.
+                    // The old fallback was returning unfiltered results, causing text from
+                    // behind the jukugo panel to appear in vertical partial mode.
                     if (totalBefore > 0 && totalAfter == 0) {
-                        Log.w(TAG, "Filter fallback triggered: preserving $totalBefore OCR elements")
-                        enriched
-                    } else {
-                        result2
+                        Log.d(TAG, "Filter: all $totalBefore elements outside visible region (expected in partial mode)")
                     }
+                    result2
                 } else {
                     enriched.also { _visibleRegion.value = null }
                 }
 
+                // Annotate elements with per-frame global luminance for adaptive furigana color
+                // Uses center 20% of frame (avoids sampling ink inside text bounding boxes)
+                val withLuminance = if (settings.value.furiganaAdaptiveColor && yPlaneData != null) {
+                    val (yBuffer, rowStride, pixelStride) = yPlaneData
+                    val globalLum = LuminanceSampler.sampleGlobalLuminance(
+                        yBuffer, rowStride, pixelStride,
+                        sensorWidth, sensorHeight, rotation
+                    )
+                    if (globalLum != null) {
+                        filtered.map { detected ->
+                            detected.copy(elements = detected.elements.map { element ->
+                                element.copy(backgroundLuminance = globalLum)
+                            })
+                        }
+                    } else filtered
+                } else filtered
+
                 // Sort by position (top-to-bottom, left-to-right) to prevent order jumping
-                val sorted = filtered.sortedWith(compareBy(
+                val sorted = withLuminance.sortedWith(compareBy(
                     { it.bounds?.top ?: Int.MAX_VALUE },
                     { it.bounds?.left ?: Int.MAX_VALUE }
                 ))
@@ -349,6 +709,8 @@ class CameraViewModel @Inject constructor(
                 }
                 _sourceImageSize.value = result.imageSize
                 updateStats(result.processingTimeMs, stabilized.size)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e  // Never swallow coroutine cancellation
             } catch (_: Exception) {
                 // OCR failed for this frame, keep previous results
             } finally {

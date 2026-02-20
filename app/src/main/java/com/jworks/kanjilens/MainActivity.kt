@@ -1,24 +1,31 @@
 package com.jworks.kanjilens
 
+import android.net.Uri
 import android.os.Bundle
 import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import kotlinx.coroutines.flow.map
 import com.jworks.kanjilens.data.auth.AuthRepository
 import com.jworks.kanjilens.data.auth.AuthState
 import com.jworks.kanjilens.data.billing.BillingManager
@@ -26,7 +33,11 @@ import com.jworks.kanjilens.data.jcoin.JCoinClient
 import com.jworks.kanjilens.data.jcoin.JCoinEarnRules
 import com.jworks.kanjilens.data.preferences.SettingsDataStore
 import com.jworks.kanjilens.data.subscription.SubscriptionManager
+import com.jworks.kanjilens.domain.repository.BookmarkRepository
+import com.jworks.kanjilens.domain.repository.DictionaryRepository
 import com.jworks.kanjilens.ui.auth.AuthScreen
+import com.jworks.kanjilens.ui.auth.HandlePromptDialog
+import com.jworks.kanjilens.ui.bookmarks.BookmarksScreen
 import com.jworks.kanjilens.ui.camera.CameraScreen
 import com.jworks.kanjilens.ui.feedback.FeedbackDialog
 import com.jworks.kanjilens.ui.feedback.FeedbackViewModel
@@ -36,6 +47,9 @@ import com.jworks.kanjilens.ui.paywall.PaywallScreen
 import com.jworks.kanjilens.ui.profile.ProfileScreen
 import com.jworks.kanjilens.ui.rewards.RewardsScreen
 import com.jworks.kanjilens.ui.settings.SettingsScreen
+import com.jworks.kanjilens.ui.dictionary.DictionaryDetailView
+import com.jworks.kanjilens.domain.models.DictionaryResult
+import com.jworks.kanjilens.ui.splash.SplashScreen
 import com.jworks.kanjilens.ui.theme.KanjiLensTheme
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
@@ -51,9 +65,12 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var jCoinClient: JCoinClient
     @Inject lateinit var jCoinEarnRules: JCoinEarnRules
     @Inject lateinit var settingsDataStore: SettingsDataStore
+    @Inject lateinit var bookmarkRepository: BookmarkRepository
+    @Inject lateinit var dictionaryRepository: DictionaryRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        installSplashScreen()
         enableEdgeToEdge()
         billingManager.initialize()
 
@@ -61,38 +78,24 @@ class MainActivity : ComponentActivity() {
             KanjiLensTheme {
                 val navController = rememberNavController()
                 val authState by authRepository.authState.collectAsState()
-                var hasSkippedAuth by remember { mutableStateOf(false) }
                 val feedbackViewModel: FeedbackViewModel = hiltViewModel()
                 val feedbackUiState by feedbackViewModel.uiState.collectAsState()
                 val hasSeenOnboarding by settingsDataStore.hasSeenOnboardingFlow
-                    .collectAsState(initial = true) // Default true to prevent flash
+                    .map<Boolean, Boolean?> { it }
+                    .collectAsState(initial = null) // null = still loading from DataStore
+                var showHandlePrompt by remember { mutableStateOf(false) }
 
-                // Check auth state on launch
+                // Ensure session on launch (auto-creates anonymous if needed)
                 LaunchedEffect(Unit) {
-                    authRepository.refreshAuthState()
+                    authRepository.ensureSession(this@MainActivity)
                 }
 
-                // Redirect to onboarding if first launch
-                LaunchedEffect(hasSeenOnboarding) {
-                    if (!hasSeenOnboarding) {
-                        if (navController.currentDestination?.route == "auth") {
-                            navController.navigate("onboarding")
-                        }
-                    }
-                }
-
-                // Sync auth metadata and auto-navigate when session is restored
-                LaunchedEffect(authState, hasSeenOnboarding) {
+                // Sync auth metadata
+                LaunchedEffect(authState) {
                     val prefs = getSharedPreferences("kanjilens_prefs", Context.MODE_PRIVATE)
                     when (val state = authState) {
                         is AuthState.SignedIn -> {
                             prefs.edit().putString("user_email", state.user.email).apply()
-                            // Auto-navigate to camera if on auth screen and onboarding done
-                            if (hasSeenOnboarding && navController.currentDestination?.route == "auth") {
-                                navController.navigate("camera") {
-                                    popUpTo("auth") { inclusive = true }
-                                }
-                            }
                         }
                         else -> {
                             prefs.edit().remove("user_email").apply()
@@ -106,53 +109,65 @@ class MainActivity : ComponentActivity() {
                 ) {
                     NavHost(
                         navController = navController,
-                        startDestination = "auth"
+                        startDestination = "splash"
                     ) {
+                        composable("splash") {
+                            SplashScreen(
+                                hasSeenOnboarding = hasSeenOnboarding,
+                                onSplashFinished = { goToOnboarding ->
+                                    if (goToOnboarding) {
+                                        navController.navigate("onboarding") {
+                                            popUpTo("splash") { inclusive = true }
+                                        }
+                                    } else {
+                                        // Skip auth — go straight to camera
+                                        navController.navigate("camera") {
+                                            popUpTo("splash") { inclusive = true }
+                                        }
+                                    }
+                                }
+                            )
+                        }
+
                         composable("onboarding") {
                             OnboardingScreen(
                                 onComplete = {
                                     lifecycleScope.launch {
                                         settingsDataStore.setOnboardingSeen()
                                     }
-                                    navController.navigate("auth") {
+                                    // Go straight to camera after onboarding
+                                    navController.navigate("camera") {
                                         popUpTo("onboarding") { inclusive = true }
                                     }
                                 }
                             )
                         }
 
+                        // Auth screen — now "Link Account", only reachable from Settings/Profile
                         composable("auth") {
-                            if (hasSkippedAuth) {
-                                LaunchedEffect(Unit) {
-                                    navController.navigate("camera") {
-                                        popUpTo("auth") { inclusive = true }
-                                    }
+                            AuthScreen(
+                                authRepository = authRepository,
+                                onBackClick = { navController.popBackStack() },
+                                onSignedIn = {
+                                    navController.popBackStack()
                                 }
-                            } else {
-                                AuthScreen(
-                                    authRepository = authRepository,
-                                    onSkip = {
-                                        hasSkippedAuth = true
-                                        navController.navigate("camera") {
-                                            popUpTo("auth") { inclusive = true }
-                                        }
-                                    },
-                                    onSignedIn = {
-                                        navController.navigate("camera") {
-                                            popUpTo("auth") { inclusive = true }
-                                        }
-                                    }
-                                )
-                            }
+                            )
                         }
 
                         composable("camera") {
+                            // Check handle prompt each time camera screen is shown
+                            LaunchedEffect(Unit) {
+                                if (authRepository.shouldShowHandlePrompt()) {
+                                    showHandlePrompt = true
+                                }
+                            }
                             CameraScreen(
                                 onSettingsClick = { navController.navigate("settings") },
                                 onRewardsClick = { navController.navigate("rewards") },
                                 onPaywallNeeded = { navController.navigate("paywall") },
                                 onProfileClick = { navController.navigate("profile") },
-                                onFeedbackClick = { feedbackViewModel.openDialog() }
+                                onFeedbackClick = { feedbackViewModel.openDialog() },
+                                onBookmarksClick = { navController.navigate("bookmarks") }
                             )
                         }
 
@@ -162,13 +177,13 @@ class MainActivity : ComponentActivity() {
                                 onLogout = {
                                     lifecycleScope.launch {
                                         authRepository.signOut()
-                                        hasSkippedAuth = false
-                                        navController.navigate("auth") {
-                                            popUpTo(0) { inclusive = true }
-                                        }
+                                        // signOut auto-creates anonymous session; go back to camera
+                                        navController.popBackStack()
                                     }
                                 },
-                                onHelpClick = { navController.navigate("help") }
+                                onHelpClick = { navController.navigate("help") },
+                                onLinkAccountClick = { navController.navigate("auth") },
+                                authRepository = authRepository
                             )
                         }
 
@@ -212,15 +227,73 @@ class MainActivity : ComponentActivity() {
                                 jCoinEarnRules = jCoinEarnRules,
                                 onBackClick = { navController.popBackStack() },
                                 onRewardsClick = { navController.navigate("rewards") },
+                                onLinkAccountClick = { navController.navigate("auth") },
                                 onSignOut = {
                                     lifecycleScope.launch {
                                         authRepository.signOut()
-                                        hasSkippedAuth = false
-                                        navController.navigate("auth") {
-                                            popUpTo(0) { inclusive = true }
-                                        }
+                                        navController.popBackStack()
                                     }
                                 }
+                            )
+                        }
+
+                        composable("bookmarks") {
+                            BookmarksScreen(
+                                bookmarkRepository = bookmarkRepository,
+                                onBackClick = { navController.popBackStack() },
+                                onWordClick = { word ->
+                                    navController.navigate("dictionary/${Uri.encode(word)}")
+                                }
+                            )
+                        }
+
+                        composable(
+                            "dictionary/{word}",
+                            arguments = listOf(navArgument("word") { type = NavType.StringType })
+                        ) { backStackEntry ->
+                            val word = Uri.decode(backStackEntry.arguments?.getString("word") ?: "")
+                            val scope = rememberCoroutineScope()
+                            var dictResult by remember { mutableStateOf<DictionaryResult?>(null) }
+                            var isLoading by remember { mutableStateOf(true) }
+                            var isBookmarked by remember { mutableStateOf(false) }
+                            var savedKanji by remember { mutableStateOf<Set<String>>(emptySet()) }
+
+                            LaunchedEffect(word) {
+                                isLoading = true
+                                dictResult = dictionaryRepository.lookup(word)
+                                isBookmarked = bookmarkRepository.isBookmarked(word)
+                                // Check which kanji in this word are bookmarked
+                                val kanjiSet = mutableSetOf<String>()
+                                word.forEach { ch ->
+                                    val s = ch.toString()
+                                    if ((ch.code in 0x4E00..0x9FFF || ch.code in 0x3400..0x4DBF)
+                                        && bookmarkRepository.isBookmarked(s)) {
+                                        kanjiSet.add(s)
+                                    }
+                                }
+                                savedKanji = kanjiSet
+                                isLoading = false
+                            }
+
+                            DictionaryDetailView(
+                                result = dictResult,
+                                isLoading = isLoading,
+                                onBackClick = { navController.popBackStack() },
+                                wordText = word,
+                                wordReading = "",
+                                isWordBookmarked = isBookmarked,
+                                onWordBookmarkToggle = {
+                                    scope.launch {
+                                        val reading = dictResult?.reading ?: ""
+                                        bookmarkRepository.toggle(word, reading)
+                                        isBookmarked = bookmarkRepository.isBookmarked(word)
+                                    }
+                                },
+                                bookmarkedKanji = savedKanji,
+                                onKanjiClick = { kanji ->
+                                    navController.navigate("dictionary/${Uri.encode(kanji)}")
+                                },
+                                modifier = Modifier.fillMaxSize().statusBarsPadding()
                             )
                         }
                     }
@@ -230,6 +303,20 @@ class MainActivity : ComponentActivity() {
                         FeedbackDialog(
                             onDismiss = { feedbackViewModel.closeDialog() },
                             viewModel = feedbackViewModel
+                        )
+                    }
+
+                    // Handle prompt dialog (after 3rd scan)
+                    if (showHandlePrompt) {
+                        HandlePromptDialog(
+                            onSave = { handle ->
+                                authRepository.setHandle(handle)
+                                showHandlePrompt = false
+                            },
+                            onDismiss = {
+                                authRepository.dismissHandlePrompt()
+                                showHandlePrompt = false
+                            }
                         )
                     }
                 }

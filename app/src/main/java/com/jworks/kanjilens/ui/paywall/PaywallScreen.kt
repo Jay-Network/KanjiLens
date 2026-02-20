@@ -55,7 +55,7 @@ fun PaywallScreen(
     val monthlyDetails = productDetails[BillingManager.PRODUCT_MONTHLY]
     val annualDetails = productDetails[BillingManager.PRODUCT_ANNUAL]
     val monthlyPrice = monthlyDetails?.subscriptionOfferDetails?.firstOrNull()
-        ?.pricingPhases?.pricingPhaseList?.firstOrNull()?.formattedPrice ?: "$2.99"
+        ?.pricingPhases?.pricingPhaseList?.firstOrNull()?.formattedPrice ?: "$1.99"
     val annualPrice = annualDetails?.subscriptionOfferDetails?.firstOrNull()
         ?.pricingPhases?.pricingPhaseList?.firstOrNull()?.formattedPrice ?: "$14.99"
 
@@ -81,7 +81,7 @@ fun PaywallScreen(
             Spacer(modifier = Modifier.height(48.dp))
 
             Text(
-                text = "Unlock Premium",
+                text = "Read Japanese Without Limits",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
@@ -91,13 +91,13 @@ fun PaywallScreen(
 
             if (remainingScans > 0) {
                 Text(
-                    text = "$remainingScans free scans remaining today",
+                    text = "$remainingScans free scan${if (remainingScans != 1) "s" else ""} left today",
                     fontSize = 14.sp,
                     color = Color(0xFFFFB74D)
                 )
             } else {
                 Text(
-                    text = "You've used all 5 free scans today",
+                    text = "You\u2019ve used all 5 free scans for today",
                     fontSize = 14.sp,
                     color = Color(0xFFFF5252)
                 )
@@ -110,11 +110,11 @@ fun PaywallScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                FeatureRow("Unlimited scans", "No daily limits or timers")
-                FeatureRow("Offline dictionary", "215K+ entries, no internet needed")
-                FeatureRow("Scan history", "Review past scans anytime")
-                FeatureRow("Favorites", "Save words for later study")
-                FeatureRow("J Coin rewards", "Earn coins with every scan")
+                FeatureRow("Unlimited scanning", "Read as much as you want, no timers")
+                FeatureRow("Full offline dictionary", "215K+ words available without internet")
+                FeatureRow("Scan history", "Go back and review what you scanned")
+                FeatureRow("Bookmarks", "Save words and kanji for later study")
+                FeatureRow("J Coin rewards", "Earn coins for tutoring sessions and more")
             }
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -156,7 +156,7 @@ fun PaywallScreen(
                 enabled = productDetails.isNotEmpty()
             ) {
                 Text(
-                    text = "Subscribe Now",
+                    text = "Start Reading Unlimited",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -166,7 +166,7 @@ fun PaywallScreen(
             if (productDetails.isEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Loading subscription options...",
+                    text = "Loading prices from Google Play\u2026",
                     color = Color.White.copy(alpha = 0.5f),
                     fontSize = 13.sp
                 )
@@ -177,7 +177,7 @@ fun PaywallScreen(
             // Dismiss
             TextButton(onClick = onDismiss) {
                 Text(
-                    text = if (remainingScans > 0) "Continue with free tier" else "Maybe later",
+                    text = if (remainingScans > 0) "Keep using free scans" else "Not right now",
                     color = Color.White.copy(alpha = 0.6f),
                     fontSize = 14.sp
                 )
@@ -210,7 +210,7 @@ fun PaywallScreen(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Get KanjiLens + KanjiQuest for \$5.99/mo (save \$1/mo)",
+                        text = "Get KanjiLens + KanjiQuest together for \$5.99/mo and save \$1 every month",
                         color = Color.White.copy(alpha = 0.7f),
                         fontSize = 13.sp
                     )

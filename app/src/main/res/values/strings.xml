@@ -1,6 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">KanjiLens</string>
-    <string name="camera_permission_rationale">KanjiLens needs camera access to detect and read Japanese text.</string>
-    <string name="camera_permission_denied">Camera permission is required. Please enable it in Settings.</string>
+
+    <!-- Camera permissions -->
+    <string name="camera_permission_rationale">KanjiLens uses your camera to detect Japanese text in real time. No photos are saved or uploaded.</string>
+    <string name="camera_permission_denied">To read Japanese text around you, please enable camera access in your device Settings.</string>
+
+    <!-- Error messages (user-friendly) -->
+    <string name="error_network">Can\'t reach the server right now. Check your internet connection and try again.</string>
+    <string name="error_auth_expired">Your session has expired. Please sign in again to continue.</string>
+    <string name="error_auth_failed">Sign-in didn\'t work. Please try again or use a different Google account.</string>
+    <string name="error_purchase_failed">Something went wrong with the purchase. You haven\'t been charged. Please try again.</string>
+    <string name="error_camera_init">Couldn\'t start the camera. Try closing other camera apps and reopen KanjiLens.</string>
+    <string name="error_ocr_failed">Couldn\'t read the text this time. Try moving closer or improving the lighting.</string>
+    <string name="error_dictionary_unavailable">Dictionary is loading. This may take a moment on first launch.</string>
+    <string name="error_coin_earn_failed">Couldn\'t save your J Coins right now. They\'ll sync next time you\'re online.</string>
+    <string name="error_bookmark_failed">Couldn\'t save this bookmark. Please try again.</string>
+    <string name="error_generic">Something unexpected happened. Please try again.</string>
+
+    <!-- Empty states -->
+    <string name="empty_bookmarks_words">No words saved yet</string>
+    <string name="empty_bookmarks_words_hint">Tap the bookmark icon when viewing a word\'s definition to save it here.</string>
+    <string name="empty_bookmarks_kanji">No kanji saved yet</string>
+    <string name="empty_bookmarks_kanji_hint">Tap the star on any kanji detail page to save it for study.</string>
+    <string name="empty_scan_results">Point your camera at Japanese text</string>
+    <string name="empty_scan_results_hint">Detected words will appear here</string>
+    <string name="empty_dictionary_results">No definitions found for this word. Try scanning a different text.</string>
 </resources>
