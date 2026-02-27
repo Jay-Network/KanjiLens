@@ -1,6 +1,7 @@
 package com.jworks.kanjilens.ui.camera
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.Rect
 import android.util.Log
 import android.util.Size
@@ -8,6 +9,12 @@ import androidx.camera.core.ImageProxy
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.mlkit.vision.common.InputImage
+import com.jworks.kanjilens.data.ai.AiProviderManager
+import com.jworks.kanjilens.data.ai.GeminiOcrCorrector
+import com.jworks.kanjilens.data.ai.OcrTextMerger
+import com.jworks.kanjilens.domain.ai.AiResponse
+import com.jworks.kanjilens.domain.ai.AnalysisContext
+import com.jworks.kanjilens.domain.ai.ScopeLevel
 import com.jworks.kanjilens.data.auth.AuthRepository
 import com.jworks.kanjilens.data.jcoin.JCoinClient
 import com.jworks.kanjilens.data.jcoin.JCoinEarnRules
@@ -33,6 +40,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -49,7 +57,9 @@ class CameraViewModel @Inject constructor(
     private val kanjiInfoRepository: KanjiInfoRepository,
     private val earnRules: JCoinEarnRules,
     private val jCoinClient: JCoinClient,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val geminiOcrCorrector: GeminiOcrCorrector,
+    private val aiProviderManager: AiProviderManager
 ) : ViewModel() {
 
     companion object {
@@ -123,6 +133,24 @@ class CameraViewModel @Inject constructor(
     private val _isKanjiInfoLoading = MutableStateFlow(false)
     val isKanjiInfoLoading: StateFlow<Boolean> = _isKanjiInfoLoading.asStateFlow()
 
+    // AI Enhance state
+    private val _isEnhancing = MutableStateFlow(false)
+    val isEnhancing: StateFlow<Boolean> = _isEnhancing.asStateFlow()
+
+    private val _isEnhanced = MutableStateFlow(false)
+    val isEnhanced: StateFlow<Boolean> = _isEnhanced.asStateFlow()
+
+    val isAiAvailable: Boolean get() = geminiOcrCorrector.isAvailable
+
+    // AI Analysis state
+    private val _aiAnalysisState = MutableStateFlow<AiPanelState>(AiPanelState.Idle)
+    val aiAnalysisState: StateFlow<AiPanelState> = _aiAnalysisState.asStateFlow()
+
+    val isAiAnalysisAvailable: Boolean get() = aiProviderManager.isAiAvailable
+
+    @Volatile private var lastFrameBitmap: Bitmap? = null
+    private var enhanceJob: Job? = null
+
     fun loadKanjiInfo(literal: String) {
         viewModelScope.launch {
             _isKanjiInfoLoading.value = true
@@ -148,6 +176,10 @@ class CameraViewModel @Inject constructor(
     private val _coinRewardToast = MutableStateFlow<String?>(null)
     val coinRewardToast: StateFlow<String?> = _coinRewardToast.asStateFlow()
 
+    // J Coin balance (for badge on camera screen)
+    private val _jCoinBalance = MutableStateFlow(0)
+    val jCoinBalance: StateFlow<Int> = _jCoinBalance.asStateFlow()
+
     fun startNewChallenge() {
         _scanChallenge.value = ScanChallengeKanji.getRandomChallenge()
     }
@@ -165,6 +197,20 @@ class CameraViewModel @Inject constructor(
         viewModelScope.launch {
             delay(2500)
             _coinRewardToast.value = null
+        }
+        // Refresh balance after a short delay for backend to process
+        viewModelScope.launch {
+            delay(1500)
+            refreshJCoinBalance()
+        }
+    }
+
+    fun refreshJCoinBalance() {
+        viewModelScope.launch {
+            val token = authRepository.getAccessToken() ?: return@launch
+            jCoinClient.getBalance(token).onSuccess {
+                _jCoinBalance.value = it.balance
+            }
         }
     }
 
@@ -215,7 +261,11 @@ class CameraViewModel @Inject constructor(
                 Log.d(TAG, "Kanji bookmark toggled: '$kanji' → $nowBookmarked")
                 // J Coin: award favorite coin when bookmarking
                 if (nowBookmarked) {
-                    awardFavoriteCoin(lastContext ?: return@launch, kanji)
+                    val ctx = lastContext ?: return@launch
+                    awardFavoriteCoin(ctx, kanji)
+                    earnRules.incrementTotalWordsSaved(ctx)
+                    val wordMilestones = earnRules.checkCumulativeWordMilestones(ctx)
+                    for (milestone in wordMilestones) { awardMilestoneCoin(ctx, milestone) }
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to toggle kanji bookmark for '$kanji'", e)
@@ -231,7 +281,11 @@ class CameraViewModel @Inject constructor(
                 Log.d(TAG, "Word bookmark toggled: '$word' → $nowBookmarked")
                 // J Coin: award favorite coin when bookmarking
                 if (nowBookmarked) {
-                    awardFavoriteCoin(lastContext ?: return@launch, word)
+                    val ctx = lastContext ?: return@launch
+                    awardFavoriteCoin(ctx, word)
+                    earnRules.incrementTotalWordsSaved(ctx)
+                    val wordMilestones = earnRules.checkCumulativeWordMilestones(ctx)
+                    for (milestone in wordMilestones) { awardMilestoneCoin(ctx, milestone) }
                 }
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to toggle word bookmark for '$word'", e)
@@ -380,6 +434,103 @@ class CameraViewModel @Inject constructor(
         }
     }
 
+    fun awardShareCoin(context: Context) {
+        viewModelScope.launch {
+            val earnAction = earnRules.checkShare(context) ?: return@launch
+            val token = authRepository.getAccessToken() ?: return@launch
+            try {
+                jCoinClient.earn(token, earnAction.sourceType, earnAction.coins).onSuccess {
+                    Log.d(TAG, "Share coin awarded: ${it.coinsAwarded}")
+                    withContext(Dispatchers.Main) { showCoinToast(earnAction.coins, "shared!") }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to award share coin", e)
+            }
+        }
+    }
+
+    private suspend fun awardMilestoneCoin(context: Context, earnAction: com.jworks.kanjilens.data.jcoin.EarnAction) {
+        val token = authRepository.getAccessToken() ?: return
+        try {
+            jCoinClient.earn(token, earnAction.sourceType, earnAction.coins).onSuccess {
+                Log.d(TAG, "Milestone coin awarded: ${it.coinsAwarded} for ${earnAction.sourceType}")
+                val label = earnAction.sourceType.replace("milestone_", "").replace("_", " ")
+                withContext(Dispatchers.Main) { showCoinToast(earnAction.coins, label) }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to award milestone coin for ${earnAction.sourceType}", e)
+        }
+    }
+
+    /**
+     * Trigger AI enhancement on the current frozen frame.
+     * Called automatically when the user pauses the camera.
+     */
+    private fun triggerEnhance() {
+        Log.d(TAG, "AI ENHANCE: triggerEnhance() called — available=${geminiOcrCorrector.isAvailable}, premium=${subscriptionManager.isPremium()}, aiEnabled=${settings.value.aiEnhanceEnabled}, enhancing=${_isEnhancing.value}, hasBitmap=${lastFrameBitmap != null}")
+        if (!geminiOcrCorrector.isAvailable) { Log.w(TAG, "AI ENHANCE: BLOCKED — Gemini not available (no API key?)"); return }
+        if (!subscriptionManager.isPremium()) { Log.w(TAG, "AI ENHANCE: BLOCKED — not premium"); return }
+        if (!settings.value.aiEnhanceEnabled) { Log.w(TAG, "AI ENHANCE: BLOCKED — disabled in settings"); return }
+        if (_isEnhancing.value) { Log.w(TAG, "AI ENHANCE: BLOCKED — already enhancing"); return }
+
+        val bitmap = lastFrameBitmap ?: run {
+            Log.w(TAG, "AI ENHANCE: BLOCKED — no frame bitmap available")
+            return
+        }
+
+        Log.d(TAG, "AI ENHANCE: ★ STARTING — bitmap ${bitmap.width}x${bitmap.height}, detectedTexts=${_detectedTexts.value.size} lines")
+        _isEnhancing.value = true
+        _isEnhanced.value = false
+
+        enhanceJob?.cancel()
+        enhanceJob = viewModelScope.launch(Dispatchers.Default) {
+            try {
+                Log.d(TAG, "AI ENHANCE: calling Gemini API...")
+                val startMs = System.currentTimeMillis()
+                val result = geminiOcrCorrector.extractTextWithReadings(bitmap)
+                val elapsedMs = System.currentTimeMillis() - startMs
+                result.onSuccess { geminiLines ->
+                    Log.d(TAG, "AI ENHANCE: Gemini returned ${geminiLines.size} lines in ${elapsedMs}ms")
+                    geminiLines.forEachIndexed { i, line ->
+                        Log.d(TAG, "AI ENHANCE:   line[$i]: text='${line.text}', words=${line.words.map { "${it.w}→${it.r}" }}")
+                    }
+                    val currentTexts = _detectedTexts.value
+                    Log.d(TAG, "AI ENHANCE: current ML Kit texts: ${currentTexts.size} lines")
+                    if (currentTexts.isNotEmpty() && geminiLines.isNotEmpty()) {
+                        val merged = OcrTextMerger.merge(currentTexts, geminiLines)
+                        _detectedTexts.value = merged
+                        _isEnhanced.value = true
+                        Log.d(TAG, "AI ENHANCE: ★ DONE — merged ${geminiLines.size} lines, isEnhanced=true")
+                        merged.forEach { dt ->
+                            dt.elements.forEach { elem ->
+                                elem.kanjiSegments.forEach { seg ->
+                                    Log.d(TAG, "AI ENHANCE:   segment: '${seg.text}' → '${seg.reading}'")
+                                }
+                            }
+                        }
+                    } else {
+                        Log.w(TAG, "AI ENHANCE: skipped merge — currentTexts=${currentTexts.size}, geminiLines=${geminiLines.size}")
+                    }
+                }.onFailure { e ->
+                    Log.w(TAG, "AI ENHANCE: ✗ Gemini API FAILED after ${elapsedMs}ms", e)
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "AI ENHANCE: ✗ ERROR", e)
+            } finally {
+                Log.d(TAG, "AI ENHANCE: enhancing complete, isEnhancing→false")
+                _isEnhancing.value = false
+            }
+        }
+    }
+
+    private fun resetAiEnhanceState() {
+        _isEnhanced.value = false
+        _isEnhancing.value = false
+        enhanceJob?.cancel()
+    }
+
     fun clearDictionaryResult() {
         _dictionaryResult.value = null
     }
@@ -414,6 +565,9 @@ class CameraViewModel @Inject constructor(
                 awardFirstScanCoin(context)
                 awardScanMilestoneCoin(context)
                 awardStreakCoin(context)
+                // Cumulative scan milestones (100/500/1000)
+                val scanMilestones = earnRules.checkCumulativeScanMilestones(context)
+                for (milestone in scanMilestones) { awardMilestoneCoin(context, milestone) }
             } catch (e: Exception) {
                 Log.w(TAG, "Failed to award scan coins", e)
             }
@@ -475,7 +629,8 @@ class CameraViewModel @Inject constructor(
     init {
         // Always start in FULL mode on cold start (don't persist partial mode across restarts)
         viewModelScope.launch {
-            val current = settings.value
+            // Wait for DataStore to emit the persisted value before resetting
+            val current = settingsRepository.settings.first()
             if (current.partialModeBoundaryRatio < 0.99f) {
                 settingsRepository.updateSettings(current.copy(partialModeBoundaryRatio = 1f))
             }
@@ -483,6 +638,7 @@ class CameraViewModel @Inject constructor(
         viewModelScope.launch {
             settings.collect { cachedFrameSkip = it.frameSkip }
         }
+        refreshJCoinBalance()
     }
 
     fun toggleFlash() {
@@ -490,7 +646,50 @@ class CameraViewModel @Inject constructor(
     }
 
     fun togglePause() {
-        _isPaused.value = !_isPaused.value
+        val wasPaused = _isPaused.value
+        _isPaused.value = !wasPaused
+        Log.d(TAG, "togglePause: wasPaused=$wasPaused → isPaused=${!wasPaused}")
+        if (!wasPaused) {
+            // Just paused — trigger AI enhancement immediately
+            Log.d(TAG, "AI ENHANCE: pause triggered, calling triggerEnhance()")
+            triggerEnhance()
+        } else {
+            // Unpaused — reset enhancement state
+            resetAiEnhanceState()
+            _aiAnalysisState.value = AiPanelState.Idle
+        }
+    }
+
+    fun analyzeFullText() {
+        val allText = _detectedTexts.value.joinToString("\n") { detected ->
+            detected.elements.joinToString("") { it.text }
+        }
+        if (allText.isBlank()) return
+
+        _aiAnalysisState.value = AiPanelState.Loading
+        viewModelScope.launch {
+            val context = AnalysisContext(
+                selectedText = allText,
+                fullSnapshotText = allText,
+                scopeLevel = ScopeLevel.FullSnapshot
+            )
+            aiProviderManager.analyze(context)
+                .onSuccess { response ->
+                    _aiAnalysisState.value = AiPanelState.Result(response, allText)
+                    settingsRepository.addTokenUsage(
+                        response.provider,
+                        response.inputTokens ?: 0,
+                        response.outputTokens ?: 0
+                    )
+                }
+                .onFailure { error ->
+                    _aiAnalysisState.value = AiPanelState.Error(error.message ?: "Analysis failed")
+                }
+        }
+    }
+
+    fun dismissAiAnalysis() {
+        _aiAnalysisState.value = AiPanelState.Idle
     }
 
     fun updateCanvasSize(size: Size) {
@@ -508,6 +707,7 @@ class CameraViewModel @Inject constructor(
         viewModelScope.launch {
             // Clear detections when switching modes (fresh start)
             _detectedTexts.value = emptyList()
+            resetAiEnhanceState()
 
             // Pause processing for 15 frames (~0.5 seconds) to let UI settle
             modeSwitchPauseFrames.set(8)
@@ -525,6 +725,7 @@ class CameraViewModel @Inject constructor(
     fun updateVerticalModeAndBoundary(verticalMode: Boolean, ratio: Float) {
         viewModelScope.launch {
             _detectedTexts.value = emptyList()
+            resetAiEnhanceState()
             modeSwitchPauseFrames.set(8)
 
             val updated = settings.value.copy(
@@ -595,13 +796,18 @@ class CameraViewModel @Inject constructor(
             return
         }
 
-        // Extract Y-plane data for luminance sampling (before coroutine — imageProxy still open)
-        val yPlaneData = try {
-            val plane = mediaImage.planes[0]
-            Triple(plane.buffer.asReadOnlyBuffer(), plane.rowStride, plane.pixelStride)
-        } catch (e: Exception) { null }
-        val sensorWidth = imageProxy.width
-        val sensorHeight = imageProxy.height
+        // Capture bitmap for AI enhancement (latest frame always available for pause-triggered enhance)
+        try {
+            lastFrameBitmap = imageProxy.toBitmap()
+        } catch (_: Exception) { /* bitmap capture optional */ }
+
+        // Sample luminance from bitmap center (more reliable than Y-plane buffer)
+        val globalLuminance: Int? = if (settings.value.furiganaAdaptiveColor) {
+            try {
+                val bmp = lastFrameBitmap
+                if (bmp != null) sampleBitmapLuminance(bmp) else null
+            } catch (e: Exception) { null }
+        } else null
 
         // Debug: Log processing dimensions
         if (frameCount % (settings.value.frameSkip * 5) == 0) {
@@ -666,21 +872,13 @@ class CameraViewModel @Inject constructor(
                     enriched.also { _visibleRegion.value = null }
                 }
 
-                // Annotate elements with per-frame global luminance for adaptive furigana color
-                // Uses center 20% of frame (avoids sampling ink inside text bounding boxes)
-                val withLuminance = if (settings.value.furiganaAdaptiveColor && yPlaneData != null) {
-                    val (yBuffer, rowStride, pixelStride) = yPlaneData
-                    val globalLum = LuminanceSampler.sampleGlobalLuminance(
-                        yBuffer, rowStride, pixelStride,
-                        sensorWidth, sensorHeight, rotation
-                    )
-                    if (globalLum != null) {
-                        filtered.map { detected ->
-                            detected.copy(elements = detected.elements.map { element ->
-                                element.copy(backgroundLuminance = globalLum)
-                            })
-                        }
-                    } else filtered
+                // Annotate elements with pre-sampled global luminance for adaptive furigana color
+                val withLuminance = if (globalLuminance != null) {
+                    filtered.map { detected ->
+                        detected.copy(elements = detected.elements.map { element ->
+                            element.copy(backgroundLuminance = globalLuminance)
+                        })
+                    }
                 } else filtered
 
                 // Sort by position (top-to-bottom, left-to-right) to prevent order jumping
@@ -709,6 +907,7 @@ class CameraViewModel @Inject constructor(
                 }
                 _sourceImageSize.value = result.imageSize
                 updateStats(result.processingTimeMs, stabilized.size)
+
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e  // Never swallow coroutine cancellation
             } catch (_: Exception) {
@@ -808,6 +1007,38 @@ class CameraViewModel @Inject constructor(
         }
     }
 
+    /** Sample average luminance from center 20% of a bitmap using 5x5 grid. */
+    private fun sampleBitmapLuminance(bitmap: Bitmap): Int? {
+        val w = bitmap.width
+        val h = bitmap.height
+        if (w <= 0 || h <= 0) return null
+
+        val cx = w / 2f
+        val cy = h / 2f
+        val rw = w * 0.2f
+        val rh = h * 0.2f
+        val left = cx - rw / 2f
+        val top = cy - rh / 2f
+
+        var sum = 0L
+        var count = 0
+        val gridSize = 5
+        for (gy in 0 until gridSize) {
+            for (gx in 0 until gridSize) {
+                val px = (left + rw * (gx + 0.5f) / gridSize).toInt().coerceIn(0, w - 1)
+                val py = (top + rh * (gy + 0.5f) / gridSize).toInt().coerceIn(0, h - 1)
+                val pixel = bitmap.getPixel(px, py)
+                val r = (pixel shr 16) and 0xFF
+                val g = (pixel shr 8) and 0xFF
+                val b = pixel and 0xFF
+                // ITU-R BT.601 luma
+                sum += (0.299 * r + 0.587 * g + 0.114 * b).toLong()
+                count++
+            }
+        }
+        return if (count > 0) (sum / count).toInt() else null
+    }
+
     private fun stabilizeDetections(
         current: List<DetectedText>,
         previous: List<DetectedText>
@@ -894,3 +1125,10 @@ data class OCRStats(
     val framesProcessed: Int = 0,
     val linesDetected: Int = 0
 )
+
+sealed class AiPanelState {
+    data object Idle : AiPanelState()
+    data object Loading : AiPanelState()
+    data class Result(val response: AiResponse, val detectedText: String) : AiPanelState()
+    data class Error(val message: String) : AiPanelState()
+}

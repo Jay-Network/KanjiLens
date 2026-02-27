@@ -39,6 +39,16 @@ class JCoinEarnRules @Inject constructor() {
         private const val KEY_CHALLENGE_COUNT = "challenge_count"
         private const val KEY_STREAK_30_CLAIMED = "streak_30_claimed"
         private const val KEY_STREAK_90_CLAIMED = "streak_90_claimed"
+
+        // Cumulative (lifetime) counters — NOT reset daily
+        private const val KEY_TOTAL_SCANS = "jcoin_total_scans"
+        private const val KEY_TOTAL_WORDS_SAVED = "jcoin_total_words_saved"
+        private const val KEY_MILESTONE_100_SCANS_CLAIMED = "milestone_100_scans"
+        private const val KEY_MILESTONE_500_SCANS_CLAIMED = "milestone_500_scans"
+        private const val KEY_MILESTONE_1000_SCANS_CLAIMED = "milestone_1000_scans"
+        private const val KEY_MILESTONE_100_WORDS_CLAIMED = "milestone_100_words"
+        private const val KEY_MILESTONE_500_WORDS_CLAIMED = "milestone_500_words"
+        private const val KEY_MILESTONE_1000_WORDS_CLAIMED = "milestone_1000_words"
     }
 
     private fun getPrefs(context: Context) =
@@ -256,6 +266,87 @@ class JCoinEarnRules @Inject constructor() {
             .putInt(KEY_SCAN_COUNT_TODAY, count + 1)
             .putString(KEY_LAST_SCAN_DATE, java.time.LocalDate.now().toString())
             .apply()
+        incrementTotalScans(context)
+    }
+
+    /** Increment lifetime total scans counter */
+    private fun incrementTotalScans(context: Context) {
+        val prefs = getPrefs(context)
+        val total = prefs.getInt(KEY_TOTAL_SCANS, 0)
+        prefs.edit().putInt(KEY_TOTAL_SCANS, total + 1).apply()
+    }
+
+    /** Increment lifetime total words saved counter */
+    fun incrementTotalWordsSaved(context: Context) {
+        val prefs = getPrefs(context)
+        val total = prefs.getInt(KEY_TOTAL_WORDS_SAVED, 0)
+        prefs.edit().putInt(KEY_TOTAL_WORDS_SAVED, total + 1).apply()
+    }
+
+    fun getTotalScans(context: Context): Int =
+        getPrefs(context).getInt(KEY_TOTAL_SCANS, 0)
+
+    fun getTotalWordsSaved(context: Context): Int =
+        getPrefs(context).getInt(KEY_TOTAL_WORDS_SAVED, 0)
+
+    /** Check cumulative scan milestones (100/500/1000). Returns list of newly unlocked. */
+    fun checkCumulativeScanMilestones(context: Context): List<EarnAction> {
+        val prefs = getPrefs(context)
+        val total = prefs.getInt(KEY_TOTAL_SCANS, 0)
+        val milestones = mutableListOf<EarnAction>()
+
+        if (total >= 100 && !prefs.getBoolean(KEY_MILESTONE_100_SCANS_CLAIMED, false)) {
+            val coins = addDailyEarned(context, 25)
+            if (coins > 0) {
+                prefs.edit().putBoolean(KEY_MILESTONE_100_SCANS_CLAIMED, true).apply()
+                milestones.add(EarnAction("milestone_100_scans", coins))
+            }
+        }
+        if (total >= 500 && !prefs.getBoolean(KEY_MILESTONE_500_SCANS_CLAIMED, false)) {
+            val coins = addDailyEarned(context, 100)
+            if (coins > 0) {
+                prefs.edit().putBoolean(KEY_MILESTONE_500_SCANS_CLAIMED, true).apply()
+                milestones.add(EarnAction("milestone_500_scans", coins))
+            }
+        }
+        if (total >= 1000 && !prefs.getBoolean(KEY_MILESTONE_1000_SCANS_CLAIMED, false)) {
+            val coins = addDailyEarned(context, 500)
+            if (coins > 0) {
+                prefs.edit().putBoolean(KEY_MILESTONE_1000_SCANS_CLAIMED, true).apply()
+                milestones.add(EarnAction("milestone_1000_scans", coins))
+            }
+        }
+        return milestones
+    }
+
+    /** Check cumulative word-save milestones (100/500/1000). Returns list of newly unlocked. */
+    fun checkCumulativeWordMilestones(context: Context): List<EarnAction> {
+        val prefs = getPrefs(context)
+        val total = prefs.getInt(KEY_TOTAL_WORDS_SAVED, 0)
+        val milestones = mutableListOf<EarnAction>()
+
+        if (total >= 100 && !prefs.getBoolean(KEY_MILESTONE_100_WORDS_CLAIMED, false)) {
+            val coins = addDailyEarned(context, 25)
+            if (coins > 0) {
+                prefs.edit().putBoolean(KEY_MILESTONE_100_WORDS_CLAIMED, true).apply()
+                milestones.add(EarnAction("milestone_100_words", coins))
+            }
+        }
+        if (total >= 500 && !prefs.getBoolean(KEY_MILESTONE_500_WORDS_CLAIMED, false)) {
+            val coins = addDailyEarned(context, 100)
+            if (coins > 0) {
+                prefs.edit().putBoolean(KEY_MILESTONE_500_WORDS_CLAIMED, true).apply()
+                milestones.add(EarnAction("milestone_500_words", coins))
+            }
+        }
+        if (total >= 1000 && !prefs.getBoolean(KEY_MILESTONE_1000_WORDS_CLAIMED, false)) {
+            val coins = addDailyEarned(context, 500)
+            if (coins > 0) {
+                prefs.edit().putBoolean(KEY_MILESTONE_1000_WORDS_CLAIMED, true).apply()
+                milestones.add(EarnAction("milestone_1000_words", coins))
+            }
+        }
+        return milestones
     }
 
     fun getStreakDays(context: Context): Int {

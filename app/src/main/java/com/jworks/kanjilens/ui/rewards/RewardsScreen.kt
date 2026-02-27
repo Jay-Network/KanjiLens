@@ -21,18 +21,22 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -148,6 +152,13 @@ fun RewardsScreen(
                     val dailyEarned = earnRules.getDailyEarned(context)
                     val streakDays = earnRules.getStreakDays(context)
                     val scansToday = earnRules.getScanCountToday(context)
+                    val totalScans = earnRules.getTotalScans(context)
+                    val totalWordsSaved = earnRules.getTotalWordsSaved(context)
+                    val scope = rememberCoroutineScope()
+
+                    // Store purchase state
+                    var purchaseItem by remember { mutableStateOf<StoreItem?>(null) }
+                    var purchaseMessage by remember { mutableStateOf<String?>(null) }
 
                     BalanceCard(balance = balance)
                     Spacer(modifier = Modifier.height(20.dp))
@@ -174,6 +185,34 @@ fun RewardsScreen(
                         color = KanjiLensColors.PrimaryAction,
                         emoji = "\uD83D\uDCF7"  // camera
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Cumulative progress cards
+                    val nextScanMilestone = when {
+                        totalScans < 100 -> 100
+                        totalScans < 500 -> 500
+                        else -> 1000
+                    }
+                    DailyProgressCard(
+                        label = "Total Scans",
+                        current = totalScans.coerceAtMost(nextScanMilestone),
+                        max = nextScanMilestone,
+                        color = Color(0xFF0D9488),
+                        emoji = "\uD83D\uDCCA"  // chart
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    val nextWordMilestone = when {
+                        totalWordsSaved < 100 -> 100
+                        totalWordsSaved < 500 -> 500
+                        else -> 1000
+                    }
+                    DailyProgressCard(
+                        label = "Words Saved",
+                        current = totalWordsSaved.coerceAtMost(nextWordMilestone),
+                        max = nextWordMilestone,
+                        color = Color(0xFF1565C0),
+                        emoji = "\uD83D\uDCDA"  // books
+                    )
 
                     Spacer(modifier = Modifier.height(24.dp))
 
@@ -189,28 +228,104 @@ fun RewardsScreen(
                     EarnRuleCard("\uD83C\uDFC6", "Reach a 30-day streak", "+100", "One-time")
                     EarnRuleCard("\uD83D\uDC8E", "Reach a 90-day streak", "+300", "One-time")
                     EarnRuleCard("\uD83D\uDCE4", "Share a scan result", "+5", "Up to 2/day")
+                    // Cumulative milestones
+                    EarnRuleCard("\uD83D\uDCCA", "Scan 100 texts total", "+25", "One-time")
+                    EarnRuleCard("\uD83D\uDCCA", "Scan 500 texts total", "+100", "One-time")
+                    EarnRuleCard("\uD83D\uDCCA", "Scan 1,000 texts total", "+500", "One-time")
+                    EarnRuleCard("\uD83D\uDCDA", "Save 100 words total", "+25", "One-time")
+                    EarnRuleCard("\uD83D\uDCDA", "Save 500 words total", "+100", "One-time")
+                    EarnRuleCard("\uD83D\uDCDA", "Save 1,000 words total", "+500", "One-time")
 
                     Spacer(modifier = Modifier.height(24.dp))
 
                     SectionHeader(title = "Redeem Coins")
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    RedemptionCard(
-                        emoji = "\uD83C\uDF93",
-                        title = "Free TutoringJay Lesson",
-                        cost = "2,000 J",
-                        description = "30-minute trial lesson with Jay",
-                        enabled = balance.balance >= 2000
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    RedemptionCard(
-                        emoji = "\uD83C\uDFAE",
-                        title = "KanjiQuest Credit",
-                        cost = "500 J",
-                        description = "\$5 credit toward KanjiQuest subscription",
-                        enabled = balance.balance >= 500
-                    )
+                    val storeItems = remember { listOf(
+                        StoreItem("\uD83C\uDF19", "Dark Theme", 200, "theme_dark", "Unlock dark OLED theme"),
+                        StoreItem("\uD83C\uDF38", "Sakura Theme", 200, "theme_sakura", "Unlock cherry blossom theme"),
+                        StoreItem("\uD83D\uDCE5", "Scan History Export", 150, "scan_export", "Export scan history as CSV"),
+                        StoreItem("\uD83D\uDD0D", "Advanced OCR Mode", 100, "advanced_ocr_trial", "24-hour enhanced OCR access"),
+                        StoreItem("\u2B50", "Premium 1-Day Pass", 50, "premium_1day", "24-hour premium access"),
+                        StoreItem("\uD83D\uDC8E", "Premium 3-Day Pass", 100, "premium_3day", "72-hour premium access")
+                    ) }
+
+                    storeItems.forEach { item ->
+                        val canAfford = balance.balance >= item.cost
+                        RedemptionCard(
+                            emoji = item.emoji,
+                            title = item.title,
+                            cost = "${item.cost} J",
+                            description = item.description,
+                            enabled = canAfford,
+                            onClick = { purchaseItem = item }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                     Spacer(modifier = Modifier.height(16.dp))
+
+                    // Purchase confirmation dialog
+                    purchaseItem?.let { item ->
+                        AlertDialog(
+                            onDismissRequest = { purchaseItem = null },
+                            title = { Text("Confirm Purchase", fontWeight = FontWeight.Bold) },
+                            text = { Text("Spend ${item.cost} J Coins on ${item.title}?") },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    val buying = item
+                                    purchaseItem = null
+                                    scope.launch {
+                                        val token = authRepository.getAccessToken()
+                                        if (token == null) {
+                                            purchaseMessage = "Sign in required"
+                                            return@launch
+                                        }
+                                        jCoinClient.spend(token, buying.sourceType, buying.cost, buying.title)
+                                            .onSuccess { resp ->
+                                                balance = balance.copy(balance = resp.newBalance.toInt())
+                                                purchaseMessage = "Purchased ${buying.title}!"
+                                                // Refresh full balance
+                                                jCoinClient.getBalance(token).onSuccess { balance = it }
+                                            }
+                                            .onFailure { e ->
+                                                val msg = e.message ?: ""
+                                                purchaseMessage = if (msg.contains("INSUFFICIENT_BALANCE"))
+                                                    "Not enough J Coins" else "Purchase failed"
+                                            }
+                                    }
+                                }) { Text("Buy", color = KanjiLensColors.PrimaryAction) }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { purchaseItem = null }) { Text("Cancel") }
+                            }
+                        )
+                    }
+
+                    // Purchase result feedback
+                    purchaseMessage?.let { msg ->
+                        LaunchedEffect(msg) {
+                            kotlinx.coroutines.delay(2500)
+                            purchaseMessage = null
+                        }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(
+                                    if (msg.startsWith("Purchased")) KanjiLensColors.SuccessGreen.copy(alpha = 0.2f)
+                                    else Color.Red.copy(alpha = 0.2f)
+                                )
+                                .padding(12.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = msg,
+                                color = if (msg.startsWith("Purchased")) KanjiLensColors.SuccessGreen else Color(0xFFEF5350),
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -592,13 +707,22 @@ private fun EarnRuleCard(emoji: String, action: String, reward: String, frequenc
     }
 }
 
+private data class StoreItem(
+    val emoji: String,
+    val title: String,
+    val cost: Int,
+    val sourceType: String,
+    val description: String
+)
+
 @Composable
 private fun RedemptionCard(
     emoji: String,
     title: String,
     cost: String,
     description: String,
-    enabled: Boolean
+    enabled: Boolean,
+    onClick: () -> Unit = {}
 ) {
     Box(
         modifier = Modifier
@@ -614,7 +738,7 @@ private fun RedemptionCard(
                         colors = listOf(KanjiLensColors.CardBg, KanjiLensColors.CardBg)
                     )
             )
-            .clickable(enabled = enabled) { /* TODO: Implement redemption flow */ }
+            .clickable(enabled = enabled) { onClick() }
             .padding(16.dp)
     ) {
         Row(

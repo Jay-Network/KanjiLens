@@ -1,6 +1,8 @@
 package com.jworks.kanjilens.ui.camera
 
 import android.Manifest
+import android.content.Intent
+import android.graphics.Rect
 import android.view.MotionEvent
 import androidx.activity.compose.BackHandler
 import androidx.camera.core.Camera
@@ -18,6 +20,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -75,6 +79,8 @@ import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.shouldShowRationale
 import com.jworks.kanjilens.R
+import com.jworks.kanjilens.domain.ai.ScopeLevel
+import com.jworks.kanjilens.domain.models.KanjiSegment
 import com.jworks.kanjilens.ui.dictionary.DictionaryDetailView
 import com.jworks.kanjilens.ui.dictionary.KanjiDetailView
 import com.jworks.kanjilens.ui.theme.KanjiLensColors
@@ -132,6 +138,7 @@ private fun CameraContent(
     val isFlashOn by viewModel.isFlashOn.collectAsState()
     val isProcessing by viewModel.isProcessing.collectAsState()
     val isPaused by viewModel.isPaused.collectAsState()
+    val isEnhanced by viewModel.isEnhanced.collectAsState()
     val ocrStats by viewModel.ocrStats.collectAsState()
     val visibleRegion by viewModel.visibleRegion.collectAsState()
     val settings by viewModel.settings.collectAsState()
@@ -139,6 +146,7 @@ private fun CameraContent(
     val isScanActive by viewModel.isScanActive.collectAsState()
     val showPaywall by viewModel.showPaywall.collectAsState()
     val isPremium by viewModel.isPremium.collectAsState()
+    val aiAnalysisState by viewModel.aiAnalysisState.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
 
@@ -364,118 +372,123 @@ private fun CameraContent(
             )
         }
 
+        // Shared jukugo/kanji accumulation state — used by both focus-mode panel and full-mode-paused panel
+        val modeKey = Pair(settings.verticalTextMode, displayBoundary)
+        var jukugoList by remember(modeKey) { mutableStateOf<List<JukugoEntry>>(emptyList()) }
+        var jukugoAccumulator by remember(modeKey) { mutableStateOf<Map<String, String>>(emptyMap()) }
+        var kanjiList by remember(modeKey) { mutableStateOf<List<JukugoEntry>>(emptyList()) }
+        var kanjiAccumulator by remember(modeKey) { mutableStateOf<Map<String, String>>(emptyMap()) }
+        var selectedJukugo by remember(modeKey) { mutableStateOf<JukugoEntry?>(null) }
+        var selectedKanji by remember(modeKey) { mutableStateOf<String?>(null) }
+
+        // Load all bookmarked kanji for highlighting in jukugo list
+        LaunchedEffect(modeKey) { viewModel.refreshAllBookmarkedKanji() }
+
+        // Accumulate jukugo from current frame (runs in both focus and full-paused modes)
+        LaunchedEffect(detectedTexts, modeKey) {
+            val imgSize = sourceImageSize
+            val imgW = imgSize.width.toFloat()
+            val imgH = imgSize.height.toFloat()
+            val isRotated = rotationDegrees == 90 || rotationDegrees == 270
+            val effW = if (isRotated) imgH else imgW
+            val effH = if (isRotated) imgW else imgH
+            val scale = if (effW > 0 && effH > 0) maxOf(maxWidthPx / effW, maxHeightPx / effH) else 1f
+            val cropOffsetX = (effW * scale - maxWidthPx) / 2f
+            val cropOffsetY = (effH * scale - maxHeightPx) / 2f
+
+            val screenYBoundary = if (settings.verticalTextMode) {
+                maxHeightPx * PartialModeConstants.VERT_PAD_TOP_RATIO
+            } else {
+                maxHeightPx * PartialModeConstants.HORIZ_CAMERA_HEIGHT_RATIO
+            }
+
+            val screenXBoundary = if (settings.verticalTextMode) {
+                maxWidthPx * (1f - PartialModeConstants.VERT_CAMERA_WIDTH_RATIO)
+            } else {
+                0f
+            }
+
+            fun isSegmentVisible(segment: KanjiSegment, bounds: Rect?, elemTextLen: Int): Boolean {
+                // In full mode (not partial), all segments are visible
+                if (!isPartial) return true
+                if (bounds == null || effW <= 0 || elemTextLen <= 0) return true
+                if (settings.verticalTextMode) {
+                    val charHeight = bounds.height().toFloat() / elemTextLen
+                    val segTopImg = bounds.top + segment.startIndex * charHeight
+                    val segBottomImg = bounds.top + segment.endIndex * charHeight
+                    val segTopScreen = segTopImg * scale - cropOffsetY
+                    val segBottomScreen = segBottomImg * scale - cropOffsetY
+                    val yOk = segBottomScreen <= screenYBoundary && segTopScreen >= 0
+                    val elemCenterXScreen = bounds.centerX() * scale - cropOffsetX
+                    val xOk = elemCenterXScreen >= screenXBoundary
+                    return yOk && xOk
+                } else {
+                    val charWidth = bounds.width().toFloat() / elemTextLen
+                    val segLeftImg = bounds.left + segment.startIndex * charWidth
+                    val segRightImg = bounds.left + segment.endIndex * charWidth
+                    val segLeftScreen = segLeftImg * scale - cropOffsetX
+                    val segRightScreen = segRightImg * scale - cropOffsetX
+                    val elemBottomScreen = bounds.bottom * scale - cropOffsetY
+                    val yOk = elemBottomScreen <= screenYBoundary
+                    val edgeMargin = charWidth * scale * 0.5f
+                    val notCutoff = segLeftScreen >= -edgeMargin &&
+                            segRightScreen <= maxWidthPx + edgeMargin
+                    return yOk && notCutoff
+                }
+            }
+
+            val newJukugo = mutableMapOf<String, String>()
+            val newKanji = mutableMapOf<String, String>()
+
+            detectedTexts.forEach { detected ->
+                detected.elements.forEach { element ->
+                    val bounds = element.bounds
+                    val elemTextLen = element.text.length
+                    element.kanjiSegments
+                        .filter { isSegmentVisible(it, bounds, elemTextLen) }
+                        .forEach { segment ->
+                            if (segment.text.length == 1) {
+                                newKanji[segment.text] = segment.reading
+                            } else {
+                                newJukugo[segment.text] = segment.reading
+                            }
+                        }
+                }
+            }
+
+            jukugoAccumulator = jukugoAccumulator + newJukugo
+            kanjiAccumulator = kanjiAccumulator + newKanji
+        }
+
+        // Refresh list every 1 second while live, or once when AI enhancement completes
+        LaunchedEffect(modeKey, isPaused, isEnhanced) {
+            if (isPaused && !isEnhanced) return@LaunchedEffect
+            jukugoList = jukugoAccumulator.map { (text, reading) ->
+                JukugoEntry(text, reading)
+            }.sortedBy { it.text }
+            jukugoAccumulator = emptyMap()
+            kanjiList = kanjiAccumulator.map { (text, reading) ->
+                JukugoEntry(text, reading)
+            }.sortedBy { it.text }
+            kanjiAccumulator = emptyMap()
+            if (isPaused) return@LaunchedEffect
+            while (true) {
+                kotlinx.coroutines.delay(1000)
+                jukugoList = jukugoAccumulator.map { (text, reading) ->
+                    JukugoEntry(text, reading)
+                }.sortedBy { it.text }
+                jukugoAccumulator = emptyMap()
+                kanjiList = kanjiAccumulator.map { (text, reading) ->
+                    JukugoEntry(text, reading)
+                }.sortedBy { it.text }
+                kanjiAccumulator = emptyMap()
+            }
+        }
+
         // Layer 3: Panel area with jukugo list
         // Vertical mode: LEFT 75% panel, RIGHT 25% camera
         // Horizontal mode: TOP 25% camera, BOTTOM 75% panel
         if (isPartial) {
-            // Jukugo collection state (1-second refresh)
-            // Key on verticalTextMode AND boundary ratio so state resets on any mode change
-            val modeKey = Pair(settings.verticalTextMode, displayBoundary)
-            var jukugoList by remember(modeKey) { mutableStateOf<List<JukugoEntry>>(emptyList()) }
-            var jukugoAccumulator by remember(modeKey) { mutableStateOf<Map<String, String>>(emptyMap()) }
-            var selectedJukugo by remember(modeKey) { mutableStateOf<JukugoEntry?>(null) }
-            var selectedKanji by remember(modeKey) { mutableStateOf<String?>(null) }
-
-            // Load all bookmarked kanji for highlighting in jukugo list
-            LaunchedEffect(modeKey) { viewModel.refreshAllBookmarkedKanji() }
-
-            // Accumulate jukugo from current frame (skip when paused)
-            // Key on modeKey so LaunchedEffect restarts with fresh state refs after mode switch
-            LaunchedEffect(detectedTexts, modeKey) {
-                if (isPaused) return@LaunchedEffect
-
-                // Compute FILL_CENTER mapping for screen-space jukugo filtering
-                // (same math as OverlayCanvas — most reliable filter)
-                val imgSize = sourceImageSize
-                val imgW = imgSize.width.toFloat()
-                val imgH = imgSize.height.toFloat()
-                val isRotated = rotationDegrees == 90 || rotationDegrees == 270
-                val effW = if (isRotated) imgH else imgW
-                val effH = if (isRotated) imgW else imgH
-                val scale = if (effW > 0 && effH > 0) maxOf(maxWidthPx / effW, maxHeightPx / effH) else 1f
-                val cropOffsetX = (effW * scale - maxWidthPx) / 2f
-                val cropOffsetY = (effH * scale - maxHeightPx) / 2f
-
-                // Screen-space Y boundary: top 25% for horizontal, top 50% for vertical
-                val screenYBoundary = if (settings.verticalTextMode) {
-                    maxHeightPx * PartialModeConstants.VERT_PAD_TOP_RATIO
-                } else {
-                    maxHeightPx * PartialModeConstants.HORIZ_CAMERA_HEIGHT_RATIO
-                }
-
-                // Screen-space X boundary: right 40% for vertical mode
-                val screenXBoundary = if (settings.verticalTextMode) {
-                    maxWidthPx * (1f - PartialModeConstants.VERT_CAMERA_WIDTH_RATIO)
-                } else {
-                    0f  // Horizontal mode: no X filtering needed
-                }
-
-                val newJukugo = detectedTexts.flatMap { detected ->
-                    detected.elements.flatMap { element ->
-                        val bounds = element.bounds
-                        val elemTextLen = element.text.length
-                        element.kanjiSegments
-                            .filter { segment ->
-                                if (segment.text.length <= 1) return@filter false
-                                if (bounds == null || effW <= 0 || elemTextLen <= 0) return@filter true
-
-                                if (settings.verticalTextMode) {
-                                    // Vertical: chars stacked top-to-bottom, per-segment Y
-                                    val charHeight = bounds.height().toFloat() / elemTextLen
-                                    val segTopImg = bounds.top + segment.startIndex * charHeight
-                                    val segBottomImg = bounds.top + segment.endIndex * charHeight
-                                    val segTopScreen = segTopImg * scale - cropOffsetY
-                                    val segBottomScreen = segBottomImg * scale - cropOffsetY
-
-                                    // Y: segment must be fully within camera strip
-                                    val yOk = segBottomScreen <= screenYBoundary && segTopScreen >= 0
-
-                                    // X: element center must be in camera strip (all segs share X)
-                                    val elemCenterXScreen = bounds.centerX() * scale - cropOffsetX
-                                    val xOk = elemCenterXScreen >= screenXBoundary
-
-                                    yOk && xOk
-                                } else {
-                                    // Horizontal: chars left-to-right, all segs share same Y
-                                    val charWidth = bounds.width().toFloat() / elemTextLen
-                                    val segLeftImg = bounds.left + segment.startIndex * charWidth
-                                    val segRightImg = bounds.left + segment.endIndex * charWidth
-                                    val segLeftScreen = segLeftImg * scale - cropOffsetX
-                                    val segRightScreen = segRightImg * scale - cropOffsetX
-
-                                    // Y: element bottom must be within camera strip
-                                    // (matches OverlayCanvas boundary check)
-                                    val elemBottomScreen = bounds.bottom * scale - cropOffsetY
-                                    val yOk = elemBottomScreen <= screenYBoundary
-
-                                    // X: segment must be fully on-screen (cutoff protection)
-                                    val edgeMargin = charWidth * scale * 0.5f
-                                    val notCutoff = segLeftScreen >= -edgeMargin &&
-                                            segRightScreen <= maxWidthPx + edgeMargin
-
-                                    yOk && notCutoff
-                                }
-                            }
-                            .map { it.text to it.reading }
-                    }
-                }.toMap()
-
-                jukugoAccumulator = jukugoAccumulator + newJukugo
-            }
-
-            // Refresh list every 1 second (skip when paused to keep list stable)
-            // Key on modeKey so timer restarts with fresh state refs after mode switch
-            LaunchedEffect(modeKey, isPaused) {
-                if (isPaused) return@LaunchedEffect
-                while (true) {
-                    kotlinx.coroutines.delay(1000)
-                    jukugoList = jukugoAccumulator.map { (text, reading) ->
-                        JukugoEntry(text, reading)
-                    }.sortedBy { it.text }
-                    jukugoAccumulator = emptyMap()
-                }
-            }
-
             val panelModifier = if (settings.verticalTextMode) {
                 // Vertical mode: panel on the LEFT (60% width)
                 val panelWidthDp = with(density) { (maxWidthPx * (1f - vertCameraRatio)).toDp() }
@@ -561,8 +574,12 @@ private fun CameraContent(
                 } else {
                     DetectedJukugoList(
                         jukugo = jukugoList,
+                        singleKanji = kanjiList,
                         onJukugoClick = { entry ->
                             selectedJukugo = entry
+                        },
+                        onKanjiClick = { entry ->
+                            selectedKanji = entry.text
                         },
                         onBackToCamera = {
                             // Collapse panel → full camera mode
@@ -571,9 +588,146 @@ private fun CameraContent(
                             }
                             viewModel.updatePartialModeBoundaryRatio(1f)
                         },
+                        onAiAnalyze = { viewModel.analyzeFullText() },
+                        isAiAvailable = viewModel.isAiAnalysisAvailable,
+                        aiAnalysisState = aiAnalysisState,
+                        onDismissAi = { viewModel.dismissAiAnalysis() },
                         bookmarkedKanji = allBookmarkedKanji,
+                        onShare = {
+                            val shareText = (jukugoList + kanjiList).joinToString("\n") { "${it.text}（${it.reading}）" }
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, "KanjiLens detected:\n$shareText")
+                            }
+                            context.startActivity(Intent.createChooser(intent, "Share detected words"))
+                            viewModel.awardShareCoin(context)
+                        },
                         modifier = Modifier.fillMaxSize()
                     )
+                }
+            }
+        }
+
+        // Layer 3a: Full-mode paused panel (draggable bottom sheet with detected words + AI)
+        if (isPaused && !isPartial) {
+            // Dictionary state for full-mode panel
+            val dictionaryResult by viewModel.dictionaryResult.collectAsState()
+            val isDictionaryLoading by viewModel.isDictionaryLoading.collectAsState()
+            val bookmarkedKanji by viewModel.bookmarkedKanji.collectAsState()
+            val isWordBookmarked by viewModel.isWordBookmarked.collectAsState()
+            val allBookmarkedKanji by viewModel.allBookmarkedKanji.collectAsState()
+            val kanjiInfo by viewModel.kanjiInfo.collectAsState()
+            val isKanjiInfoLoading by viewModel.isKanjiInfoLoading.collectAsState()
+
+            LaunchedEffect(selectedJukugo) {
+                selectedJukugo?.let { viewModel.lookupWord(it.text, context) }
+            }
+            LaunchedEffect(selectedKanji) {
+                if (selectedKanji != null) viewModel.loadKanjiInfo(selectedKanji!!)
+                else viewModel.clearKanjiInfo()
+            }
+
+            val hasContent = jukugoList.isNotEmpty() || kanjiList.isNotEmpty() || aiAnalysisState !is AiPanelState.Idle
+
+            DraggablePanel(hasContent = hasContent) {
+                // AI analysis states take over the panel
+                when (val aiState = aiAnalysisState) {
+                    is AiPanelState.Loading -> {
+                        val allText = detectedTexts.joinToString("\n") { detected ->
+                            detected.elements.joinToString("") { it.text }
+                        }
+                        AiLoadingPanel(
+                            selectedText = allText,
+                            scopeLevel = ScopeLevel.FullSnapshot,
+                            onDismiss = { viewModel.dismissAiAnalysis() }
+                        )
+                    }
+                    is AiPanelState.Result -> {
+                        AiAnalysisPanel(
+                            selectedText = aiState.detectedText,
+                            scopeLevel = ScopeLevel.FullSnapshot,
+                            response = aiState.response,
+                            onDismiss = { viewModel.dismissAiAnalysis() }
+                        )
+                    }
+                    is AiPanelState.Error -> {
+                        Column(
+                            modifier = Modifier.fillMaxSize().padding(16.dp),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "Analysis failed: ${aiState.message}",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Button(onClick = { viewModel.dismissAiAnalysis() }) {
+                                Text("Dismiss")
+                            }
+                        }
+                    }
+                    is AiPanelState.Idle -> {
+                        // Show detected words list (same as focus mode panel)
+                        if (selectedKanji != null) {
+                            val kanjiStr = selectedKanji!!
+                            val isKanjiBM = kanjiStr in bookmarkedKanji
+                            KanjiDetailView(
+                                kanji = kanjiStr,
+                                kanjiInfo = kanjiInfo,
+                                isLoading = isKanjiInfoLoading,
+                                isBookmarked = isKanjiBM,
+                                onBackClick = { selectedKanji = null },
+                                onBookmarkToggle = {
+                                    viewModel.toggleKanjiBookmark(kanjiStr)
+                                    viewModel.refreshAllBookmarkedKanji()
+                                },
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else if (selectedJukugo != null) {
+                            DictionaryDetailView(
+                                result = dictionaryResult,
+                                isLoading = isDictionaryLoading,
+                                onBackClick = {
+                                    selectedJukugo = null
+                                    viewModel.clearDictionaryResult()
+                                },
+                                wordText = selectedJukugo?.text ?: "",
+                                wordReading = selectedJukugo?.reading ?: "",
+                                isWordBookmarked = isWordBookmarked,
+                                onWordBookmarkToggle = {
+                                    val entry = selectedJukugo ?: return@DictionaryDetailView
+                                    viewModel.toggleWordBookmark(entry.text, entry.reading)
+                                },
+                                bookmarkedKanji = bookmarkedKanji,
+                                onKanjiClick = { kanji -> selectedKanji = kanji },
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            DetectedJukugoList(
+                                jukugo = jukugoList,
+                                singleKanji = kanjiList,
+                                onJukugoClick = { entry -> selectedJukugo = entry },
+                                onKanjiClick = { entry -> selectedKanji = entry.text },
+                                onBackToCamera = { viewModel.togglePause() },
+                                onAiAnalyze = { viewModel.analyzeFullText() },
+                                isAiAvailable = viewModel.isAiAnalysisAvailable,
+                                aiAnalysisState = aiAnalysisState,
+                                onDismissAi = { viewModel.dismissAiAnalysis() },
+                                bookmarkedKanji = allBookmarkedKanji,
+                                onShare = {
+                                    val shareText = (jukugoList + kanjiList).joinToString("\n") { "${it.text}（${it.reading}）" }
+                                    val intent = Intent(Intent.ACTION_SEND).apply {
+                                        type = "text/plain"
+                                        putExtra(Intent.EXTRA_TEXT, "KanjiLens detected:\n$shareText")
+                                    }
+                                    context.startActivity(Intent.createChooser(intent, "Share detected words"))
+                                    viewModel.awardShareCoin(context)
+                                },
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -733,16 +887,34 @@ private fun CameraContent(
             btnSize = btnSizePx
         ) { ProfileButtonContent() }
 
-        // J Coin rewards button (bottom row, center)
-        DraggableFloatingButton(
-            offset = jcoinBtnOffset,
-            onOffsetChange = { jcoinBtnOffset = it },
-            onClick = onRewardsClick,
-            maxWidth = maxWidthPx,
-            maxHeight = maxHeightPx,
-            btnSize = btnSizePx,
-            bgColor = KanjiLensColors.JCoinButtonBg.copy(alpha = 0.85f)
-        ) { JCoinButtonContent() }
+        // J Coin rewards button (bottom row, center) with balance badge
+        Box {
+            DraggableFloatingButton(
+                offset = jcoinBtnOffset,
+                onOffsetChange = { jcoinBtnOffset = it },
+                onClick = onRewardsClick,
+                maxWidth = maxWidthPx,
+                maxHeight = maxHeightPx,
+                btnSize = btnSizePx,
+                bgColor = KanjiLensColors.JCoinButtonBg.copy(alpha = 0.85f)
+            ) { JCoinButtonContent() }
+
+            val jCoinBalance by viewModel.jCoinBalance.collectAsState()
+            if (jCoinBalance > 0) {
+                val displayBalance = if (jCoinBalance >= 1000) "${jCoinBalance / 1000}K" else "$jCoinBalance"
+                Text(
+                    text = displayBalance,
+                    fontSize = 8.sp,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 4.dp, y = (-4).dp)
+                        .background(KanjiLensColors.PrimaryAction, RoundedCornerShape(6.dp))
+                        .padding(horizontal = 3.dp, vertical = 1.dp)
+                )
+            }
+        }
 
         // Feedback button (bottom row, right)
         DraggableFloatingButton(
@@ -765,6 +937,7 @@ private fun CameraContent(
             btnSize = btnSizePx,
             bgColor = KanjiLensColors.BookmarkButtonBg.copy(alpha = 0.85f)
         ) { BookmarkButtonContent() }
+
 
         // Layer 11: Scan timer pill (free users only)
         if (!isPremium && isScanActive) {
@@ -820,16 +993,66 @@ private fun CameraContent(
 }
 
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DetectedJukugoList(
     jukugo: List<JukugoEntry>,
+    singleKanji: List<JukugoEntry> = emptyList(),
     onJukugoClick: (JukugoEntry) -> Unit,
+    onKanjiClick: (JukugoEntry) -> Unit = {},
     onBackToCamera: () -> Unit,
+    onAiAnalyze: () -> Unit = {},
+    isAiAvailable: Boolean = false,
+    aiAnalysisState: AiPanelState = AiPanelState.Idle,
+    onDismissAi: () -> Unit = {},
     bookmarkedKanji: Set<String> = emptySet(),
+    onShare: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    // If AI analysis is active, show AI panel instead of word list
+    when (val aiState = aiAnalysisState) {
+        is AiPanelState.Loading -> {
+            val allText = (jukugo + singleKanji).joinToString(", ") { "${it.text} (${it.reading})" }
+            AiLoadingPanel(
+                selectedText = allText,
+                scopeLevel = ScopeLevel.FullSnapshot,
+                onDismiss = onDismissAi,
+                modifier = modifier
+            )
+            return
+        }
+        is AiPanelState.Result -> {
+            AiAnalysisPanel(
+                selectedText = aiState.detectedText,
+                scopeLevel = ScopeLevel.FullSnapshot,
+                response = aiState.response,
+                onDismiss = onDismissAi,
+                modifier = modifier
+            )
+            return
+        }
+        is AiPanelState.Error -> {
+            Column(
+                modifier = modifier.padding(16.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Analysis failed: ${aiState.message}",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(onClick = onDismissAi) { Text("Dismiss") }
+            }
+            return
+        }
+        is AiPanelState.Idle -> { /* show normal word list below */ }
+    }
+
+    val totalCount = singleKanji.size + jukugo.size
     Column(modifier = modifier) {
-        // Header with close button
+        // Header with close button and AI Analyze button
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -847,11 +1070,39 @@ private fun DetectedJukugoList(
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = "Detected 熟語 (${jukugo.size})",
+                text = "Detected Words ($totalCount)",
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.White,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f)
             )
+            if (totalCount > 0) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_share),
+                    contentDescription = "Share detected words",
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clickable { onShare() },
+                    tint = Color.White.copy(alpha = 0.8f)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+            if (isAiAvailable && totalCount > 0) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Color(0xFF7C4DFF).copy(alpha = 0.9f))
+                        .clickable { onAiAnalyze() }
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                ) {
+                    Text(
+                        text = "AI Analyze",
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
         }
 
         // Scrollable content
@@ -860,7 +1111,7 @@ private fun DetectedJukugoList(
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
         ) {
-            if (jukugo.isEmpty()) {
+            if (totalCount == 0) {
                 Text(
                     text = "Point your camera at Japanese text",
                     style = MaterialTheme.typography.bodyMedium,
@@ -873,60 +1124,112 @@ private fun DetectedJukugoList(
                     color = KanjiLensColors.JukugoSecondary.copy(alpha = 0.7f)
                 )
             } else {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(1.dp)
-                ) {
-                    jukugo.forEachIndexed { index, entry ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(KanjiLensColors.PanelItemBackground)
-                                .clickable { onJukugoClick(entry) }
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
-                            horizontalArrangement = Arrangement.Start,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = buildAnnotatedString {
-                                    entry.text.forEach { ch ->
-                                        val isKanjiBM = ch.toString() in bookmarkedKanji
-                                        if (isKanjiBM) {
-                                            withStyle(SpanStyle(
-                                                fontWeight = FontWeight.ExtraBold,
-                                                color = KanjiLensColors.BookmarkedKanjiHighlight
-                                            )) { append(ch) }
-                                        } else {
-                                            append(ch)
-                                        }
-                                    }
-                                },
-                                fontSize = 18.sp,
-                                color = KanjiLensColors.JukugoText,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = " - ",
-                                fontSize = 14.sp,
-                                color = KanjiLensColors.JukugoSecondary
-                            )
-                            Text(
-                                text = entry.reading,
-                                fontSize = 14.sp,
-                                color = KanjiLensColors.JukugoSecondary,
-                                fontWeight = FontWeight.Normal
-                            )
+                // Single kanji section
+                if (singleKanji.isNotEmpty()) {
+                    Text(
+                        text = "漢字 (${singleKanji.size})",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = KanjiLensColors.JukugoSecondary,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+                    // Horizontal wrap layout for single kanji chips
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        singleKanji.forEach { entry ->
+                            val isBookmarked = entry.text in bookmarkedKanji
+                            Column(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(KanjiLensColors.PanelItemBackground)
+                                    .clickable { onKanjiClick(entry) }
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = entry.text,
+                                    fontSize = 22.sp,
+                                    fontWeight = if (isBookmarked) FontWeight.ExtraBold else FontWeight.Medium,
+                                    color = if (isBookmarked) KanjiLensColors.BookmarkedKanjiHighlight else KanjiLensColors.JukugoText
+                                )
+                                Text(
+                                    text = entry.reading,
+                                    fontSize = 11.sp,
+                                    color = KanjiLensColors.JukugoSecondary
+                                )
+                            }
                         }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
 
-                        // Divider between entries (except after last)
-                        if (index < jukugo.size - 1) {
-                            Box(
+                // Jukugo section
+                if (jukugo.isNotEmpty()) {
+                    Text(
+                        text = "熟語 (${jukugo.size})",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = KanjiLensColors.JukugoSecondary,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(1.dp)
+                    ) {
+                        jukugo.forEachIndexed { index, entry ->
+                            Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(1.dp)
-                                    .background(KanjiLensColors.PanelBorder.copy(alpha = 0.3f))
-                            )
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(KanjiLensColors.PanelItemBackground)
+                                    .clickable { onJukugoClick(entry) }
+                                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                                horizontalArrangement = Arrangement.Start,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = buildAnnotatedString {
+                                        entry.text.forEach { ch ->
+                                            val isKanjiBM = ch.toString() in bookmarkedKanji
+                                            if (isKanjiBM) {
+                                                withStyle(SpanStyle(
+                                                    fontWeight = FontWeight.ExtraBold,
+                                                    color = KanjiLensColors.BookmarkedKanjiHighlight
+                                                )) { append(ch) }
+                                            } else {
+                                                append(ch)
+                                            }
+                                        }
+                                    },
+                                    fontSize = 18.sp,
+                                    color = KanjiLensColors.JukugoText,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = " - ",
+                                    fontSize = 14.sp,
+                                    color = KanjiLensColors.JukugoSecondary
+                                )
+                                Text(
+                                    text = entry.reading,
+                                    fontSize = 14.sp,
+                                    color = KanjiLensColors.JukugoSecondary,
+                                    fontWeight = FontWeight.Normal
+                                )
+                            }
+
+                            // Divider between entries (except after last)
+                            if (index < jukugo.size - 1) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(1.dp)
+                                        .background(KanjiLensColors.PanelBorder.copy(alpha = 0.3f))
+                                )
+                            }
                         }
                     }
                 }
