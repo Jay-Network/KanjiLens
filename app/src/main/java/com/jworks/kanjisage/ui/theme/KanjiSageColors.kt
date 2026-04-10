@@ -69,7 +69,39 @@ object KanjiSageColors {
     // Surfaces
     val DarkBg = Color(0xFF1B1B1B)
     val CardBg = Color(0xFF2A2A2A)
+    val CardBgLight = Color(0xFF3A3A3A)
     val HeaderBg = Color(0xFF0D3B66)
+    val TabBg = Color(0xFF252525)
+
+    // Accent
+    val AccentTeal = Color(0xFF0D9488)
+    val AccentOrange = Color(0xFFFF8C42)
+
+    // Help / info
+    val RowLabelBg = Color(0xFF1B3A4B)
+
+    // Semantic: links / actions
+    val LinkBlue = Color(0xFF1976D2)
+    val MutedBlueGrey = Color(0xFF546E7A)
+
+    // Semantic: status / feedback
+    val DisabledGrey = Color(0xFF9E9E9E)
+    val InactiveToggle = Color(0xFFBDBDBD)
+    val DangerButton = Color(0xFFD32F2F)
+    val DangerText = Color(0xFFBF360C)
+    val WarningLightBg = Color(0xFFFFF3E0)
+    val WarningDarkText = Color(0xFFE65100)
+
+    // Muted text
+    val MutedText = Color(0xFF999999)
+    val MutedTextDark = Color(0xFF49454F)
+
+    // Cross-promotion (KanjiJourney)
+    val PromoCardBg = Color(0xFF1A3A2A)
+    val PromoCardText = Color(0xFF81C784)
+    val KJCreamBg = Color(0xFFFFF8E1)
+    val KJBookmarkGold = Color(0xFFFFD700)
+    val KJDarkText = Color(0xFF1C1B1F)
 
     // Gradient brushes
     val CoinBalanceGradient = Brush.horizontalGradient(

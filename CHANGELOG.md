@@ -6,6 +6,16 @@ Single source of truth for version: `VERSION` file at repo root.
 
 ---
 
+## v1.6.2 (2026-04-10)
+
+### Fixed
+- L1 compliance: Raised all font sizes below 12sp to 12sp (CameraScreen, KanjiDetailView)
+- L1 compliance: Fixed onSurfaceVariant contrast — replaced alpha-based white with solid Color(0xFFCAC4D0)
+- L1 compliance: Migrated hardcoded hex colors to KanjiSageColors tokens in HelpScreen, ProfileScreen, BookmarksScreen, KanjiDetailView
+
+### Changed
+- Expanded KanjiSageColors with 16 new design tokens (accent, semantic, muted, cross-promo)
+
 ## [Unreleased]
 
 ### Added

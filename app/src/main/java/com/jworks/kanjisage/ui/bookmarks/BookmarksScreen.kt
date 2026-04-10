@@ -54,11 +54,11 @@ import com.jworks.kanjisage.domain.repository.BookmarkRepository
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import kotlinx.coroutines.launch
 
-private val TanAccent = Color(0xFFD4B896)
-private val CreamText = Color(0xFFF5E6D3)
-private val MutedText = Color(0xFF999999)
-private val BookmarkGold = Color(0xFFFFB74D)
-private val TabBg = Color(0xFF252525)
+private val TanAccent = KanjiSageColors.PanelBorder
+private val CreamText = KanjiSageColors.PanelBackground
+private val MutedText = KanjiSageColors.MutedText
+private val BookmarkGold = KanjiSageColors.CoinAccent
+private val TabBg = KanjiSageColors.TabBg
 
 private fun BookmarkEntry.isKanji(): Boolean {
     return word.length == 1 && word[0].let { c ->
@@ -292,7 +292,7 @@ private fun WordBookmarkRow(
             Text(
                 text = formatRelativeTime(entry.bookmarkedAt),
                 color = MutedText,
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 modifier = Modifier.padding(top = 2.dp)
             )
         }
@@ -329,7 +329,7 @@ private fun KanjiBookmarkRow(
             modifier = Modifier
                 .size(48.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .background(Color(0xFF3A3A3A)),
+                .background(KanjiSageColors.CardBgLight),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -350,7 +350,7 @@ private fun KanjiBookmarkRow(
             Text(
                 text = formatRelativeTime(entry.bookmarkedAt),
                 color = MutedText,
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 modifier = Modifier.padding(top = 2.dp)
             )
         }
@@ -374,19 +374,19 @@ private fun KanjiJourneyPromoCard(onClick: () -> Unit) {
             .focusBorder(RoundedCornerShape(12.dp))
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A3A2A))
+        colors = CardDefaults.cardColors(containerColor = KanjiSageColors.PromoCardBg)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = "Practice these kanji in KanjiJourney",
-                color = Color(0xFF81C784),
+                color = KanjiSageColors.PromoCardText,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "AI checks your handwriting \u2022 Compete with other learners",
-                color = Color(0xFF81C784).copy(alpha = 0.7f),
+                color = KanjiSageColors.PromoCardText.copy(alpha = 0.7f),
                 fontSize = 13.sp
             )
             Spacer(modifier = Modifier.height(8.dp))

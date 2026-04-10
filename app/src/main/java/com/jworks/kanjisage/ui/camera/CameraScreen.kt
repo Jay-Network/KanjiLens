@@ -872,7 +872,7 @@ private fun CameraContent(
         Text(
             text = "v${com.jworks.kanjisage.BuildConfig.VERSION_NAME}",
             color = Color.White.copy(alpha = 0.5f),
-            fontSize = 9.sp,
+            fontSize = 12.sp,
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(start = leftMarginDp, bottom = CameraDimens.VERSION_LABEL_BOTTOM_PADDING)
@@ -905,14 +905,14 @@ private fun CameraContent(
                 val displayBalance = if (jCoinBalance >= 1000) "${jCoinBalance / 1000}K" else "$jCoinBalance"
                 Text(
                     text = displayBalance,
-                    fontSize = 8.sp,
+                    fontSize = 12.sp,
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .offset(x = 4.dp, y = (-4).dp)
-                        .background(KanjiSageColors.PrimaryAction, RoundedCornerShape(6.dp))
-                        .padding(horizontal = 3.dp, vertical = 1.dp)
+                        .offset(x = 6.dp, y = (-6).dp)
+                        .background(KanjiSageColors.PrimaryAction, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 4.dp, vertical = 2.dp)
                 )
             }
         }
@@ -1161,7 +1161,7 @@ private fun DetectedJukugoList(
                                 )
                                 Text(
                                     text = entry.reading,
-                                    fontSize = 11.sp,
+                                    fontSize = 12.sp,
                                     color = KanjiSageColors.JukugoSecondary
                                 )
                             }
@@ -1268,12 +1268,12 @@ private fun DebugStatsHud(stats: OCRStats, modifier: Modifier = Modifier) {
                 stats.avgFrameMs < 400 -> KanjiSageColors.HudMedium
                 else -> KanjiSageColors.HudSlow
             },
-            fontSize = 11.sp
+            fontSize = 12.sp
         )
         Text(
             text = "Lines: ${stats.linesDetected} | #${stats.framesProcessed}",
             color = Color.White.copy(alpha = 0.7f),
-            fontSize = 10.sp
+            fontSize = 12.sp
         )
     }
 }

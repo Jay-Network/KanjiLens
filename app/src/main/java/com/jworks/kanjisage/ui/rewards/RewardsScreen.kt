@@ -704,7 +704,7 @@ private fun EarnRuleCard(emoji: String, action: String, reward: String, frequenc
         Text(
             text = frequency,
             color = Color.White.copy(alpha = 0.4f),
-            fontSize = 11.sp
+            fontSize = 12.sp
         )
     }
 }

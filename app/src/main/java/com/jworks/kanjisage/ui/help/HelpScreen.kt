@@ -41,13 +41,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jworks.kanjisage.BuildConfig
 import com.jworks.kanjisage.R
+import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import com.jworks.kanjisage.ui.theme.focusBorder
 
-private val AccentBlue = Color(0xFF4FC3F7)
-private val AccentTeal = Color(0xFF0D9488)
-private val AccentOrange = Color(0xFFFF8C42)
-private val BadgeBg = Color(0xFF2A2A2A)
-private val RowLabelBg = Color(0xFF1B3A4B)
+private val AccentBlue = KanjiSageColors.PrimaryAction
+private val AccentTeal = KanjiSageColors.AccentTeal
+private val AccentOrange = KanjiSageColors.AccentOrange
+private val BadgeBg = KanjiSageColors.CardBg
+private val RowLabelBg = KanjiSageColors.RowLabelBg
 
 @Composable
 fun HelpScreen(
@@ -65,7 +66,7 @@ fun HelpScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFF1B1B1B))
+                .background(KanjiSageColors.DarkBg)
                 .statusBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -108,7 +109,7 @@ fun HelpScreen(
                     Text(
                         text = "\u6F22\u5B57",  // 漢字
                         fontSize = 48.sp,
-                        color = Color(0xFF4FC3F7),
+                        color = KanjiSageColors.PrimaryAction,
                         fontWeight = FontWeight.Bold
                     )
                     Text(

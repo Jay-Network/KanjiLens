@@ -172,7 +172,7 @@ fun ModeButtonContent(isFullMode: Boolean) {
     Text(
         if (isFullMode) "FULL" else "FOCUS",
         color = Color.White,
-        fontSize = 10.sp
+        fontSize = 12.sp
     )
 }
 

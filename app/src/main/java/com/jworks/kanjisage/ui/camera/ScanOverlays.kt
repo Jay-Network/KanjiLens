@@ -122,7 +122,7 @@ fun ScanChallengePill(
                 Text(
                     text = "Love this? Try Camera Challenge in KanjiJourney!",
                     color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 10.sp
+                    fontSize = 12.sp
                 )
             }
         }

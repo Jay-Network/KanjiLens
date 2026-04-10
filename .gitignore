@@ -34,3 +34,6 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Claude Code worktree isolation
+.claude/worktrees/

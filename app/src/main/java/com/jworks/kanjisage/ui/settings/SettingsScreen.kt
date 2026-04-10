@@ -489,7 +489,7 @@ private fun TokenUsageCard(settings: AppSettings, onReset: () -> Unit) {
             text = "Gemini 2.5 Flash: $0.15/$0.60 per 1M • Claude Haiku: $0.80/$4.00 per 1M",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 10.sp
+            fontSize = 12.sp
         )
     }
 }
@@ -529,7 +529,7 @@ private fun ColorPresetRow(settings: AppSettings, onPresetClick: (Long, Long) ->
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(preset.name, fontSize = 11.sp)
+                Text(preset.name, fontSize = 12.sp)
             }
         }
     }

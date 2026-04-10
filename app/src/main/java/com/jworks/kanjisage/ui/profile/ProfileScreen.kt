@@ -134,7 +134,7 @@ fun ProfileScreen(
                         modifier = Modifier
                             .size(56.dp)
                             .clip(CircleShape)
-                            .background(if (handle != null) Color(0xFF1976D2) else if (isAnonymous) Color(0xFF546E7A) else KanjiSageColors.BookmarkButtonBg),
+                            .background(if (handle != null) KanjiSageColors.LinkBlue else if (isAnonymous) KanjiSageColors.MutedBlueGrey else KanjiSageColors.BookmarkButtonBg),
                         contentAlignment = Alignment.Center
                     ) {
                         val initial = when {
@@ -183,7 +183,7 @@ fun ProfileScreen(
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         // Subscription badge
-                        val badgeColor = if (isPremium) KanjiSageColors.Primary else Color(0xFF9E9E9E)
+                        val badgeColor = if (isPremium) KanjiSageColors.Primary else KanjiSageColors.DisabledGrey
                         val badgeText = if (isPremium) "Premium" else "Free"
                         Text(
                             text = badgeText,
@@ -340,14 +340,14 @@ fun ProfileScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0))
+                    colors = CardDefaults.cardColors(containerColor = KanjiSageColors.WarningLightBg)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
                             text = "Developer Tools",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFFE65100)
+                            color = KanjiSageColors.WarningDarkText
                         )
                         Spacer(modifier = Modifier.height(12.dp))
 
@@ -381,7 +381,7 @@ fun ProfileScreen(
                         Text(
                             text = "Current: ${if (premiumOverride) "Force premium" else "Force free"}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFFBF360C)
+                            color = KanjiSageColors.DangerText
                         )
 
                         // Two-state toggle buttons
@@ -396,7 +396,7 @@ fun ProfileScreen(
                                     subscriptionManager.setPremiumOverride(true, context)
                                 },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (premiumOverride) KanjiSageColors.Primary else Color(0xFFBDBDBD)
+                                    containerColor = if (premiumOverride) KanjiSageColors.Primary else KanjiSageColors.InactiveToggle
                                 ),
                                 modifier = Modifier.weight(1f)
                             ) {
@@ -408,7 +408,7 @@ fun ProfileScreen(
                                     subscriptionManager.setPremiumOverride(false, context)
                                 },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (!premiumOverride) KanjiSageColors.HudSlow else Color(0xFFBDBDBD)
+                                    containerColor = if (!premiumOverride) KanjiSageColors.HudSlow else KanjiSageColors.InactiveToggle
                                 ),
                                 modifier = Modifier.weight(1f)
                             ) {
@@ -425,7 +425,7 @@ fun ProfileScreen(
                 Button(
                     onClick = onLinkAccountClick,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2)),
+                    colors = ButtonDefaults.buttonColors(containerColor = KanjiSageColors.LinkBlue),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
@@ -445,7 +445,7 @@ fun ProfileScreen(
                 Button(
                     onClick = onSignOut,
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD32F2F)),
+                    colors = ButtonDefaults.buttonColors(containerColor = KanjiSageColors.DangerButton),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(

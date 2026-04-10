@@ -160,7 +160,7 @@ fun DictionaryDetailView(
                     ) {
                         Text(
                             text = "common",
-                            fontSize = 10.sp,
+                            fontSize = 12.sp,
                             color = Color.White,
                             fontWeight = FontWeight.Medium
                         )
@@ -313,7 +313,7 @@ fun DictionaryDetailView(
                                 ) {
                                     Text(
                                         text = POS_LABELS[pos] ?: pos,
-                                        fontSize = 11.sp,
+                                        fontSize = 12.sp,
                                         color = DarkText,
                                         fontWeight = FontWeight.Medium
                                     )
@@ -435,7 +435,7 @@ private fun KanjiJourneyPracticeButton(kanji: String) {
             )
             Text(
                 text = "AI checks your handwriting",
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 color = Color.White.copy(alpha = 0.8f)
             )
         }

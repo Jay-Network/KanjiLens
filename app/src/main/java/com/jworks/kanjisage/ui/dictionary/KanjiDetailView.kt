@@ -35,17 +35,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jworks.kanjisage.domain.models.KanjiInfo
+import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import com.jworks.kanjisage.ui.theme.focusBorder
 
 // Match KanjiJourney theme colors exactly for visual consistency
-private val OrangeBar = Color(0xFFFF8C42)       // KanjiJourney primary
-private val CreamBg = Color(0xFFFFF8E1)         // KanjiJourney Cream background
-private val SurfaceCard = Color.White            // KanjiJourney surface
-private val BookmarkGold = Color(0xFFFFD700)     // KanjiJourney star gold
-private val GreenPractice = Color(0xFF4CAF50)    // KanjiJourney Writing button
-private val DarkText = Color(0xFF1C1B1F)         // KanjiJourney onBackground
-private val OrangePrimary = Color(0xFFFF8C42)    // KanjiJourney primary for titles
-private val MutedText = Color(0xFF49454F)        // KanjiJourney onSurfaceVariant
+private val OrangeBar = KanjiSageColors.AccentOrange
+private val CreamBg = KanjiSageColors.KJCreamBg
+private val SurfaceCard = Color.White
+private val BookmarkGold = KanjiSageColors.KJBookmarkGold
+private val GreenPractice = KanjiSageColors.Primary
+private val DarkText = KanjiSageColors.KJDarkText
+private val OrangePrimary = KanjiSageColors.AccentOrange
+private val MutedText = KanjiSageColors.MutedTextDark
 
 @Composable
 fun KanjiDetailView(
@@ -206,7 +207,7 @@ fun KanjiDetailView(
                             )
                             Text(
                                 text = "AI checks your handwriting",
-                                fontSize = 9.sp,
+                                fontSize = 12.sp,
                                 color = Color.White.copy(alpha = 0.8f)
                             )
                         }
@@ -219,7 +220,7 @@ fun KanjiDetailView(
                 Text(
                     text = "More on Jisho.org",
                     fontSize = 13.sp,
-                    color = Color(0xFF1976D2),
+                    color = KanjiSageColors.LinkBlue,
                     modifier = Modifier.focusBorder().clickable {
                         val intent = Intent(
                             Intent.ACTION_VIEW,
