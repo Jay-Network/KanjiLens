@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jworks.kanjisage.data.billing.BillingManager
+import com.jworks.kanjisage.ui.theme.focusBorder
 
 @Composable
 fun PaywallScreen(
@@ -55,9 +56,9 @@ fun PaywallScreen(
     val monthlyDetails = productDetails[BillingManager.PRODUCT_MONTHLY]
     val annualDetails = productDetails[BillingManager.PRODUCT_ANNUAL]
     val monthlyPrice = monthlyDetails?.subscriptionOfferDetails?.firstOrNull()
-        ?.pricingPhases?.pricingPhaseList?.firstOrNull()?.formattedPrice ?: "$1.99"
+        ?.pricingPhases?.pricingPhaseList?.firstOrNull()?.formattedPrice ?: "$0.99"
     val annualPrice = annualDetails?.subscriptionOfferDetails?.firstOrNull()
-        ?.pricingPhases?.pricingPhaseList?.firstOrNull()?.formattedPrice ?: "$14.99"
+        ?.pricingPhases?.pricingPhaseList?.firstOrNull()?.formattedPrice ?: "$4.99"
 
     Box(
         modifier = Modifier
@@ -267,6 +268,7 @@ private fun PlanCard(
             .clip(RoundedCornerShape(12.dp))
             .background(bgColor)
             .border(2.dp, borderColor, RoundedCornerShape(12.dp))
+            .focusBorder(RoundedCornerShape(12.dp))
             .clickable { onClick() }
             .padding(16.dp)
     ) {

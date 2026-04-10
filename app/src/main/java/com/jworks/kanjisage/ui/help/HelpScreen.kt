@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jworks.kanjisage.BuildConfig
 import com.jworks.kanjisage.R
+import com.jworks.kanjisage.ui.theme.focusBorder
 
 private val AccentBlue = Color(0xFF4FC3F7)
 private val AccentTeal = Color(0xFF0D9488)
@@ -74,6 +75,7 @@ fun HelpScreen(
                 contentDescription = "Back",
                 modifier = Modifier
                     .size(24.dp)
+                    .focusBorder(CircleShape)
                     .clickable { onBackClick() },
                 tint = Color.White
             )
@@ -382,6 +384,7 @@ private fun LinkRow(label: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .focusBorder()
             .clickable { onClick() }
             .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,

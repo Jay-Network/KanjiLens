@@ -59,6 +59,7 @@ import com.jworks.kanjisage.data.subscription.SubscriptionManager
 import com.jworks.kanjisage.ui.anim.StreakFlameIcon
 import com.jworks.kanjisage.ui.anim.rememberAnimatedCount
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
+import com.jworks.kanjisage.ui.theme.focusBorder
 
 @Composable
 fun RewardsScreen(
@@ -112,6 +113,7 @@ fun RewardsScreen(
                 contentDescription = "Back",
                 modifier = Modifier
                     .size(24.dp)
+                    .focusBorder(CircleShape)
                     .clickable { onBackClick() },
                 tint = Color.White
             )
@@ -738,6 +740,7 @@ private fun RedemptionCard(
                         colors = listOf(KanjiSageColors.CardBg, KanjiSageColors.CardBg)
                     )
             )
+            .focusBorder(RoundedCornerShape(14.dp))
             .clickable(enabled = enabled) { onClick() }
             .padding(16.dp)
     ) {

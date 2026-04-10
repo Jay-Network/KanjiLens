@@ -20,7 +20,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -84,6 +83,8 @@ import com.jworks.kanjisage.domain.models.KanjiSegment
 import com.jworks.kanjisage.ui.dictionary.DictionaryDetailView
 import com.jworks.kanjisage.ui.dictionary.KanjiDetailView
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
+import com.jworks.kanjisage.ui.theme.focusBorder
+import androidx.compose.foundation.shape.CircleShape
 
 import android.content.res.Configuration
 import androidx.compose.ui.platform.LocalConfiguration
@@ -993,7 +994,6 @@ private fun CameraContent(
 }
 
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DetectedJukugoList(
     jukugo: List<JukugoEntry>,
@@ -1065,6 +1065,7 @@ private fun DetectedJukugoList(
                 contentDescription = "Back to camera",
                 modifier = Modifier
                     .size(24.dp)
+                    .focusBorder(CircleShape)
                     .clickable { onBackToCamera() },
                 tint = Color.White
             )
@@ -1082,6 +1083,7 @@ private fun DetectedJukugoList(
                     contentDescription = "Share detected words",
                     modifier = Modifier
                         .size(22.dp)
+                        .focusBorder(CircleShape)
                         .clickable { onShare() },
                     tint = Color.White.copy(alpha = 0.8f)
                 )
@@ -1092,6 +1094,7 @@ private fun DetectedJukugoList(
                     modifier = Modifier
                         .clip(RoundedCornerShape(16.dp))
                         .background(Color(0xFF7C4DFF).copy(alpha = 0.9f))
+                        .focusBorder(RoundedCornerShape(16.dp))
                         .clickable { onAiAnalyze() }
                         .padding(horizontal = 10.dp, vertical = 5.dp)
                 ) {
@@ -1145,6 +1148,7 @@ private fun DetectedJukugoList(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(KanjiSageColors.PanelItemBackground)
+                                    .focusBorder(RoundedCornerShape(8.dp))
                                     .clickable { onKanjiClick(entry) }
                                     .padding(horizontal = 12.dp, vertical = 8.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
@@ -1185,6 +1189,7 @@ private fun DetectedJukugoList(
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(KanjiSageColors.PanelItemBackground)
+                                    .focusBorder(RoundedCornerShape(8.dp))
                                     .clickable { onJukugoClick(entry) }
                                     .padding(horizontal = 16.dp, vertical = 14.dp),
                                 horizontalArrangement = Arrangement.Start,

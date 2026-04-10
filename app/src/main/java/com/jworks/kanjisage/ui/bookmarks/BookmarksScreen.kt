@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import com.jworks.kanjisage.ui.theme.focusBorder
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,12 +19,14 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
@@ -48,10 +51,9 @@ import androidx.compose.ui.unit.sp
 import com.jworks.kanjisage.R
 import com.jworks.kanjisage.domain.models.BookmarkEntry
 import com.jworks.kanjisage.domain.repository.BookmarkRepository
+import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import kotlinx.coroutines.launch
 
-private val DarkBg = Color(0xFF1B1B1B)
-private val CardBg = Color(0xFF2A2A2A)
 private val TanAccent = Color(0xFFD4B896)
 private val CreamText = Color(0xFFF5E6D3)
 private val MutedText = Color(0xFF999999)
@@ -64,6 +66,7 @@ private fun BookmarkEntry.isKanji(): Boolean {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookmarksScreen(
     bookmarkRepository: BookmarkRepository,
@@ -86,13 +89,13 @@ fun BookmarksScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarkBg)
+            .background(KanjiSageColors.DarkBg)
     ) {
         // Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFF1B1B1B))
+                .background(KanjiSageColors.DarkBg)
                 .statusBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -102,6 +105,7 @@ fun BookmarksScreen(
                 contentDescription = "Back",
                 modifier = Modifier
                     .size(24.dp)
+                    .focusBorder(CircleShape)
                     .clickable { onBackClick() },
                 tint = Color.White
             )
@@ -115,13 +119,13 @@ fun BookmarksScreen(
         }
 
         // Tabs
-        TabRow(
+        PrimaryTabRow(
             selectedTabIndex = selectedTab,
             containerColor = TabBg,
             contentColor = BookmarkGold,
-            indicator = { tabPositions ->
-                TabRowDefaults.SecondaryIndicator(
-                    modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+            indicator = {
+                TabRowDefaults.PrimaryIndicator(
+                    modifier = Modifier.tabIndicatorOffset(selectedTab),
                     color = BookmarkGold
                 )
             }
@@ -264,7 +268,8 @@ private fun WordBookmarkRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(CardBg)
+            .background(KanjiSageColors.CardBg)
+            .focusBorder(RoundedCornerShape(12.dp))
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -296,6 +301,7 @@ private fun WordBookmarkRow(
             contentDescription = "Remove bookmark",
             modifier = Modifier
                 .size(20.dp)
+                .focusBorder(CircleShape)
                 .clickable { onDelete() },
             tint = MutedText
         )
@@ -312,7 +318,8 @@ private fun KanjiBookmarkRow(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(CardBg)
+            .background(KanjiSageColors.CardBg)
+            .focusBorder(RoundedCornerShape(12.dp))
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -352,6 +359,7 @@ private fun KanjiBookmarkRow(
             contentDescription = "Remove bookmark",
             modifier = Modifier
                 .size(20.dp)
+                .focusBorder(CircleShape)
                 .clickable { onDelete() },
             tint = MutedText
         )
@@ -363,6 +371,7 @@ private fun KanjiJourneyPromoCard(onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .focusBorder(RoundedCornerShape(12.dp))
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF1A3A2A))
@@ -383,7 +392,7 @@ private fun KanjiJourneyPromoCard(onClick: () -> Unit) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Open on Play Store >",
-                color = Color(0xFF4CAF50),
+                color = KanjiSageColors.Primary,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
                 fontStyle = FontStyle.Italic

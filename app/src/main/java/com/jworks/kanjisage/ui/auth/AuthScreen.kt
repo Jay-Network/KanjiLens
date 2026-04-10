@@ -41,6 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jworks.kanjisage.data.auth.AuthRepository
+import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import com.jworks.kanjisage.data.auth.AuthState
 import kotlinx.coroutines.launch
 
@@ -79,8 +80,8 @@ fun AuthScreen(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF1B1B1B),
-                        Color(0xFF0D3B66)
+                        KanjiSageColors.DarkBg,
+                        KanjiSageColors.HeaderBg
                     )
                 )
             )
@@ -129,7 +130,7 @@ fun AuthScreen(
             // Privacy note
             Text(
                 text = "Only your email address is collected.\nYour name and photo are not stored.",
-                color = Color(0xFF4FC3F7).copy(alpha = 0.8f),
+                color = KanjiSageColors.PrimaryAction.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center,
                 fontSize = 13.sp,
                 lineHeight = 18.sp
@@ -188,7 +189,7 @@ fun AuthScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = (authState as AuthState.Error).message,
-                    color = Color(0xFFFF5252),
+                    color = KanjiSageColors.TimerWarning,
                     fontSize = 14.sp,
                     textAlign = TextAlign.Center
                 )
@@ -225,7 +226,7 @@ private fun BenefitItem(text: String) {
     ) {
         Text(
             text = "\u2713",
-            color = Color(0xFF4FC3F7),
+            color = KanjiSageColors.PrimaryAction,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold
         )

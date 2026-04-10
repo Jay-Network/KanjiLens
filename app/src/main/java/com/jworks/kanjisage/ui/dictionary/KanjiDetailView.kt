@@ -6,7 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -36,6 +35,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jworks.kanjisage.domain.models.KanjiInfo
+import com.jworks.kanjisage.ui.theme.focusBorder
 
 // Match KanjiJourney theme colors exactly for visual consistency
 private val OrangeBar = Color(0xFFFF8C42)       // KanjiJourney primary
@@ -47,7 +47,6 @@ private val DarkText = Color(0xFF1C1B1F)         // KanjiJourney onBackground
 private val OrangePrimary = Color(0xFFFF8C42)    // KanjiJourney primary for titles
 private val MutedText = Color(0xFF49454F)        // KanjiJourney onSurfaceVariant
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun KanjiDetailView(
     kanji: String,
@@ -73,7 +72,7 @@ fun KanjiDetailView(
                 text = "\u2190",
                 fontSize = 24.sp,
                 color = Color.White,
-                modifier = Modifier.clickable { onBackClick() }
+                modifier = Modifier.focusBorder().clickable { onBackClick() }
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
@@ -89,6 +88,7 @@ fun KanjiDetailView(
                 fontSize = 24.sp,
                 color = if (isBookmarked) BookmarkGold else Color.White,
                 modifier = Modifier
+                    .focusBorder()
                     .clickable { onBookmarkToggle() }
                     .padding(4.dp)
             )
@@ -220,7 +220,7 @@ fun KanjiDetailView(
                     text = "More on Jisho.org",
                     fontSize = 13.sp,
                     color = Color(0xFF1976D2),
-                    modifier = Modifier.clickable {
+                    modifier = Modifier.focusBorder().clickable {
                         val intent = Intent(
                             Intent.ACTION_VIEW,
                             Uri.parse("https://jisho.org/search/${kanji}%20%23kanji")

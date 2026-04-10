@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import com.jworks.kanjisage.ui.theme.focusBorder
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,6 +54,7 @@ import com.jworks.kanjisage.ui.auth.HandlePromptDialog
 import com.jworks.kanjisage.data.jcoin.JCoinClient
 import com.jworks.kanjisage.data.jcoin.JCoinEarnRules
 import com.jworks.kanjisage.data.subscription.SubscriptionManager
+import com.jworks.kanjisage.ui.theme.KanjiSageColors
 
 @Composable
 fun ProfileScreen(
@@ -82,7 +84,7 @@ fun ProfileScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFF1B1B1B))
+                .background(KanjiSageColors.DarkBg)
                 .statusBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -92,6 +94,7 @@ fun ProfileScreen(
                 contentDescription = "Back",
                 modifier = Modifier
                     .size(24.dp)
+                    .focusBorder(CircleShape)
                     .clickable { onBackClick() },
                 tint = Color.White
             )
@@ -131,7 +134,7 @@ fun ProfileScreen(
                         modifier = Modifier
                             .size(56.dp)
                             .clip(CircleShape)
-                            .background(if (handle != null) Color(0xFF1976D2) else if (isAnonymous) Color(0xFF546E7A) else Color(0xFF78909C)),
+                            .background(if (handle != null) Color(0xFF1976D2) else if (isAnonymous) Color(0xFF546E7A) else KanjiSageColors.BookmarkButtonBg),
                         contentAlignment = Alignment.Center
                     ) {
                         val initial = when {
@@ -180,7 +183,7 @@ fun ProfileScreen(
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         // Subscription badge
-                        val badgeColor = if (isPremium) Color(0xFF4CAF50) else Color(0xFF9E9E9E)
+                        val badgeColor = if (isPremium) KanjiSageColors.Primary else Color(0xFF9E9E9E)
                         val badgeText = if (isPremium) "Premium" else "Free"
                         Text(
                             text = badgeText,
@@ -197,6 +200,7 @@ fun ProfileScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .focusBorder()
                     .clickable { showHandleDialog = true }
                     .padding(vertical = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -392,7 +396,7 @@ fun ProfileScreen(
                                     subscriptionManager.setPremiumOverride(true, context)
                                 },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (premiumOverride) Color(0xFF4CAF50) else Color(0xFFBDBDBD)
+                                    containerColor = if (premiumOverride) KanjiSageColors.Primary else Color(0xFFBDBDBD)
                                 ),
                                 modifier = Modifier.weight(1f)
                             ) {
@@ -404,7 +408,7 @@ fun ProfileScreen(
                                     subscriptionManager.setPremiumOverride(false, context)
                                 },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (!premiumOverride) Color(0xFFF44336) else Color(0xFFBDBDBD)
+                                    containerColor = if (!premiumOverride) KanjiSageColors.HudSlow else Color(0xFFBDBDBD)
                                 ),
                                 modifier = Modifier.weight(1f)
                             ) {
@@ -478,6 +482,7 @@ private fun EcosystemAppRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .focusBorder()
             .clickable { onClick() }
             .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,

@@ -3,6 +3,7 @@ package com.jworks.kanjisage.ui.settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import com.jworks.kanjisage.ui.theme.focusBorder
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.jworks.kanjisage.R
+import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import com.jworks.kanjisage.data.auth.AuthRepository
 import com.jworks.kanjisage.data.auth.AuthState
 import com.jworks.kanjisage.domain.models.AppSettings
@@ -271,12 +273,12 @@ fun SettingsScreen(
                     onClick = onLogout,
                     modifier = Modifier.fillMaxWidth(),
                     colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color.Red
+                        contentColor = MaterialTheme.colorScheme.error
                     ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.Red.copy(alpha = 0.5f)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Sign Out", color = Color.Red)
+                    Text("Sign Out", color = MaterialTheme.colorScheme.error)
                 }
             }
 
@@ -286,13 +288,14 @@ fun SettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .focusBorder()
                         .clickable { onHelpClick() }
                         .padding(vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text("Help & About", style = MaterialTheme.typography.bodyMedium)
-                    Text(">", style = MaterialTheme.typography.bodyLarge, color = Color.Gray)
+                    Text(">", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
@@ -343,6 +346,7 @@ private fun GeminiApiKeySection(viewModel: SettingsViewModel) {
     var keyInput by remember(currentKey) { mutableStateOf(currentKey) }
     var showKey by remember { mutableStateOf(false) }
     val hasKey = currentKey.isNotBlank()
+    val keyError = keyInput.isNotBlank() && keyInput.trim().length < 10
 
     Column(modifier = Modifier.padding(vertical = 4.dp)) {
         Text(
@@ -353,7 +357,7 @@ private fun GeminiApiKeySection(viewModel: SettingsViewModel) {
         Text(
             text = if (hasKey) "Key is set" else "No key configured",
             style = MaterialTheme.typography.bodySmall,
-            color = if (hasKey) Color(0xFF4CAF50) else MaterialTheme.colorScheme.onSurfaceVariant
+            color = if (hasKey) KanjiSageColors.Primary else MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -363,6 +367,10 @@ private fun GeminiApiKeySection(viewModel: SettingsViewModel) {
             label = { Text("API Key") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
+            isError = keyError,
+            supportingText = if (keyError) {
+                { Text("API key is too short") }
+            } else null,
             visualTransformation = if (showKey) VisualTransformation.None
                 else PasswordVisualTransformation(),
             trailingIcon = {
@@ -387,7 +395,7 @@ private fun GeminiApiKeySection(viewModel: SettingsViewModel) {
                 onClick = {
                     viewModel.setGeminiApiKey(keyInput.trim())
                 },
-                enabled = keyInput.trim() != currentKey,
+                enabled = keyInput.trim() != currentKey && !keyError,
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(8.dp)
             ) {
@@ -402,9 +410,9 @@ private fun GeminiApiKeySection(viewModel: SettingsViewModel) {
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(8.dp),
                     colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color.Red
+                        contentColor = MaterialTheme.colorScheme.error
                     ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.Red.copy(alpha = 0.5f))
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
                 ) {
                     Text("Clear")
                 }
@@ -502,6 +510,7 @@ private fun ColorPresetRow(settings: AppSettings, onPresetClick: (Long, Long) ->
                         if (isSelected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
                         else Modifier
                     )
+                    .focusBorder(RoundedCornerShape(8.dp))
                     .clickable { onPresetClick(preset.kanjiColor, preset.kanaColor) }
                     .padding(8.dp)
             ) {

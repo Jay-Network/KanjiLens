@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.jworks.kanjisage.ui.theme.focusBorder
 import kotlinx.coroutines.delay
 
 /**
@@ -74,6 +75,7 @@ fun KanjiJourneyPromoBanner(
                 .padding(horizontal = 16.dp, vertical = 8.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .background(Color(0xFFFF8C42).copy(alpha = 0.95f))
+                .focusBorder(RoundedCornerShape(12.dp))
                 .clickable {
                     // Try to open KanjiJourney, fall back to Play Store
                     val intent = context.packageManager

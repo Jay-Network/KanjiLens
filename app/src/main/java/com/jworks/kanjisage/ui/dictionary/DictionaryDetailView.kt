@@ -4,10 +4,10 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -38,6 +38,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jworks.kanjisage.R
+import com.jworks.kanjisage.ui.theme.focusBorder
 import com.jworks.kanjisage.domain.models.DictionaryResult
 
 private val KanjiJourneyGreen = Color(0xFF4CAF50)
@@ -98,7 +99,6 @@ private val POS_LABELS = mapOf(
     "cop" to "Copula",
 )
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun DictionaryDetailView(
     result: DictionaryResult?,
@@ -129,6 +129,7 @@ fun DictionaryDetailView(
                 contentDescription = "Back",
                 modifier = Modifier
                     .size(24.dp)
+                    .focusBorder(CircleShape)
                     .clickable { onBackClick() },
                 tint = Color.White
             )
@@ -174,6 +175,7 @@ fun DictionaryDetailView(
                     contentDescription = if (isWordBookmarked) "Remove bookmark" else "Bookmark word",
                     modifier = Modifier
                         .size(28.dp)
+                        .focusBorder(CircleShape)
                         .clickable { onWordBookmarkToggle() }
                         .padding(2.dp),
                     tint = if (isWordBookmarked) Color(0xFFFFD54F) else Color.White
@@ -238,6 +240,7 @@ fun DictionaryDetailView(
                                     .size(48.dp)
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(if (isSaved) Color(0xFFFFF3E0) else KanjiCardBg)
+                                    .focusBorder(RoundedCornerShape(8.dp))
                                     .clickable { onKanjiClick(kanjiStr) },
                                 contentAlignment = Alignment.Center
                             ) {
@@ -266,13 +269,15 @@ fun DictionaryDetailView(
                     fontSize = 13.sp,
                     color = Color(0xFF1976D2),
                     fontStyle = FontStyle.Italic,
-                    modifier = Modifier.clickable {
-                        val intent = Intent(
-                            Intent.ACTION_VIEW,
-                            Uri.parse("https://jisho.org/search/${displayWord}")
-                        )
-                        context.startActivity(intent)
-                    }
+                    modifier = Modifier
+                        .focusBorder()
+                        .clickable {
+                            val intent = Intent(
+                                Intent.ACTION_VIEW,
+                                Uri.parse("https://jisho.org/search/${displayWord}")
+                            )
+                            context.startActivity(intent)
+                        }
                 )
             }
         } else {
@@ -358,6 +363,7 @@ fun DictionaryDetailView(
                                     .size(48.dp)
                                     .clip(RoundedCornerShape(8.dp))
                                     .background(if (isSaved) Color(0xFFFFF3E0) else KanjiCardBg)
+                                    .focusBorder(RoundedCornerShape(8.dp))
                                     .clickable { onKanjiClick(kanjiStr) },
                                 contentAlignment = Alignment.Center
                             ) {
@@ -386,13 +392,15 @@ fun DictionaryDetailView(
                     fontSize = 13.sp,
                     color = Color(0xFF1976D2),
                     fontStyle = FontStyle.Italic,
-                    modifier = Modifier.clickable {
-                        val intent = Intent(
-                            Intent.ACTION_VIEW,
-                            Uri.parse("https://jisho.org/search/${result.word}")
-                        )
-                        context.startActivity(intent)
-                    }
+                    modifier = Modifier
+                        .focusBorder()
+                        .clickable {
+                            val intent = Intent(
+                                Intent.ACTION_VIEW,
+                                Uri.parse("https://jisho.org/search/${result.word}")
+                            )
+                            context.startActivity(intent)
+                        }
                 )
             }
         }
@@ -407,6 +415,7 @@ private fun KanjiJourneyPracticeButton(kanji: String) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
             .background(KanjiJourneyGreen)
+            .focusBorder(RoundedCornerShape(10.dp))
             .clickable {
                 val intent = Intent(
                     Intent.ACTION_VIEW,

@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import com.jworks.kanjisage.domain.models.ScanChallenge
 import com.jworks.kanjisage.ui.anim.CoinBurstEffect
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
+import com.jworks.kanjisage.ui.theme.focusBorder
 
 /**
  * Scan timer pill displayed for free-tier users during an active scan.
@@ -85,6 +86,7 @@ fun ScanChallengePill(
                 if (challenge.isCompleted) KanjiSageColors.ChallengeComplete.copy(alpha = 0.85f)
                 else KanjiSageColors.ChallengeActive.copy(alpha = 0.85f)
             )
+            .focusBorder(RoundedCornerShape(16.dp))
             .clickable { if (challenge.isCompleted) onNextChallenge() }
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
