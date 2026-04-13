@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jworks.kanjisage.data.billing.BillingManager
+import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import com.jworks.kanjisage.ui.theme.focusBorder
 
 @Composable
@@ -66,8 +67,8 @@ fun PaywallScreen(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF1B1B1B),
-                        Color(0xFF0D3B66)
+                        KanjiSageColors.DarkBg,
+                        KanjiSageColors.HeaderBg
                     )
                 )
             )
@@ -94,13 +95,13 @@ fun PaywallScreen(
                 Text(
                     text = "$remainingScans free scan${if (remainingScans != 1) "s" else ""} left today",
                     fontSize = 14.sp,
-                    color = Color(0xFFFFB74D)
+                    color = KanjiSageColors.CoinAccent
                 )
             } else {
                 Text(
                     text = "You\u2019ve used all 5 free scans for today",
                     fontSize = 14.sp,
-                    color = Color(0xFFFF5252)
+                    color = KanjiSageColors.TimerWarning
                 )
             }
 
@@ -151,7 +152,7 @@ fun PaywallScreen(
                     .fillMaxWidth()
                     .height(56.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF4FC3F7)
+                    containerColor = KanjiSageColors.PrimaryAction
                 ),
                 shape = RoundedCornerShape(28.dp),
                 enabled = productDetails.isNotEmpty()
@@ -199,13 +200,13 @@ fun PaywallScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Color(0xFF1A3A5C))
+                    .background(KanjiSageColors.ActiveCard)
                     .padding(16.dp)
             ) {
                 Column {
                     Text(
                         text = "Bundle & Save",
-                        color = Color(0xFFFFB74D),
+                        color = KanjiSageColors.CoinAccent,
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     )
@@ -229,7 +230,7 @@ private fun FeatureRow(title: String, description: String) {
     ) {
         Text(
             text = "\u2713",
-            color = Color(0xFF4FC3F7),
+            color = KanjiSageColors.PrimaryAction,
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold
         )
@@ -259,8 +260,8 @@ private fun PlanCard(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val borderColor = if (isSelected) Color(0xFF4FC3F7) else Color.White.copy(alpha = 0.2f)
-    val bgColor = if (isSelected) Color(0xFF1A3A5C) else Color.Transparent
+    val borderColor = if (isSelected) KanjiSageColors.PrimaryAction else Color.White.copy(alpha = 0.2f)
+    val bgColor = if (isSelected) KanjiSageColors.ActiveCard else Color.Transparent
 
     Box(
         modifier = Modifier
@@ -287,7 +288,7 @@ private fun PlanCard(
                 if (savings != null) {
                     Text(
                         text = savings,
-                        color = Color(0xFF4CAF50),
+                        color = KanjiSageColors.Primary,
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium
                     )

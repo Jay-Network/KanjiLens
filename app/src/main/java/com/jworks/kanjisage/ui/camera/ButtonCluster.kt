@@ -227,7 +227,7 @@ fun JCoinButtonContent() {
         ) {
             Text(
                 text = "J",
-                color = Color(0xFF5D4037),
+                color = KanjiSageColors.CoinLetterBrown,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.ExtraBold
             )

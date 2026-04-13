@@ -55,14 +55,14 @@ private val pages = listOf(
         title = "See Japanese Everywhere",
         subtitle = "Real-time kanji recognition",
         description = "Point your camera at any Japanese text\nand instantly see readings and meanings\nright on top of the text.",
-        accentColor = Color(0xFF4FC3F7)
+        accentColor = KanjiSageColors.PrimaryAction
     ),
     OnboardingPage(
         symbol = "\uD83D\uDD0D",
         title = "Tap. Learn. Remember.",
         subtitle = "215,000+ dictionary entries",
         description = "Tap any detected word for its full definition.\nSave your favorites to study later.\nWorks completely offline.",
-        accentColor = Color(0xFF66BB6A)
+        accentColor = KanjiSageColors.SuccessGreen
     ),
     OnboardingPage(
         symbol = "J_COIN",
@@ -76,7 +76,7 @@ private val pages = listOf(
         title = "Ready to Scan!",
         subtitle = "5 free scans daily, no sign-up needed",
         description = "Start scanning right now.\nCreate an account to earn J Coins,\nsync your bookmarks, and go unlimited.",
-        accentColor = Color(0xFFFF4081)
+        accentColor = KanjiSageColors.ConfettiPink
     )
 )
 
@@ -95,8 +95,8 @@ fun OnboardingScreen(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF121212),
-                        Color(0xFF0D3B66)
+                        KanjiSageColors.AbyssBg,
+                        KanjiSageColors.HeaderBg
                     )
                 )
             )
@@ -198,7 +198,7 @@ fun OnboardingScreen(
             ) {
                 Text(
                     text = if (isLastPage) "Start Scanning" else "Next",
-                    color = if (isLastPage) Color.White else Color(0xFF121212),
+                    color = if (isLastPage) Color.White else KanjiSageColors.AbyssBg,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -242,9 +242,9 @@ private fun OnboardingPageContent(
                         .background(
                             Brush.radialGradient(
                                 colors = listOf(
-                                    Color(0xFFFFD54F),
-                                    Color(0xFFFFA726),
-                                    Color(0xFFFF8F00)
+                                    KanjiSageColors.CoinGold,
+                                    KanjiSageColors.GoldGradientMid,
+                                    KanjiSageColors.GoldGradientDeep
                                 )
                             )
                         ),

@@ -1093,7 +1093,7 @@ private fun DetectedJukugoList(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0xFF7C4DFF).copy(alpha = 0.9f))
+                        .background(KanjiSageColors.ChallengePurple.copy(alpha = 0.9f))
                         .focusBorder(RoundedCornerShape(16.dp))
                         .clickable { onAiAnalyze() }
                         .padding(horizontal = 10.dp, vertical = 5.dp)

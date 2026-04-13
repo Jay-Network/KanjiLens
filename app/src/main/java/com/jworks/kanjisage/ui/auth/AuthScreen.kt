@@ -171,12 +171,12 @@ fun AuthScreen(
                             text = "G",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF4285F4)
+                            color = KanjiSageColors.GoogleBlue
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             text = "Continue with Google",
-                            color = Color(0xFF333333),
+                            color = KanjiSageColors.DarkGreyText,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium
                         )

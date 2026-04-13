@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import com.jworks.kanjisage.ui.theme.KanjiSageColors
 
 @Composable
 fun HandlePromptDialog(
@@ -129,7 +130,7 @@ fun HandlePromptDialog(
                     onClick = { if (validate()) onSave(handle.trim()) },
                     enabled = handle.trim().length >= 3,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF1976D2)
+                        containerColor = KanjiSageColors.LinkBlue
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {

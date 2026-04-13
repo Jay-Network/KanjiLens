@@ -161,7 +161,7 @@ fun CoinRewardToast(
                     Brush.horizontalGradient(
                         colors = listOf(
                             KanjiSageColors.CoinToastBackground,
-                            Color(0xFF1565C0)
+                            KanjiSageColors.CoinGradientEnd
                         )
                     )
                 )
@@ -185,7 +185,7 @@ fun CoinRewardToast(
             ) {
                 Text(
                     text = "J",
-                    color = Color(0xFF5D4037),
+                    color = KanjiSageColors.CoinLetterBrown,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.ExtraBold
                 )

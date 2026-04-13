@@ -101,7 +101,7 @@ fun RewardsScreen(
                 .fillMaxWidth()
                 .background(
                     Brush.horizontalGradient(
-                        colors = listOf(Color(0xFF0D3B66), Color(0xFF1565C0))
+                        colors = listOf(KanjiSageColors.HeaderBg, KanjiSageColors.CoinGradientEnd)
                     )
                 )
                 .statusBarsPadding()
@@ -130,7 +130,7 @@ fun RewardsScreen(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text("J", color = Color(0xFF5D4037), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
+                Text("J", color = KanjiSageColors.CoinLetterBrown, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
             }
             Spacer(modifier = Modifier.width(8.dp))
             Text(
@@ -199,7 +199,7 @@ fun RewardsScreen(
                         label = "Total Scans",
                         current = totalScans.coerceAtMost(nextScanMilestone),
                         max = nextScanMilestone,
-                        color = Color(0xFF0D9488),
+                        color = KanjiSageColors.AccentTeal,
                         emoji = "\uD83D\uDCCA"  // chart
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -212,7 +212,7 @@ fun RewardsScreen(
                         label = "Words Saved",
                         current = totalWordsSaved.coerceAtMost(nextWordMilestone),
                         max = nextWordMilestone,
-                        color = Color(0xFF1565C0),
+                        color = KanjiSageColors.CoinGradientEnd,
                         emoji = "\uD83D\uDCDA"  // books
                     )
 
@@ -322,7 +322,7 @@ fun RewardsScreen(
                         ) {
                             Text(
                                 text = msg,
-                                color = if (msg.startsWith("Purchased")) KanjiSageColors.SuccessGreen else Color(0xFFEF5350),
+                                color = if (msg.startsWith("Purchased")) KanjiSageColors.SuccessGreen else KanjiSageColors.ErrorLight,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 14.sp
                             )
@@ -352,7 +352,7 @@ private fun SignedOutCard() {
             .clip(RoundedCornerShape(16.dp))
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color(0xFF2A2A2A), Color(0xFF1E1E1E))
+                    colors = listOf(KanjiSageColors.CardBg, KanjiSageColors.CardBgDark)
                 )
             )
             .padding(32.dp),
@@ -373,7 +373,7 @@ private fun SignedOutCard() {
             ) {
                 Text(
                     text = "J",
-                    color = Color(0xFF5D4037),
+                    color = KanjiSageColors.CoinLetterBrown,
                     fontSize = 36.sp,
                     fontWeight = FontWeight.ExtraBold
                 )
@@ -405,7 +405,7 @@ private fun PremiumRequiredCard(onUpgradeClick: () -> Unit) {
             .clip(RoundedCornerShape(16.dp))
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(Color(0xFF2A2A2A), Color(0xFF1E1E1E))
+                    colors = listOf(KanjiSageColors.CardBg, KanjiSageColors.CardBgDark)
                 )
             )
             .padding(32.dp),
@@ -417,7 +417,7 @@ private fun PremiumRequiredCard(onUpgradeClick: () -> Unit) {
                 modifier = Modifier
                     .size(72.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFF3A3A3A)),
+                    .background(KanjiSageColors.CardBgLight),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -503,7 +503,7 @@ private fun BalanceCard(balance: JCoinBalance) {
                 ) {
                     Text(
                         text = "J",
-                        color = Color(0xFF5D4037),
+                        color = KanjiSageColors.CoinLetterBrown,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.ExtraBold
                     )
@@ -535,7 +535,7 @@ private fun StreakCard(streakDays: Int) {
             .background(
                 if (streakDays > 0)
                     Brush.horizontalGradient(
-                        colors = listOf(Color(0xFF3E2723), Color(0xFF4E342E))
+                        colors = listOf(KanjiSageColors.CardBrownStart, KanjiSageColors.CardBrownEnd)
                     )
                 else
                     Brush.horizontalGradient(
@@ -661,7 +661,7 @@ private fun DailyProgressCard(
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp)),
                 color = color,
-                trackColor = Color(0xFF3A3A3A)
+                trackColor = KanjiSageColors.CardBgLight
             )
         }
     }
@@ -733,7 +733,7 @@ private fun RedemptionCard(
             .background(
                 if (enabled)
                     Brush.horizontalGradient(
-                        colors = listOf(Color(0xFF1A3A5C), Color(0xFF1E4976))
+                        colors = listOf(KanjiSageColors.ActiveCard, KanjiSageColors.ActiveCardLight)
                     )
                 else
                     Brush.horizontalGradient(

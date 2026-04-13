@@ -6,6 +6,17 @@ Single source of truth for version: `VERSION` file at repo root.
 
 ---
 
+## v1.6.3 (2026-04-13)
+
+### Fixed
+- L1 compliance: Migrated remaining inline `Color(0x...)` literals to `KanjiSageColors` tokens across 10 files — DictionaryDetailView, RewardsScreen, PaywallScreen, OnboardingScreen, SplashScreen, AuthScreen, HandlePromptDialog, CrossPromoBanner, CameraScreen, ScanOverlays, ButtonCluster
+
+### Changed
+- Expanded `KanjiSageColors` with 14 tokens: `PosTagBg`, `CoinGradientEnd`, `CoinLetterBrown`, `ErrorLight`, `CardBgDark`, `CardBrownStart`, `CardBrownEnd`, `ActiveCardLight`, `AbyssBg`, `GoldGradientMid`, `GoldGradientDeep`, `GoogleBlue`, `DarkGreyText`, `ChallengePurple`
+
+### Security
+- chmod 600 on `.credentials`, `google-oauth-credentials.json`, `google-oauth-android-credentials.json`; added `SECRETS.md` documenting location + pre-launch hardening plan (move-out-of-repo + key rotation)
+
 ## v1.6.2 (2026-04-10)
 
 ### Fixed

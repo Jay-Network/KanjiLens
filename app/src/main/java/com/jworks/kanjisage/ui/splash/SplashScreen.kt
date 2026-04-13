@@ -33,11 +33,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jworks.kanjisage.R
+import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-private val SplashBg = Color(0xFF000000)
-private val TealAccent = Color(0xFF0D9488)
+private val SplashBg = Color.Black
+private val TealAccent = KanjiSageColors.AccentTeal
 
 @Composable
 fun SplashScreen(

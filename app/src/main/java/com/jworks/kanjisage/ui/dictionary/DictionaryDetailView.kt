@@ -38,18 +38,9 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jworks.kanjisage.R
+import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import com.jworks.kanjisage.ui.theme.focusBorder
 import com.jworks.kanjisage.domain.models.DictionaryResult
-
-private val KanjiJourneyGreen = Color(0xFF4CAF50)
-
-private val TanBar = Color(0xFFD4B896)
-private val CreamBg = Color(0xFFF5E6D3)
-private val DarkText = Color(0xFF2C2C2C)
-private val MutedText = Color(0xFF666666)
-private val PosTagBg = Color(0xFFE8D5BE)
-private val KanjiCardBg = Color(0xFFEDD9C0)
-private val CommonBadge = Color(0xFF4CAF50)
 
 // POS abbreviation → display label
 private val POS_LABELS = mapOf(
@@ -115,12 +106,12 @@ fun DictionaryDetailView(
     val displayWord = result?.word ?: wordText
     val displayReading = result?.reading ?: wordReading
 
-    Column(modifier = modifier.background(CreamBg)) {
+    Column(modifier = modifier.background(KanjiSageColors.PanelBackground)) {
         // Header bar
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(TanBar)
+                .background(KanjiSageColors.PanelBorder)
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -155,7 +146,7 @@ fun DictionaryDetailView(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(4.dp))
-                            .background(CommonBadge)
+                            .background(KanjiSageColors.Primary)
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
@@ -178,7 +169,7 @@ fun DictionaryDetailView(
                         .focusBorder(CircleShape)
                         .clickable { onWordBookmarkToggle() }
                         .padding(2.dp),
-                    tint = if (isWordBookmarked) Color(0xFFFFD54F) else Color.White
+                    tint = if (isWordBookmarked) KanjiSageColors.CoinGold else Color.White
                 )
             } else {
                 Text(
@@ -197,7 +188,7 @@ fun DictionaryDetailView(
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(
-                    color = TanBar,
+                    color = KanjiSageColors.PanelBorder,
                     strokeWidth = 2.dp,
                     modifier = Modifier.size(32.dp)
                 )
@@ -212,7 +203,7 @@ fun DictionaryDetailView(
                 Text(
                     text = "No definition found",
                     fontSize = 16.sp,
-                    color = MutedText
+                    color = KanjiSageColors.JukugoSecondary
                 )
 
                 // Still show kanji breakdown for words without dictionary entries
@@ -225,7 +216,7 @@ fun DictionaryDetailView(
                         text = "Kanji",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = MutedText,
+                        color = KanjiSageColors.JukugoSecondary,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     FlowRow(
@@ -239,7 +230,7 @@ fun DictionaryDetailView(
                                 modifier = Modifier
                                     .size(48.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(if (isSaved) Color(0xFFFFF3E0) else KanjiCardBg)
+                                    .background(if (isSaved) KanjiSageColors.WarningLightBg else KanjiSageColors.PanelItemBackground)
                                     .focusBorder(RoundedCornerShape(8.dp))
                                     .clickable { onKanjiClick(kanjiStr) },
                                 contentAlignment = Alignment.Center
@@ -247,7 +238,7 @@ fun DictionaryDetailView(
                                 Text(
                                     text = kanjiStr,
                                     fontSize = 26.sp,
-                                    color = if (isSaved) Color(0xFFBF6900) else DarkText,
+                                    color = if (isSaved) KanjiSageColors.BookmarkedKanjiHighlight else KanjiSageColors.JukugoText,
                                     fontWeight = if (isSaved) FontWeight.Bold else FontWeight.Medium
                                 )
                             }
@@ -267,7 +258,7 @@ fun DictionaryDetailView(
                 Text(
                     text = "Search on Jisho.org",
                     fontSize = 13.sp,
-                    color = Color(0xFF1976D2),
+                    color = KanjiSageColors.LinkBlue,
                     fontStyle = FontStyle.Italic,
                     modifier = Modifier
                         .focusBorder()
@@ -308,13 +299,13 @@ fun DictionaryDetailView(
                                 Box(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(4.dp))
-                                        .background(PosTagBg)
+                                        .background(KanjiSageColors.PosTagBg)
                                         .padding(horizontal = 8.dp, vertical = 3.dp)
                                 ) {
                                     Text(
                                         text = POS_LABELS[pos] ?: pos,
                                         fontSize = 12.sp,
-                                        color = DarkText,
+                                        color = KanjiSageColors.JukugoText,
                                         fontWeight = FontWeight.Medium
                                     )
                                 }
@@ -326,13 +317,13 @@ fun DictionaryDetailView(
                     // Numbered gloss
                     Text(
                         text = buildAnnotatedString {
-                            withStyle(SpanStyle(color = TanBar, fontWeight = FontWeight.Bold)) {
+                            withStyle(SpanStyle(color = KanjiSageColors.PanelBorder, fontWeight = FontWeight.Bold)) {
                                 append("$senseNumber. ")
                             }
                             append(sense.glosses.joinToString("; "))
                         },
                         fontSize = 15.sp,
-                        color = DarkText,
+                        color = KanjiSageColors.JukugoText,
                         modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
                     )
                     senseNumber++
@@ -348,7 +339,7 @@ fun DictionaryDetailView(
                         text = "Kanji",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = MutedText,
+                        color = KanjiSageColors.JukugoSecondary,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     FlowRow(
@@ -362,7 +353,7 @@ fun DictionaryDetailView(
                                 modifier = Modifier
                                     .size(48.dp)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(if (isSaved) Color(0xFFFFF3E0) else KanjiCardBg)
+                                    .background(if (isSaved) KanjiSageColors.WarningLightBg else KanjiSageColors.PanelItemBackground)
                                     .focusBorder(RoundedCornerShape(8.dp))
                                     .clickable { onKanjiClick(kanjiStr) },
                                 contentAlignment = Alignment.Center
@@ -370,7 +361,7 @@ fun DictionaryDetailView(
                                 Text(
                                     text = kanjiStr,
                                     fontSize = 26.sp,
-                                    color = if (isSaved) Color(0xFFBF6900) else DarkText,
+                                    color = if (isSaved) KanjiSageColors.BookmarkedKanjiHighlight else KanjiSageColors.JukugoText,
                                     fontWeight = if (isSaved) FontWeight.Bold else FontWeight.Medium
                                 )
                             }
@@ -390,7 +381,7 @@ fun DictionaryDetailView(
                 Text(
                     text = "More on Jisho.org",
                     fontSize = 13.sp,
-                    color = Color(0xFF1976D2),
+                    color = KanjiSageColors.LinkBlue,
                     fontStyle = FontStyle.Italic,
                     modifier = Modifier
                         .focusBorder()
@@ -414,7 +405,7 @@ private fun KanjiJourneyPracticeButton(kanji: String) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
-            .background(KanjiJourneyGreen)
+            .background(KanjiSageColors.Primary)
             .focusBorder(RoundedCornerShape(10.dp))
             .clickable {
                 val intent = Intent(

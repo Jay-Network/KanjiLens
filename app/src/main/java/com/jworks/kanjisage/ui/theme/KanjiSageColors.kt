@@ -96,6 +96,24 @@ object KanjiSageColors {
     val MutedText = Color(0xFF999999)
     val MutedTextDark = Color(0xFF49454F)
 
+    // Dictionary
+    val PosTagBg = Color(0xFFE8D5BE)
+
+    // Rewards / paywall gradients & accents
+    val CoinGradientEnd = Color(0xFF1565C0)
+    val CoinLetterBrown = Color(0xFF5D4037)
+    val ErrorLight = Color(0xFFEF5350)
+    val CardBgDark = Color(0xFF1E1E1E)
+    val CardBrownStart = Color(0xFF3E2723)
+    val CardBrownEnd = Color(0xFF4E342E)
+    val ActiveCardLight = Color(0xFF1E4976)
+    val AbyssBg = Color(0xFF121212)
+    val GoogleBlue = Color(0xFF4285F4)
+    val DarkGreyText = Color(0xFF333333)
+    val ChallengePurple = Color(0xFF7C4DFF)
+    val GoldGradientMid = Color(0xFFFFA726)
+    val GoldGradientDeep = Color(0xFFFF8F00)
+
     // Cross-promotion (KanjiJourney)
     val PromoCardBg = Color(0xFF1A3A2A)
     val PromoCardText = Color(0xFF81C784)
