@@ -78,11 +78,15 @@ fun KanjiJourneyPromoBanner(
                 .background(KanjiSageColors.AccentOrange.copy(alpha = 0.95f))
                 .focusBorder(RoundedCornerShape(12.dp))
                 .clickable {
-                    // Try to open KanjiJourney, fall back to Play Store
-                    val intent = context.packageManager
-                        .getLaunchIntentForPackage("com.jworks.kanjijourney")
-                    if (intent != null) {
-                        context.startActivity(intent)
+                    // Deep link kanji to KanjiJourney, fall back to Play Store
+                    val deepLink = if (currentKanji != null) {
+                        Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse("kanjijourney://import?source=kanjisage&kanji=$currentKanji")
+                        )
+                    } else null
+                    if (deepLink != null && deepLink.resolveActivity(context.packageManager) != null) {
+                        context.startActivity(deepLink)
                     } else {
                         val storeIntent = Intent(
                             Intent.ACTION_VIEW,

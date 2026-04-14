@@ -249,7 +249,7 @@ fun DictionaryDetailView(
                 // KanjiJourney promo for kanji practice
                 if (fallbackKanji.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(16.dp))
-                    KanjiJourneyPracticeButton(kanji = fallbackKanji.first().toString())
+                    KanjiJourneyPracticeButton(kanjiList = fallbackKanji.toList())
                 }
 
                 // Jisho.org link
@@ -372,7 +372,7 @@ fun DictionaryDetailView(
                 // KanjiJourney promo for kanji practice
                 if (kanjiChars.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(16.dp))
-                    KanjiJourneyPracticeButton(kanji = kanjiChars.first().toString())
+                    KanjiJourneyPracticeButton(kanjiList = kanjiChars.toList())
                 }
 
                 // Jisho.org link
@@ -399,8 +399,10 @@ fun DictionaryDetailView(
 }
 
 @Composable
-private fun KanjiJourneyPracticeButton(kanji: String) {
+private fun KanjiJourneyPracticeButton(kanjiList: List<Char>) {
     val context = LocalContext.current
+    val kanjiCsv = kanjiList.joinToString(",")
+    val displayKanji = if (kanjiList.size <= 3) kanjiCsv else "${kanjiList.take(3).joinToString(",")}…"
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -408,24 +410,32 @@ private fun KanjiJourneyPracticeButton(kanji: String) {
             .background(KanjiSageColors.Primary)
             .focusBorder(RoundedCornerShape(10.dp))
             .clickable {
-                val intent = Intent(
+                val deepLink = Intent(
                     Intent.ACTION_VIEW,
-                    Uri.parse("https://play.google.com/store/apps/details?id=com.jworks.kanjijourney")
+                    Uri.parse("kanjijourney://import?source=kanjisage&kanji=$kanjiCsv")
                 )
-                context.startActivity(intent)
+                if (deepLink.resolveActivity(context.packageManager) != null) {
+                    context.startActivity(deepLink)
+                } else {
+                    val storeIntent = Intent(
+                        Intent.ACTION_VIEW,
+                        Uri.parse("https://play.google.com/store/apps/details?id=com.jworks.kanjijourney")
+                    )
+                    context.startActivity(storeIntent)
+                }
             }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "Practice writing $kanji in KanjiJourney",
+                text = "Send $displayKanji to KanjiJourney",
                 fontSize = 14.sp,
                 color = Color.White,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "AI checks your handwriting",
+                text = "Auto-creates flashcards + SRS review",
                 fontSize = 12.sp,
                 color = Color.White.copy(alpha = 0.8f)
             )

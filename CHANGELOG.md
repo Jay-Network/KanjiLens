@@ -6,6 +6,13 @@ Single source of truth for version: `VERSION` file at repo root.
 
 ---
 
+## v1.7.0 (2026-04-14)
+
+### Added
+- "Send to KanjiJourney" deep link integration — sends scanned kanji via `kanjijourney://import?source=kanjisage&kanji=漢,字,日`
+- DictionaryDetailView: button sends all kanji from the current word (both lookup result and fallback paths)
+- CrossPromoBanner: tapping the promo now deep-links the current kanji to KanjiJourney (falls back to Play Store if not installed)
+
 ## v1.6.3 (2026-04-13)
 
 ### Fixed
