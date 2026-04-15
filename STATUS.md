@@ -1,17 +1,17 @@
-# KanjiLens Development Tracker
+# KanjiSage Development Tracker
 
-> **Updated by**: jworks:43 (KanjiLens agent)
-> **Last updated**: 2026-02-25
+> **Updated by**: jworks:43 (KanjiSage agent)
+> **Last updated**: 2026-04-15
 
 ---
 
 ## Current Status
 
-- **Version**: 1.6.0 (versionCode 15)
+- **Version**: 1.7.1 (versionCode 19)
 - **Platform**: Android (Kotlin + Jetpack Compose)
-- **Build**: Passing
+- **Build**: Passing (45 unit tests, 0 failures)
 - **Branch**: master
-- **Stage**: Store-ready, pre-launch
+- **Stage**: Pre-launch polish — all code work complete, awaiting Play Console setup
 
 ---
 
@@ -24,18 +24,20 @@
 | ML Kit Japanese OCR (offline) | DONE |
 | Text overlay with bounding boxes | DONE |
 | Settings UI (text size, colors, overlay) | DONE |
-| Unit tests (22) | DONE |
+| Unit tests (45) | DONE |
 | **Phase 2: Furigana** | |
 | JMDict database (215K entries) | DONE |
-| Kuroshiro backend (morphological analysis) | DONE |
+| Kuromoji morphological analysis (offline) | DONE |
 | Context-aware furigana lookup | DONE |
 | Per-kanji-segment rendering | DONE |
 | Jitter stabilization | DONE |
 | Partial mode (dual-filter OCR) | DONE |
-| Vertical text support | DONE |
+| Vertical text support (縦書き) | DONE |
 | **Phase 3: Monetization & Auth** | |
+| Anonymous-first auth (no auth wall) | DONE |
 | Google Sign-In + Supabase auth | DONE |
-| Google Play Billing ($1.99/mo, $14.99/yr) | DONE |
+| Handle system (display name) | DONE |
+| Google Play Billing ($0.99/mo, $4.99/yr) | DONE |
 | Free tier (5 scans/day, 60s max) | DONE |
 | Paywall screen | DONE |
 | Admin override | DONE |
@@ -43,8 +45,9 @@
 | Feedback system (Supabase + FCM) | DONE |
 | Profile screen | DONE |
 | App icon (adaptive) | DONE |
-| Draggable button cluster (8 buttons) | DONE |
+| Draggable button cluster | DONE |
 | Onboarding tutorial + Help/About | DONE |
+| Animated splash screen (~3.6s) | DONE |
 | **Phase 3c: Native Dictionary** | |
 | Enriched JMDict (221K entries) | DONE |
 | Room schema v2 | DONE |
@@ -55,50 +58,63 @@
 | Coin earning rules | DONE |
 | Rewards screen | DONE |
 | Bookmarks (Recent/Saved tabs) | DONE |
-| Wired to UI triggers | IN PROGRESS |
-| **Phase 4: Advanced** | |
-| Traditional kanji variant dictionary | - |
-| Cloud Vision API fallback | - |
-| Screenshot/save mode | - |
-| History tracking | - |
-| Flashcard integration (KanjiQuest) | - |
-| **Phase 5: Pre-Launch** | |
-| Supabase credentials configured | - |
-| Google OAuth client ID | - |
+| Wired to UI triggers | DONE |
+| **L1 Accessibility Compliance** | |
+| Focus indicators on all 44 interactive elements | DONE |
+| Font sizes ≥12sp | DONE |
+| Contrast ratios (onSurfaceVariant fix) | DONE |
+| All hex colors migrated to KanjiSageColors tokens | DONE |
+| **Cross-App Integration** | |
+| KanjiJourney deep link (DictionaryDetailView) | DONE |
+| KanjiJourney deep link (CrossPromoBanner) | DONE |
+| Play Store fallback if KanjiJourney not installed | DONE |
+| **Security** | |
+| Secret files chmod 600 | DONE |
+| StaticFieldLeak fix (applicationContext) | DONE |
+| Lint crash workaround (3 detectors disabled) | DONE |
+| **Pre-Launch** | |
+| Play Developer Account (jay@jworks-ai.com) | DONE |
+| Privacy policy URL | DONE |
+| Play Store listing text | DONE |
+| Data safety form answers | DONE |
+| CameraX ≥1.4 (16KB alignment) | DONE |
 | Play Console subscription products | - |
-| QA testing checklist | - |
-| Beta testing program | - |
 | Signed AAB upload | - |
+| Internal testing track | - |
+| Staged rollout → LIVE | - |
+| Secrets moved out of repo | - |
 
-**Legend**: DONE | IN PROGRESS | - (not started) | N/A
+**Legend**: DONE | IN PROGRESS | - (not started)
 
 ---
 
 ## Current Sprint
 
-- **Current work**: Spatial filtering refinements for kanji/jukugo disambiguation
-- **Next**: Traditional kanji variant dictionary (high priority)
+- **Current work**: All autonomous code work complete. Awaiting Play Console access for launch tasks.
+- **Next**: Create subscription products in Play Console → build signed AAB → internal testing
 - **Blockers**:
-  - Traditional kanji recognition (ML Kit fails on kyujitai: 萬, 國, 學)
-  - Supabase credentials not yet configured
-  - Play Console account needed
+  - Play Console subscription product creation (needs Jay)
+  - Secrets migration out of repo before store launch (needs Jay's approval)
 
 ---
 
 ## Tech Stack
 
-| Component | Technology |
-|-----------|-----------|
-| Language | Kotlin 2.0.21 |
-| UI | Jetpack Compose (BOM 2026.01.01) |
-| Camera | CameraX 1.5.3 |
-| OCR | ML Kit Japanese 16.0.1 |
-| Morphology | Kuromoji 0.9.0 |
-| Database | Room 2.6.1 + SQLite |
-| Backend | Retrofit 2.11.0 |
-| Auth | Supabase 2.1.5 + Google Sign-In 21.3.0 |
-| Billing | Google Play Billing 7.1.1 |
-| DI | Hilt 2.54 |
+| Component | Technology | Version |
+|-----------|-----------|---------|
+| Language | Kotlin | 2.0.21 |
+| UI | Jetpack Compose (BOM) | 2026.01.01 |
+| Camera | CameraX | 1.5.3 |
+| OCR | ML Kit Japanese | 16.0.1 |
+| Morphology | Kuromoji | 0.9.0 |
+| Database | Room + SQLite | 2.6.1 |
+| Backend | Retrofit | 2.11.0 |
+| Auth | Supabase + Google Sign-In | 2.1.5 / 21.3.0 |
+| Billing | Google Play Billing | 7.1.1 |
+| DI | Hilt | 2.54 |
+| Build | AGP / Gradle | 8.7.3 / 8.9 |
+| compileSdk / targetSdk | | 35 |
+| minSdk | | 26 |
 
 ---
 

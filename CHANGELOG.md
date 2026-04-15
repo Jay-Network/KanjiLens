@@ -6,6 +6,15 @@ Single source of truth for version: `VERSION` file at repo root.
 
 ---
 
+## v1.7.2 (2026-04-15)
+
+### Added
+- 40 new unit tests across 3 test files: ScanChallengeTest (12), AppSettingsTest (15), DictionaryResultTest (13) — total 85 tests
+
+### Changed
+- Updated STATUS.md to v1.7.1 with accurate tech stack versions (AGP 8.7.3, Gradle 8.9, Hilt 2.54, billing-ktx 7.1.1)
+- Updated ROADMAP.md to reflect completed work through v1.7.1 — was stuck at v1.6.1
+
 ## v1.7.1 (2026-04-15)
 
 ### Fixed
