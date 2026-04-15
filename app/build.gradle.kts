@@ -17,8 +17,8 @@ android {
         applicationId = "com.jworks.kanjisage"
         minSdk = 26
         targetSdk = 35
-        versionCode = 18
-        versionName = "1.7.0"
+        versionCode = 19
+        versionName = "1.7.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -75,6 +75,13 @@ android {
     lint {
         checkReleaseBuilds = false
         abortOnError = false
+        // Kotlin 2.0 UAST + AndroidX lint — multiple detectors crash with
+        // IncompatibleClassChangeError. Disable all until upstream fix lands.
+        disable += setOf(
+            "RememberInComposition",
+            "FrequentlyChangedValue",
+            "NullSafeMutableLiveData"
+        )
     }
 
     packaging {

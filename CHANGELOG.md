@@ -6,6 +6,12 @@ Single source of truth for version: `VERSION` file at repo root.
 
 ---
 
+## v1.7.1 (2026-04-15)
+
+### Fixed
+- Fix StaticFieldLeak in CameraViewModel — store applicationContext instead of Activity context
+- Fix lint crash: disable 3 crashing AndroidX lint detectors (Kotlin 2.0 UAST incompatibility)
+
 ## v1.7.0 (2026-04-14)
 
 ### Added

@@ -554,7 +554,7 @@ class CameraViewModel @Inject constructor(
     private var lastContext: Context? = null
 
     fun startScan(context: Context, allowPaywall: Boolean = true) {
-        lastContext = context
+        lastContext = context.applicationContext
         // Track total scans for handle prompt
         authRepository.incrementTotalScans()
 
