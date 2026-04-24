@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jworks.kanjisage.R
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
+import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.ui.theme.focusBorder
 import com.jworks.kanjisage.domain.models.DictionaryResult
 
@@ -117,7 +118,7 @@ fun DictionaryDetailView(
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_arrow_back),
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.dict_back),
                 modifier = Modifier
                     .size(24.dp)
                     .focusBorder(CircleShape)
@@ -150,7 +151,7 @@ fun DictionaryDetailView(
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = "common",
+                            text = stringResource(R.string.dict_common),
                             fontSize = 12.sp,
                             color = Color.White,
                             fontWeight = FontWeight.Medium
@@ -163,7 +164,7 @@ fun DictionaryDetailView(
                         id = if (isWordBookmarked) R.drawable.ic_bookmark_filled
                         else R.drawable.ic_bookmark_border
                     ),
-                    contentDescription = if (isWordBookmarked) "Remove bookmark" else "Bookmark word",
+                    contentDescription = stringResource(if (isWordBookmarked) R.string.dict_remove_bookmark else R.string.dict_bookmark_word),
                     modifier = Modifier
                         .size(28.dp)
                         .focusBorder(CircleShape)
@@ -173,7 +174,7 @@ fun DictionaryDetailView(
                 )
             } else {
                 Text(
-                    text = "Dictionary",
+                    text = stringResource(R.string.dict_title),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -201,7 +202,7 @@ fun DictionaryDetailView(
                     .padding(16.dp)
             ) {
                 Text(
-                    text = "No definition found",
+                    text = stringResource(R.string.dict_no_definition),
                     fontSize = 16.sp,
                     color = KanjiSageColors.JukugoSecondary
                 )
@@ -213,7 +214,7 @@ fun DictionaryDetailView(
                 if (fallbackKanji.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(20.dp))
                     Text(
-                        text = "Kanji",
+                        text = stringResource(R.string.dict_kanji_section),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = KanjiSageColors.JukugoSecondary,
@@ -256,7 +257,7 @@ fun DictionaryDetailView(
                 Spacer(modifier = Modifier.height(24.dp))
                 val context = LocalContext.current
                 Text(
-                    text = "Search on Jisho.org",
+                    text = stringResource(R.string.dict_search_jisho),
                     fontSize = 13.sp,
                     color = KanjiSageColors.LinkBlue,
                     fontStyle = FontStyle.Italic,
@@ -336,7 +337,7 @@ fun DictionaryDetailView(
                 if (kanjiChars.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(20.dp))
                     Text(
-                        text = "Kanji",
+                        text = stringResource(R.string.dict_kanji_section),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = KanjiSageColors.JukugoSecondary,
@@ -379,7 +380,7 @@ fun DictionaryDetailView(
                 Spacer(modifier = Modifier.height(24.dp))
                 val context = LocalContext.current
                 Text(
-                    text = "More on Jisho.org",
+                    text = stringResource(R.string.dict_more_jisho),
                     fontSize = 13.sp,
                     color = KanjiSageColors.LinkBlue,
                     fontStyle = FontStyle.Italic,
@@ -429,13 +430,13 @@ private fun KanjiJourneyPracticeButton(kanjiList: List<Char>) {
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "Send $displayKanji to KanjiJourney",
+                text = stringResource(R.string.dict_send_to_kj, displayKanji),
                 fontSize = 14.sp,
                 color = Color.White,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                text = "Auto-creates flashcards + SRS review",
+                text = stringResource(R.string.dict_kj_flashcards),
                 fontSize = 12.sp,
                 color = Color.White.copy(alpha = 0.8f)
             )

@@ -36,6 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jworks.kanjisage.domain.models.KanjiInfo
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
+import androidx.compose.ui.res.stringResource
+import com.jworks.kanjisage.R
 import com.jworks.kanjisage.ui.theme.focusBorder
 
 // Match KanjiJourney theme colors exactly for visual consistency
@@ -136,10 +138,10 @@ fun KanjiDetailView(
                             AssistChip(onClick = {}, label = { Text(it, color = DarkText) })
                         }
                         if (kanjiInfo.strokeCount > 0) {
-                            AssistChip(onClick = {}, label = { Text("${kanjiInfo.strokeCount} strokes", color = DarkText) })
+                            AssistChip(onClick = {}, label = { Text(stringResource(R.string.kanji_strokes, kanjiInfo.strokeCount), color = DarkText) })
                         }
                         kanjiInfo.frequency?.let {
-                            AssistChip(onClick = {}, label = { Text("Freq #$it", color = DarkText) })
+                            AssistChip(onClick = {}, label = { Text(stringResource(R.string.kanji_freq, it), color = DarkText) })
                         }
                     }
 
@@ -147,7 +149,7 @@ fun KanjiDetailView(
 
                     // Meanings — section card
                     if (kanjiInfo.meanings.isNotEmpty()) {
-                        SectionCard(title = "Meanings") {
+                        SectionCard(title = stringResource(R.string.kanji_meanings)) {
                             Text(
                                 text = kanjiInfo.meanings.joinToString(", "),
                                 fontSize = 15.sp,
@@ -159,7 +161,7 @@ fun KanjiDetailView(
 
                     // On'yomi readings
                     if (kanjiInfo.onReadings.isNotEmpty()) {
-                        SectionCard(title = "On'yomi (Chinese readings)") {
+                        SectionCard(title = stringResource(R.string.kanji_onyomi)) {
                             Text(
                                 text = kanjiInfo.onReadings.joinToString("   "),
                                 fontSize = 15.sp,
@@ -171,7 +173,7 @@ fun KanjiDetailView(
 
                     // Kun'yomi readings
                     if (kanjiInfo.kunReadings.isNotEmpty()) {
-                        SectionCard(title = "Kun'yomi (Japanese readings)") {
+                        SectionCard(title = stringResource(R.string.kanji_kunyomi)) {
                             Text(
                                 text = kanjiInfo.kunReadings.joinToString("   "),
                                 fontSize = 15.sp,
@@ -183,7 +185,7 @@ fun KanjiDetailView(
                 }
 
                 // Practice section — matches KanjiJourney Writing button
-                SectionCard(title = "Practice") {
+                SectionCard(title = stringResource(R.string.kanji_practice)) {
                     Button(
                         onClick = {
                             val intent = Intent(
@@ -200,13 +202,13 @@ fun KanjiDetailView(
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
-                                text = "Practice writing $kanji in KanjiJourney",
+                                text = stringResource(R.string.kanji_practice_writing, kanji),
                                 fontSize = 13.sp,
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "AI checks your handwriting",
+                                text = stringResource(R.string.kanji_ai_handwriting),
                                 fontSize = 12.sp,
                                 color = Color.White.copy(alpha = 0.8f)
                             )
@@ -218,7 +220,7 @@ fun KanjiDetailView(
 
                 // Jisho.org link
                 Text(
-                    text = "More on Jisho.org",
+                    text = stringResource(R.string.kanji_more_jisho),
                     fontSize = 13.sp,
                     color = KanjiSageColors.LinkBlue,
                     modifier = Modifier.focusBorder().clickable {

@@ -33,49 +33,51 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.jworks.kanjisage.R
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 
 private data class OnboardingPage(
     val symbol: String,
-    val title: String,
-    val subtitle: String,
-    val description: String,
+    val titleRes: Int,
+    val subtitleRes: Int,
+    val descriptionRes: Int,
     val accentColor: Color
 )
 
 private val pages = listOf(
     OnboardingPage(
         symbol = "\u6F22\u5B57",  // 漢字
-        title = "See Japanese Everywhere",
-        subtitle = "Real-time kanji recognition",
-        description = "Point your camera at any Japanese text\nand instantly see readings and meanings\nright on top of the text.",
+        titleRes = R.string.onboarding_title_1,
+        subtitleRes = R.string.onboarding_subtitle_1,
+        descriptionRes = R.string.onboarding_desc_1,
         accentColor = KanjiSageColors.PrimaryAction
     ),
     OnboardingPage(
         symbol = "\uD83D\uDD0D",
-        title = "Tap. Learn. Remember.",
-        subtitle = "215,000+ dictionary entries",
-        description = "Tap any detected word for its full definition.\nSave your favorites to study later.\nWorks completely offline.",
+        titleRes = R.string.onboarding_title_2,
+        subtitleRes = R.string.onboarding_subtitle_2,
+        descriptionRes = R.string.onboarding_desc_2,
         accentColor = KanjiSageColors.SuccessGreen
     ),
     OnboardingPage(
         symbol = "J_COIN",
-        title = "Earn J Coins",
-        subtitle = "Real rewards for learning",
-        description = "Every scan, every lookup, every streak\nearns you J Coins. Redeem them for\ntutoring sessions and app credits.",
+        titleRes = R.string.onboarding_title_3,
+        subtitleRes = R.string.onboarding_subtitle_3,
+        descriptionRes = R.string.onboarding_desc_3,
         accentColor = KanjiSageColors.CoinGold
     ),
     OnboardingPage(
         symbol = "\uD83D\uDE80",
-        title = "Ready to Scan!",
-        subtitle = "5 free scans daily, no sign-up needed",
-        description = "Start scanning right now.\nCreate an account to earn J Coins,\nsync your bookmarks, and go unlimited.",
+        titleRes = R.string.onboarding_title_4,
+        subtitleRes = R.string.onboarding_subtitle_4,
+        descriptionRes = R.string.onboarding_desc_4,
         accentColor = KanjiSageColors.ConfettiPink
     )
 )
@@ -110,7 +112,7 @@ fun OnboardingScreen(
                     .padding(top = 48.dp, end = 16.dp)
             ) {
                 Text(
-                    text = "Skip",
+                    text = stringResource(R.string.onboarding_skip),
                     color = Color.White.copy(alpha = 0.5f),
                     fontSize = 15.sp
                 )
@@ -197,7 +199,7 @@ fun OnboardingScreen(
                 shape = RoundedCornerShape(28.dp)
             ) {
                 Text(
-                    text = if (isLastPage) "Start Scanning" else "Next",
+                    text = if (isLastPage) stringResource(R.string.onboarding_start_scanning) else stringResource(R.string.onboarding_next),
                     color = if (isLastPage) Color.White else KanjiSageColors.AbyssBg,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
@@ -270,7 +272,7 @@ private fun OnboardingPageContent(
         Spacer(modifier = Modifier.height(36.dp))
 
         Text(
-            text = page.title,
+            text = stringResource(page.titleRes),
             fontSize = 28.sp,
             color = Color.White,
             fontWeight = FontWeight.Bold,
@@ -281,7 +283,7 @@ private fun OnboardingPageContent(
 
         // Subtitle with accent color
         Text(
-            text = page.subtitle,
+            text = stringResource(page.subtitleRes),
             fontSize = 15.sp,
             color = page.accentColor,
             fontWeight = FontWeight.Medium,
@@ -291,7 +293,7 @@ private fun OnboardingPageContent(
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = page.description,
+            text = stringResource(page.descriptionRes),
             fontSize = 16.sp,
             color = Color.White.copy(alpha = 0.75f),
             textAlign = TextAlign.Center,

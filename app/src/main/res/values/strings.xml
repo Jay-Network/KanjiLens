@@ -318,6 +318,102 @@
     <string name="rewards_insufficient">Not enough J Coins</string>
     <string name="rewards_failed">Purchase failed</string>
 
+    <!-- Scan overlays -->
+    <string name="scan_challenge_found">Found %1$s! +10J  Tap for next</string>
+    <string name="scan_challenge_find">Find: </string>
+    <string name="scan_challenge_promo">Love this? Try Camera Challenge in KanjiJourney!</string>
+    <string name="scan_expired_title">Time\'s Up!</string>
+    <string name="scan_expired_desc">Your free scan session has ended</string>
+    <string name="scan_expired_new">Use Another Free Scan</string>
+    <string name="scan_expired_premium">Go Unlimited with Premium</string>
+    <string name="scan_expired_review">Review detected words</string>
+
+    <!-- Camera screen -->
+    <string name="camera_paused">Paused camera</string>
+    <string name="camera_dismiss">Dismiss</string>
+    <string name="camera_back">Back to camera</string>
+    <string name="camera_detected_words">Detected Words (%d)</string>
+    <string name="camera_share_words">Share detected words</string>
+    <string name="camera_ai_analyze">AI Analyze</string>
+    <string name="camera_point_hint">Point your camera at Japanese text</string>
+    <string name="camera_words_hint">Detected words will appear here</string>
+    <string name="camera_tap_hint">Tap a word to look it up</string>
+    <string name="camera_allow_access">Allow Camera Access</string>
+    <string name="camera_share_prefix">KanjiSage detected:\n%s</string>
+    <string name="camera_analysis_failed">Analysis failed: %s</string>
+    <string name="camera_permission_rationale">KanjiSage uses your camera to detect Japanese text in real time. No photos are saved or uploaded.</string>
+    <string name="camera_permission_request">To read Japanese text around you, KanjiSage needs access to your camera.</string>
+
+    <!-- Bookmarks screen -->
+    <string name="bookmarks_back">Back</string>
+    <string name="bookmarks_title">Bookmarks (%d)</string>
+    <string name="bookmarks_tab_words">Words (%d)</string>
+    <string name="bookmarks_tab_kanji">Kanji (%d)</string>
+    <string name="bookmarks_word_awaits">Your word collection awaits!</string>
+    <string name="bookmarks_kanji_awaits">Start your kanji collection!</string>
+    <string name="bookmarks_word_hint">Scan some Japanese text, tap a word\nto see its meaning, then hit the\nbookmark icon to save it here.</string>
+    <string name="bookmarks_kanji_hint">When you find an interesting kanji,\ntap the star to add it to your\npersonal collection.</string>
+    <string name="bookmarks_word_tip">Save words you see often — they\'re probably the most useful!</string>
+    <string name="bookmarks_kanji_tip">Collecting kanji earns you +2 J Coins each time!</string>
+    <string name="bookmarks_remove">Remove bookmark</string>
+    <string name="bookmarks_practice">Practice these kanji in KanjiJourney</string>
+    <string name="bookmarks_practice_desc">AI checks your handwriting • Compete with other learners</string>
+    <string name="bookmarks_play_store">Open on Play Store ></string>
+    <string name="bookmarks_just_now">Just now</string>
+    <string name="bookmarks_days_ago">%dd ago</string>
+    <string name="bookmarks_hours_ago">%dh ago</string>
+    <string name="bookmarks_minutes_ago">%dm ago</string>
+
+    <!-- Dictionary detail -->
+    <string name="dict_back">Back</string>
+    <string name="dict_common">common</string>
+    <string name="dict_remove_bookmark">Remove bookmark</string>
+    <string name="dict_bookmark_word">Bookmark word</string>
+    <string name="dict_title">Dictionary</string>
+    <string name="dict_no_definition">No definition found</string>
+    <string name="dict_kanji_section">Kanji</string>
+    <string name="dict_search_jisho">Search on Jisho.org</string>
+    <string name="dict_more_jisho">More on Jisho.org</string>
+    <string name="dict_send_to_kj">Send %s to KanjiJourney</string>
+    <string name="dict_kj_flashcards">Auto-creates flashcards + SRS review</string>
+
+    <!-- Kanji detail -->
+    <string name="kanji_strokes">%d strokes</string>
+    <string name="kanji_freq">Freq #%d</string>
+    <string name="kanji_meanings">Meanings</string>
+    <string name="kanji_onyomi">On\'yomi (Chinese readings)</string>
+    <string name="kanji_kunyomi">Kun\'yomi (Japanese readings)</string>
+    <string name="kanji_practice">Practice</string>
+    <string name="kanji_practice_writing">Practice writing %s in KanjiJourney</string>
+    <string name="kanji_ai_handwriting">AI checks your handwriting</string>
+    <string name="kanji_more_jisho">More on Jisho.org</string>
+
+    <!-- Button cluster / accessibility -->
+    <string name="btn_settings">Settings</string>
+    <string name="btn_profile">Profile</string>
+    <string name="btn_feedback">Send Feedback</string>
+    <string name="btn_bookmarks">Bookmarks</string>
+
+    <!-- AI analysis panel -->
+    <string name="ai_analyzing">Analyzing Japanese text…</string>
+
+    <!-- Handle prompt dialog -->
+    <string name="handle_prompt_title">Choose a display name</string>
+    <string name="handle_prompt_subtitle">This is how you\'ll appear on leaderboards\nand in the community. Not your real name.</string>
+
+    <!-- Feedback dialog -->
+    <string name="feedback_title">Send Feedback</string>
+    <string name="feedback_close">Close</string>
+    <string name="feedback_category">Category</string>
+    <string name="feedback_previous">Your Previous Feedback</string>
+    <string name="feedback_none_yet">No feedback submitted yet</string>
+    <string name="feedback_note">Note: %s</string>
+
+    <!-- Cross-promo banner -->
+    <string name="promo_kj_master_kanji">Master \"%s\" with KanjiJourney!</string>
+    <string name="promo_kj_master_generic">Master kanji with KanjiJourney!</string>
+    <string name="promo_kj_tagline">Gamified learning + earn J Coins</string>
+
     <!-- Empty states -->
     <string name="empty_bookmarks_words">No words saved yet</string>
     <string name="empty_bookmarks_words_hint">Tap the bookmark icon when viewing a word\'s definition to save it here.</string>

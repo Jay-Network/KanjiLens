@@ -38,6 +38,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.jworks.kanjisage.domain.models.FeedbackCategory
+import androidx.compose.ui.res.stringResource
+import com.jworks.kanjisage.R
 import com.jworks.kanjisage.domain.models.FeedbackWithHistory
 
 @Composable
@@ -76,7 +78,7 @@ fun FeedbackDialog(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Send Feedback",
+                    text = stringResource(R.string.feedback_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
@@ -84,7 +86,7 @@ fun FeedbackDialog(
                     viewModel.closeDialog()
                     onDismiss()
                 }) {
-                    Icon(Icons.Default.Close, contentDescription = "Close")
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.feedback_close))
                 }
             }
 
@@ -92,7 +94,7 @@ fun FeedbackDialog(
 
             // Category selection
             Text(
-                text = "Category",
+                text = stringResource(R.string.feedback_category),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold
             )
@@ -171,7 +173,7 @@ fun FeedbackDialog(
 
             // Feedback history header
             Text(
-                text = "Your Previous Feedback",
+                text = stringResource(R.string.feedback_previous),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold
             )
@@ -192,7 +194,7 @@ fun FeedbackDialog(
                 } else if (uiState.feedbackList.isEmpty()) {
                     item {
                         Text(
-                            text = "No feedback submitted yet",
+                            text = stringResource(R.string.feedback_none_yet),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(16.dp)
@@ -261,7 +263,7 @@ private fun FeedbackHistoryItem(item: FeedbackWithHistory) {
         if (item.feedback.completionNote != null) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "Note: ${item.feedback.completionNote}",
+                text = stringResource(R.string.feedback_note, item.feedback.completionNote!!),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontStyle = FontStyle.Italic

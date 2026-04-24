@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.ui.res.stringResource
+import com.jworks.kanjisage.R
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -105,16 +107,16 @@ fun KanjiJourneyPromoBanner(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = if (currentKanji != null) {
-                            "Master \"$currentKanji\" with KanjiJourney!"
+                            stringResource(R.string.promo_kj_master_kanji, currentKanji)
                         } else {
-                            "Master kanji with KanjiJourney!"
+                            stringResource(R.string.promo_kj_master_generic)
                         },
                         color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "Gamified learning + earn J Coins",
+                        text = stringResource(R.string.promo_kj_tagline),
                         color = Color.White.copy(alpha = 0.8f),
                         fontSize = 12.sp
                     )

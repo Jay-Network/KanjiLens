@@ -44,6 +44,8 @@ import androidx.compose.ui.unit.sp
 import com.jworks.kanjisage.domain.models.ScanChallenge
 import com.jworks.kanjisage.ui.anim.CoinBurstEffect
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
+import androidx.compose.ui.res.stringResource
+import com.jworks.kanjisage.R
 import com.jworks.kanjisage.ui.theme.focusBorder
 
 /**
@@ -94,14 +96,14 @@ fun ScanChallengePill(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (challenge.isCompleted) {
                     Text(
-                        text = "Found ${challenge.targetKanji}! +10J  Tap for next",
+                        text = stringResource(R.string.scan_challenge_found, challenge.targetKanji),
                         color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
                 } else {
                     Text(
-                        text = "Find: ",
+                        text = stringResource(R.string.scan_challenge_find),
                         color = Color.White.copy(alpha = 0.8f),
                         fontSize = 13.sp
                     )
@@ -120,7 +122,7 @@ fun ScanChallengePill(
             }
             if (challenge.isCompleted) {
                 Text(
-                    text = "Love this? Try Camera Challenge in KanjiJourney!",
+                    text = stringResource(R.string.scan_challenge_promo),
                     color = Color.White.copy(alpha = 0.7f),
                     fontSize = 12.sp
                 )
@@ -222,14 +224,14 @@ fun ScanExpiredOverlay(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Time's Up!",
+                text = stringResource(R.string.scan_expired_title),
                 color = Color.White,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold
             )
 
             Text(
-                text = "Your free scan session has ended",
+                text = stringResource(R.string.scan_expired_desc),
                 color = Color.White.copy(alpha = 0.7f),
                 fontSize = 14.sp
             )
@@ -242,7 +244,7 @@ fun ScanExpiredOverlay(
                 shape = RoundedCornerShape(24.dp)
             ) {
                 Text(
-                    text = "Use Another Free Scan",
+                    text = stringResource(R.string.scan_expired_new),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -252,7 +254,7 @@ fun ScanExpiredOverlay(
 
             TextButton(onClick = onUpgrade) {
                 Text(
-                    text = "Go Unlimited with Premium",
+                    text = stringResource(R.string.scan_expired_premium),
                     color = KanjiSageColors.PrimaryAction,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium
@@ -261,7 +263,7 @@ fun ScanExpiredOverlay(
 
             TextButton(onClick = onBackToCamera) {
                 Text(
-                    text = "Review detected words",
+                    text = stringResource(R.string.scan_expired_review),
                     color = Color.White.copy(alpha = 0.6f),
                     fontSize = 13.sp
                 )

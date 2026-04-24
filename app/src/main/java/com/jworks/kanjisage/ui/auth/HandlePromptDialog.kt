@@ -33,6 +33,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
+import androidx.compose.ui.res.stringResource
+import com.jworks.kanjisage.R
 
 @Composable
 fun HandlePromptDialog(
@@ -76,7 +78,7 @@ fun HandlePromptDialog(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Choose a display name",
+                text = stringResource(R.string.handle_prompt_title),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -85,7 +87,7 @@ fun HandlePromptDialog(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "This is how you'll appear on leaderboards\nand in the community. Not your real name.",
+                text = stringResource(R.string.handle_prompt_subtitle),
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,

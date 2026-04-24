@@ -52,6 +52,7 @@ import com.jworks.kanjisage.R
 import com.jworks.kanjisage.domain.models.BookmarkEntry
 import com.jworks.kanjisage.domain.repository.BookmarkRepository
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
 
 private val TanAccent = KanjiSageColors.PanelBorder
@@ -102,7 +103,7 @@ fun BookmarksScreen(
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_arrow_back),
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.bookmarks_back),
                 modifier = Modifier
                     .size(24.dp)
                     .focusBorder(CircleShape)
@@ -111,7 +112,7 @@ fun BookmarksScreen(
             )
             Spacer(modifier = Modifier.width(16.dp))
             Text(
-                text = "Bookmarks ($totalCount)",
+                text = stringResource(R.string.bookmarks_title, totalCount),
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
@@ -135,7 +136,7 @@ fun BookmarksScreen(
                 onClick = { selectedTab = 0 },
                 text = {
                     Text(
-                        text = "Words (${wordBookmarks.size})",
+                        text = stringResource(R.string.bookmarks_tab_words, wordBookmarks.size),
                         fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal,
                         color = if (selectedTab == 0) BookmarkGold else MutedText
                     )
@@ -146,7 +147,7 @@ fun BookmarksScreen(
                 onClick = { selectedTab = 1 },
                 text = {
                     Text(
-                        text = "Kanji (${kanjiBookmarks.size})",
+                        text = stringResource(R.string.bookmarks_tab_kanji, kanjiBookmarks.size),
                         fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal,
                         color = if (selectedTab == 1) BookmarkGold else MutedText
                     )
@@ -175,30 +176,30 @@ fun BookmarksScreen(
                     )
                     Spacer(modifier = Modifier.height(20.dp))
                     Text(
-                        text = if (selectedTab == 0)
-                            "Your word collection awaits!"
-                        else
-                            "Start your kanji collection!",
+                        text = stringResource(
+                            if (selectedTab == 0) R.string.bookmarks_word_awaits
+                            else R.string.bookmarks_kanji_awaits
+                        ),
                         color = CreamText,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                     Text(
-                        text = if (selectedTab == 0)
-                            "Scan some Japanese text, tap a word\nto see its meaning, then hit the\nbookmark icon to save it here."
-                        else
-                            "When you find an interesting kanji,\ntap the star to add it to your\npersonal collection.",
+                        text = stringResource(
+                            if (selectedTab == 0) R.string.bookmarks_word_hint
+                            else R.string.bookmarks_kanji_hint
+                        ),
                         color = MutedText,
                         fontSize = 14.sp,
                         lineHeight = 22.sp
                     )
                     Spacer(modifier = Modifier.height(20.dp))
                     Text(
-                        text = if (selectedTab == 0)
-                            "Tip: Save words you see often — they're probably the most useful!"
-                        else
-                            "Tip: Collecting kanji earns you +2 J Coins each time!",
+                        text = stringResource(
+                            if (selectedTab == 0) R.string.bookmarks_word_tip
+                            else R.string.bookmarks_kanji_tip
+                        ),
                         color = BookmarkGold.copy(alpha = 0.7f),
                         fontSize = 13.sp,
                         fontStyle = FontStyle.Italic
@@ -290,7 +291,7 @@ private fun WordBookmarkRow(
                 )
             }
             Text(
-                text = formatRelativeTime(entry.bookmarkedAt),
+                text = formatRelativeTime(LocalContext.current, entry.bookmarkedAt),
                 color = MutedText,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(top = 2.dp)
@@ -298,7 +299,7 @@ private fun WordBookmarkRow(
         }
         Icon(
             painter = painterResource(id = R.drawable.ic_close),
-            contentDescription = "Remove bookmark",
+            contentDescription = stringResource(R.string.bookmarks_remove),
             modifier = Modifier
                 .size(20.dp)
                 .focusBorder(CircleShape)
@@ -348,7 +349,7 @@ private fun KanjiBookmarkRow(
                 fontWeight = FontWeight.Medium
             )
             Text(
-                text = formatRelativeTime(entry.bookmarkedAt),
+                text = formatRelativeTime(LocalContext.current, entry.bookmarkedAt),
                 color = MutedText,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(top = 2.dp)
@@ -356,7 +357,7 @@ private fun KanjiBookmarkRow(
         }
         Icon(
             painter = painterResource(id = R.drawable.ic_close),
-            contentDescription = "Remove bookmark",
+            contentDescription = stringResource(R.string.bookmarks_remove),
             modifier = Modifier
                 .size(20.dp)
                 .focusBorder(CircleShape)
@@ -378,20 +379,20 @@ private fun KanjiJourneyPromoCard(onClick: () -> Unit) {
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Practice these kanji in KanjiJourney",
+                text = stringResource(R.string.bookmarks_practice),
                 color = KanjiSageColors.PromoCardText,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "AI checks your handwriting \u2022 Compete with other learners",
+                text = stringResource(R.string.bookmarks_practice_desc),
                 color = KanjiSageColors.PromoCardText.copy(alpha = 0.7f),
                 fontSize = 13.sp
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Open on Play Store >",
+                text = stringResource(R.string.bookmarks_play_store),
                 color = KanjiSageColors.Primary,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
@@ -401,7 +402,7 @@ private fun KanjiJourneyPromoCard(onClick: () -> Unit) {
     }
 }
 
-private fun formatRelativeTime(timestamp: Long): String {
+private fun formatRelativeTime(context: android.content.Context, timestamp: Long): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
     val seconds = diff / 1000
@@ -410,9 +411,9 @@ private fun formatRelativeTime(timestamp: Long): String {
     val days = hours / 24
 
     return when {
-        days > 0 -> "${days}d ago"
-        hours > 0 -> "${hours}h ago"
-        minutes > 0 -> "${minutes}m ago"
-        else -> "Just now"
+        days > 0 -> context.getString(R.string.bookmarks_days_ago, days.toInt())
+        hours > 0 -> context.getString(R.string.bookmarks_hours_ago, hours.toInt())
+        minutes > 0 -> context.getString(R.string.bookmarks_minutes_ago, minutes.toInt())
+        else -> context.getString(R.string.bookmarks_just_now)
     }
 }

@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.compose.ui.res.stringResource
+import com.jworks.kanjisage.R
 import androidx.lifecycle.LifecycleOwner
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -101,7 +103,7 @@ fun FrozenPreviewLayer(
     frozenBitmap?.let { bitmap ->
         Image(
             bitmap = bitmap,
-            contentDescription = "Paused camera",
+            contentDescription = stringResource(R.string.camera_paused),
             contentScale = ContentScale.Crop,
             modifier = modifier.fillMaxSize()
         )

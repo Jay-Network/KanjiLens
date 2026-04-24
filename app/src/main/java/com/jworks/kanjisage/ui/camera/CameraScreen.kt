@@ -83,6 +83,7 @@ import com.jworks.kanjisage.domain.models.KanjiSegment
 import com.jworks.kanjisage.ui.dictionary.DictionaryDetailView
 import com.jworks.kanjisage.ui.dictionary.KanjiDetailView
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
+import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.ui.theme.focusBorder
 import androidx.compose.foundation.shape.CircleShape
 
@@ -354,7 +355,7 @@ private fun CameraContent(
         frozenBitmap?.let { bitmap ->
             Image(
                 bitmap = bitmap,
-                contentDescription = "Paused camera",
+                contentDescription = stringResource(R.string.camera_paused),
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
@@ -598,9 +599,9 @@ private fun CameraContent(
                             val shareText = (jukugoList + kanjiList).joinToString("\n") { "${it.text}（${it.reading}）" }
                             val intent = Intent(Intent.ACTION_SEND).apply {
                                 type = "text/plain"
-                                putExtra(Intent.EXTRA_TEXT, "KanjiSage detected:\n$shareText")
+                                putExtra(Intent.EXTRA_TEXT, context.getString(R.string.camera_share_prefix, shareText))
                             }
-                            context.startActivity(Intent.createChooser(intent, "Share detected words"))
+                            context.startActivity(Intent.createChooser(intent, context.getString(R.string.camera_share_words)))
                             viewModel.awardShareCoin(context)
                         },
                         modifier = Modifier.fillMaxSize()
@@ -658,13 +659,13 @@ private fun CameraContent(
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "Analysis failed: ${aiState.message}",
+                                text = stringResource(R.string.camera_analysis_failed, aiState.message),
                                 color = MaterialTheme.colorScheme.error,
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Button(onClick = { viewModel.dismissAiAnalysis() }) {
-                                Text("Dismiss")
+                                Text(stringResource(R.string.camera_dismiss))
                             }
                         }
                     }
@@ -720,9 +721,9 @@ private fun CameraContent(
                                     val shareText = (jukugoList + kanjiList).joinToString("\n") { "${it.text}（${it.reading}）" }
                                     val intent = Intent(Intent.ACTION_SEND).apply {
                                         type = "text/plain"
-                                        putExtra(Intent.EXTRA_TEXT, "KanjiSage detected:\n$shareText")
+                                        putExtra(Intent.EXTRA_TEXT, context.getString(R.string.camera_share_prefix, shareText))
                                     }
-                                    context.startActivity(Intent.createChooser(intent, "Share detected words"))
+                                    context.startActivity(Intent.createChooser(intent, context.getString(R.string.camera_share_words)))
                                     viewModel.awardShareCoin(context)
                                 },
                                 modifier = Modifier.fillMaxSize()
@@ -1038,12 +1039,12 @@ private fun DetectedJukugoList(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Analysis failed: ${aiState.message}",
+                    text = stringResource(R.string.camera_analysis_failed, aiState.message),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Button(onClick = onDismissAi) { Text("Dismiss") }
+                Button(onClick = onDismissAi) { Text(stringResource(R.string.camera_dismiss)) }
             }
             return
         }
@@ -1062,7 +1063,7 @@ private fun DetectedJukugoList(
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_close),
-                contentDescription = "Back to camera",
+                contentDescription = stringResource(R.string.camera_back),
                 modifier = Modifier
                     .size(24.dp)
                     .focusBorder(CircleShape)
@@ -1071,7 +1072,7 @@ private fun DetectedJukugoList(
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
-                text = "Detected Words ($totalCount)",
+                text = stringResource(R.string.camera_detected_words, totalCount),
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.White,
                 fontWeight = FontWeight.SemiBold,
@@ -1080,7 +1081,7 @@ private fun DetectedJukugoList(
             if (totalCount > 0) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_share),
-                    contentDescription = "Share detected words",
+                    contentDescription = stringResource(R.string.camera_share_words),
                     modifier = Modifier
                         .size(22.dp)
                         .focusBorder(CircleShape)
@@ -1099,7 +1100,7 @@ private fun DetectedJukugoList(
                         .padding(horizontal = 10.dp, vertical = 5.dp)
                 ) {
                     Text(
-                        text = "AI Analyze",
+                        text = stringResource(R.string.camera_ai_analyze),
                         color = Color.White,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold
@@ -1116,13 +1117,13 @@ private fun DetectedJukugoList(
         ) {
             if (totalCount == 0) {
                 Text(
-                    text = "Point your camera at Japanese text",
+                    text = stringResource(R.string.camera_point_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = KanjiSageColors.JukugoSecondary
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Detected words will appear here",
+                    text = stringResource(R.string.camera_words_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = KanjiSageColors.JukugoSecondary.copy(alpha = 0.7f)
                 )
@@ -1242,7 +1243,7 @@ private fun DetectedJukugoList(
                 // Hint text at bottom
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "Tap a word to look it up",
+                    text = stringResource(R.string.camera_tap_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray,
                     modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -1291,15 +1292,14 @@ private fun CameraPermissionRequest(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = if (showRationale) {
-                "KanjiSage uses your camera to detect Japanese text in real time. No photos are saved or uploaded."
-            } else {
-                "To read Japanese text around you, KanjiSage needs access to your camera."
-            },
+            text = stringResource(
+                if (showRationale) R.string.camera_permission_rationale
+                else R.string.camera_permission_request
+            ),
             modifier = Modifier.padding(bottom = 16.dp)
         )
         Button(onClick = onRequestPermission) {
-            Text("Allow Camera Access")
+            Text(stringResource(R.string.camera_allow_access))
         }
     }
 }

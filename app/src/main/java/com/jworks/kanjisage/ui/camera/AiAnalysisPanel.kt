@@ -166,7 +166,7 @@ fun AiLoadingPanel(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "Analyzing Japanese text...",
+                            text = stringResource(R.string.ai_analyzing),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

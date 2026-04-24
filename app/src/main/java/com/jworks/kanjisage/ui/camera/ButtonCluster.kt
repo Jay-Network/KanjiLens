@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jworks.kanjisage.R
+import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.ui.anim.CoinPulseGlow
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import kotlin.math.roundToInt
@@ -149,7 +150,7 @@ fun DraggableFloatingButton(
 fun SettingsButtonContent() {
     Icon(
         painter = painterResource(id = R.drawable.ic_settings),
-        contentDescription = "Settings",
+        contentDescription = stringResource(R.string.btn_settings),
         tint = Color.White,
         modifier = Modifier.size(CameraDimens.ICON_SIZE)
     )
@@ -198,7 +199,7 @@ fun PauseButtonContent(isPaused: Boolean) {
 fun ProfileButtonContent() {
     Icon(
         painter = painterResource(id = R.drawable.ic_person),
-        contentDescription = "Profile",
+        contentDescription = stringResource(R.string.btn_profile),
         tint = Color.White,
         modifier = Modifier.size(CameraDimens.ICON_SIZE)
     )
@@ -239,7 +240,7 @@ fun JCoinButtonContent() {
 fun FeedbackButtonContent() {
     Icon(
         painter = painterResource(id = R.drawable.ic_email),
-        contentDescription = "Send Feedback",
+        contentDescription = stringResource(R.string.btn_feedback),
         tint = Color.White,
         modifier = Modifier.size(CameraDimens.ICON_SIZE)
     )
@@ -249,7 +250,7 @@ fun FeedbackButtonContent() {
 fun BookmarkButtonContent() {
     Icon(
         painter = painterResource(id = R.drawable.ic_bookmark_filled),
-        contentDescription = "Bookmarks",
+        contentDescription = stringResource(R.string.btn_bookmarks),
         tint = Color.White,
         modifier = Modifier.size(CameraDimens.ICON_SIZE)
     )
