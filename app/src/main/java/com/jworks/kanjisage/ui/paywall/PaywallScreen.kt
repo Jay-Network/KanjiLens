@@ -39,6 +39,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jworks.kanjisage.data.billing.BillingManager
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
+import androidx.compose.ui.res.stringResource
+import com.jworks.kanjisage.R
 import com.jworks.kanjisage.ui.theme.focusBorder
 
 @Composable
@@ -83,7 +85,7 @@ fun PaywallScreen(
             Spacer(modifier = Modifier.height(48.dp))
 
             Text(
-                text = "Read Japanese Without Limits",
+                text = stringResource(R.string.paywall_title),
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
@@ -93,13 +95,13 @@ fun PaywallScreen(
 
             if (remainingScans > 0) {
                 Text(
-                    text = "$remainingScans free scan${if (remainingScans != 1) "s" else ""} left today",
+                    text = if (remainingScans != 1) stringResource(R.string.paywall_scans_left_plural, remainingScans) else stringResource(R.string.paywall_scans_left_singular, remainingScans),
                     fontSize = 14.sp,
                     color = KanjiSageColors.CoinAccent
                 )
             } else {
                 Text(
-                    text = "You\u2019ve used all 5 free scans for today",
+                    text = stringResource(R.string.paywall_scans_used),
                     fontSize = 14.sp,
                     color = KanjiSageColors.TimerWarning
                 )
@@ -112,20 +114,20 @@ fun PaywallScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                FeatureRow("Unlimited scanning", "Read as much as you want, no timers")
-                FeatureRow("Full offline dictionary", "215K+ words available without internet")
-                FeatureRow("Scan history", "Go back and review what you scanned")
-                FeatureRow("Bookmarks", "Save words and kanji for later study")
-                FeatureRow("J Coin rewards", "Earn coins for tutoring sessions and more")
+                FeatureRow(stringResource(R.string.paywall_feature_scanning), stringResource(R.string.paywall_feature_scanning_desc))
+                FeatureRow(stringResource(R.string.paywall_feature_dictionary), stringResource(R.string.paywall_feature_dictionary_desc))
+                FeatureRow(stringResource(R.string.paywall_feature_history), stringResource(R.string.paywall_feature_history_desc))
+                FeatureRow(stringResource(R.string.paywall_feature_bookmarks), stringResource(R.string.paywall_feature_bookmarks_desc))
+                FeatureRow(stringResource(R.string.paywall_feature_jcoin), stringResource(R.string.paywall_feature_jcoin_desc))
             }
 
             Spacer(modifier = Modifier.height(32.dp))
 
             // Plan cards
             PlanCard(
-                title = "Monthly",
+                title = stringResource(R.string.paywall_plan_monthly),
                 price = monthlyPrice,
-                period = "/month",
+                period = stringResource(R.string.paywall_period_month),
                 isSelected = selectedPlan == BillingManager.PRODUCT_MONTHLY,
                 onClick = { selectedPlan = BillingManager.PRODUCT_MONTHLY }
             )
@@ -133,10 +135,10 @@ fun PaywallScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             PlanCard(
-                title = "Annual",
+                title = stringResource(R.string.paywall_plan_annual),
                 price = annualPrice,
-                period = "/year",
-                savings = "Save 37%",
+                period = stringResource(R.string.paywall_period_year),
+                savings = stringResource(R.string.paywall_save_percent),
                 isSelected = selectedPlan == BillingManager.PRODUCT_ANNUAL,
                 onClick = { selectedPlan = BillingManager.PRODUCT_ANNUAL }
             )
@@ -158,7 +160,7 @@ fun PaywallScreen(
                 enabled = productDetails.isNotEmpty()
             ) {
                 Text(
-                    text = "Start Reading Unlimited",
+                    text = stringResource(R.string.paywall_subscribe),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -168,7 +170,7 @@ fun PaywallScreen(
             if (productDetails.isEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Loading prices from Google Play\u2026",
+                    text = stringResource(R.string.paywall_loading),
                     color = Color.White.copy(alpha = 0.5f),
                     fontSize = 13.sp
                 )
@@ -179,7 +181,7 @@ fun PaywallScreen(
             // Dismiss
             TextButton(onClick = onDismiss) {
                 Text(
-                    text = if (remainingScans > 0) "Keep using free scans" else "Not right now",
+                    text = if (remainingScans > 0) stringResource(R.string.paywall_keep_free) else stringResource(R.string.paywall_not_now),
                     color = Color.White.copy(alpha = 0.6f),
                     fontSize = 14.sp
                 )
@@ -188,7 +190,7 @@ fun PaywallScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Cancel anytime. Managed by Google Play.",
+                text = stringResource(R.string.paywall_cancel_note),
                 color = Color.White.copy(alpha = 0.4f),
                 fontSize = 12.sp,
                 textAlign = TextAlign.Center
@@ -205,14 +207,14 @@ fun PaywallScreen(
             ) {
                 Column {
                     Text(
-                        text = "Bundle & Save",
+                        text = stringResource(R.string.paywall_bundle_title),
                         color = KanjiSageColors.CoinAccent,
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Get KanjiSage + KanjiJourney together for \$5.99/mo and save \$1 every month",
+                        text = stringResource(R.string.paywall_bundle_desc),
                         color = Color.White.copy(alpha = 0.7f),
                         fontSize = 13.sp
                     )

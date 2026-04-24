@@ -39,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -51,17 +52,17 @@ import com.jworks.kanjisage.data.auth.AuthState
 import com.jworks.kanjisage.domain.models.AppSettings
 import kotlin.math.roundToInt
 
-private data class ColorPreset(
-    val name: String,
+private data class ColorPresetDef(
+    val nameRes: Int,
     val kanjiColor: Long,
     val kanaColor: Long
 )
 
-private val COLOR_PRESETS = listOf(
-    ColorPreset("Forest", 0xFF4CAF50, 0xFF2196F3),
-    ColorPreset("Sunset", 0xFFFF9800, 0xFF9C27B0),
-    ColorPreset("Ocean", 0xFF00BCD4, 0xFF009688),
-    ColorPreset("Neon", 0xFFE91E63, 0xFFFFEB3B)
+private val COLOR_PRESET_DEFS = listOf(
+    ColorPresetDef(R.string.settings_color_preset_forest, 0xFF4CAF50, 0xFF2196F3),
+    ColorPresetDef(R.string.settings_color_preset_sunset, 0xFFFF9800, 0xFF9C27B0),
+    ColorPresetDef(R.string.settings_color_preset_ocean, 0xFF00BCD4, 0xFF009688),
+    ColorPresetDef(R.string.settings_color_preset_neon, 0xFFE91E63, 0xFFFFEB3B)
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -81,12 +82,12 @@ fun SettingsScreen(
 
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text("Settings") },
+            title = { Text(stringResource(R.string.settings_title)) },
             navigationIcon = {
                 IconButton(onClick = onBackClick) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_arrow_back),
-                        contentDescription = "Back"
+                        contentDescription = stringResource(R.string.settings_back)
                     )
                 }
             }
@@ -98,12 +99,12 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
         ) {
-            SectionHeader("Overlay")
+            SectionHeader(stringResource(R.string.settings_section_overlay))
 
             SliderSetting(
-                label = "Label font size",
+                label = stringResource(R.string.settings_label_font_size),
                 value = settings.labelFontSize,
-                valueLabel = "${settings.labelFontSize.roundToInt()}sp",
+                valueLabel = stringResource(R.string.settings_font_size_value, settings.labelFontSize.roundToInt()),
                 range = 5f..24f,
                 onValueChange = viewModel::updateLabelFontSize
             )
@@ -117,7 +118,7 @@ fun SettingsScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Adaptive furigana color", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.settings_adaptive_furigana_color), style = MaterialTheme.typography.bodyMedium)
                 Switch(
                     checked = settings.furiganaAdaptiveColor,
                     onCheckedChange = viewModel::updateFuriganaAdaptiveColor
@@ -132,7 +133,7 @@ fun SettingsScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    "White furigana text",
+                    stringResource(R.string.settings_white_furigana_text),
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (settings.furiganaAdaptiveColor)
                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
@@ -154,7 +155,7 @@ fun SettingsScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Show bounding boxes", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.settings_show_bounding_boxes), style = MaterialTheme.typography.bodyMedium)
                 Switch(
                     checked = settings.showBoxes,
                     onCheckedChange = viewModel::updateShowBoxes
@@ -162,21 +163,21 @@ fun SettingsScreen(
             }
 
             Spacer(modifier = Modifier.height(8.dp))
-            Text("Color theme", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.settings_color_theme), style = MaterialTheme.typography.bodyMedium)
             Spacer(modifier = Modifier.height(8.dp))
 
             ColorPresetRow(settings = settings, onPresetClick = viewModel::applyColorPreset)
 
             Spacer(modifier = Modifier.height(24.dp))
-            SectionHeader("Performance")
+            SectionHeader(stringResource(R.string.settings_section_performance))
 
             SliderSetting(
-                label = "Frame skip",
+                label = stringResource(R.string.settings_frame_skip),
                 value = settings.frameSkip.toFloat(),
                 valueLabel = when (settings.frameSkip) {
-                    1 -> "No skip (real-time)"
-                    2 -> "Skip 1 frame"
-                    else -> "Skip ${settings.frameSkip - 1} frames"
+                    1 -> stringResource(R.string.settings_frame_skip_realtime)
+                    2 -> stringResource(R.string.settings_frame_skip_one)
+                    else -> stringResource(R.string.settings_frame_skip_n, settings.frameSkip - 1)
                 },
                 range = 1f..10f,
                 steps = 8,
@@ -184,7 +185,7 @@ fun SettingsScreen(
             )
 
             Spacer(modifier = Modifier.height(24.dp))
-            SectionHeader("AI Enhancement")
+            SectionHeader(stringResource(R.string.settings_section_ai))
 
             Row(
                 modifier = Modifier
@@ -193,7 +194,7 @@ fun SettingsScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Enable AI-enhanced readings", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.settings_enable_ai), style = MaterialTheme.typography.bodyMedium)
                 Switch(
                     checked = settings.aiEnhanceEnabled,
                     onCheckedChange = viewModel::updateAiEnhanceEnabled
@@ -203,11 +204,11 @@ fun SettingsScreen(
             GeminiApiKeySection(viewModel = viewModel)
 
             Spacer(modifier = Modifier.height(24.dp))
-            SectionHeader("Token Usage")
+            SectionHeader(stringResource(R.string.settings_section_token_usage))
             TokenUsageCard(settings = settings, onReset = viewModel::resetTokenUsage)
 
             Spacer(modifier = Modifier.height(24.dp))
-            SectionHeader("Debug")
+            SectionHeader(stringResource(R.string.settings_section_debug))
 
             Row(
                 modifier = Modifier
@@ -216,7 +217,7 @@ fun SettingsScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Show debug HUD", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.settings_show_debug_hud), style = MaterialTheme.typography.bodyMedium)
                 Switch(
                     checked = settings.showDebugHud,
                     onCheckedChange = viewModel::updateShowDebugHud
@@ -224,7 +225,7 @@ fun SettingsScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-            SectionHeader("Subscription")
+            SectionHeader(stringResource(R.string.settings_section_subscription))
 
             androidx.compose.material3.OutlinedButton(
                 onClick = {
@@ -237,11 +238,11 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text("Manage Subscription on Google Play")
+                Text(stringResource(R.string.settings_manage_subscription))
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-            SectionHeader("Account")
+            SectionHeader(stringResource(R.string.settings_section_account))
 
             if (isAnonymous && onLinkAccountClick != null) {
                 // Anonymous user — offer to link an account
@@ -250,11 +251,11 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Sign In / Link Account")
+                    Text(stringResource(R.string.settings_sign_in_link))
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Sign in to sync across devices and earn J Coins",
+                    text = stringResource(R.string.settings_sign_in_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -263,7 +264,7 @@ fun SettingsScreen(
                 val email = (authState?.value as? AuthState.SignedIn)?.user?.email ?: ""
                 if (email.isNotEmpty()) {
                     Text(
-                        text = "Signed in as $email",
+                        text = stringResource(R.string.settings_signed_in_as, email),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -278,7 +279,7 @@ fun SettingsScreen(
                     border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
                     shape = RoundedCornerShape(8.dp)
                 ) {
-                    Text("Sign Out", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.settings_sign_out), color = MaterialTheme.colorScheme.error)
                 }
             }
 
@@ -294,7 +295,7 @@ fun SettingsScreen(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Help & About", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.settings_help_about), style = MaterialTheme.typography.bodyMedium)
                     Text(">", style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
@@ -350,12 +351,12 @@ private fun GeminiApiKeySection(viewModel: SettingsViewModel) {
 
     Column(modifier = Modifier.padding(vertical = 4.dp)) {
         Text(
-            text = "Gemini API key (for AI-enhanced readings)",
+            text = stringResource(R.string.settings_gemini_api_key_label),
             style = MaterialTheme.typography.bodyMedium
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = if (hasKey) "Key is set" else "No key configured",
+            text = if (hasKey) stringResource(R.string.settings_key_set) else stringResource(R.string.settings_no_key),
             style = MaterialTheme.typography.bodySmall,
             color = if (hasKey) KanjiSageColors.Primary else MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -364,12 +365,12 @@ private fun GeminiApiKeySection(viewModel: SettingsViewModel) {
         OutlinedTextField(
             value = keyInput,
             onValueChange = { keyInput = it },
-            label = { Text("API Key") },
+            label = { Text(stringResource(R.string.settings_api_key)) },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             isError = keyError,
             supportingText = if (keyError) {
-                { Text("API key is too short") }
+                { Text(stringResource(R.string.settings_key_too_short)) }
             } else null,
             visualTransformation = if (showKey) VisualTransformation.None
                 else PasswordVisualTransformation(),
@@ -377,7 +378,7 @@ private fun GeminiApiKeySection(viewModel: SettingsViewModel) {
                 Row {
                     IconButton(onClick = { showKey = !showKey }) {
                         Text(
-                            text = if (showKey) "Hide" else "Show",
+                            text = if (showKey) stringResource(R.string.settings_hide) else stringResource(R.string.settings_show),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -399,7 +400,7 @@ private fun GeminiApiKeySection(viewModel: SettingsViewModel) {
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text("Save")
+                Text(stringResource(R.string.settings_save))
             }
             if (hasKey) {
                 androidx.compose.material3.OutlinedButton(
@@ -414,14 +415,14 @@ private fun GeminiApiKeySection(viewModel: SettingsViewModel) {
                     ),
                     border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
                 ) {
-                    Text("Clear")
+                    Text(stringResource(R.string.settings_clear))
                 }
             }
         }
 
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "Get your key at ai.google.dev",
+            text = stringResource(R.string.settings_get_key_hint),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -445,9 +446,9 @@ private fun TokenUsageCard(settings: AppSettings, onReset: () -> Unit) {
                 modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Gemini", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.settings_gemini), style = MaterialTheme.typography.bodyMedium)
                 Text(
-                    text = "${settings.geminiInputTokens} in / ${settings.geminiOutputTokens} out (~${"$%.4f".format(geminiCost)})",
+                    text = stringResource(R.string.settings_token_format, settings.geminiInputTokens, settings.geminiOutputTokens, "%.4f".format(geminiCost)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -458,9 +459,9 @@ private fun TokenUsageCard(settings: AppSettings, onReset: () -> Unit) {
                 modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text("Claude", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.settings_claude), style = MaterialTheme.typography.bodyMedium)
                 Text(
-                    text = "${settings.claudeInputTokens} in / ${settings.claudeOutputTokens} out (~${"$%.4f".format(claudeCost)})",
+                    text = stringResource(R.string.settings_token_format, settings.claudeInputTokens, settings.claudeOutputTokens, "%.4f".format(claudeCost)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -468,7 +469,7 @@ private fun TokenUsageCard(settings: AppSettings, onReset: () -> Unit) {
         }
         if (settings.geminiInputTokens == 0L && settings.claudeInputTokens == 0L) {
             Text(
-                text = "No AI analysis tokens used yet",
+                text = stringResource(R.string.settings_no_tokens_used),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -480,13 +481,13 @@ private fun TokenUsageCard(settings: AppSettings, onReset: () -> Unit) {
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text("Reset Token Counters")
+                Text(stringResource(R.string.settings_reset_token_counters))
             }
         }
 
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "Gemini 2.5 Flash: $0.15/$0.60 per 1M • Claude Haiku: $0.80/$4.00 per 1M",
+            text = stringResource(R.string.settings_token_pricing),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 12.sp
@@ -500,7 +501,7 @@ private fun ColorPresetRow(settings: AppSettings, onPresetClick: (Long, Long) ->
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        COLOR_PRESETS.forEach { preset ->
+        COLOR_PRESET_DEFS.forEach { preset ->
             val isSelected = settings.kanjiColor == preset.kanjiColor && settings.kanaColor == preset.kanaColor
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -529,7 +530,7 @@ private fun ColorPresetRow(settings: AppSettings, onPresetClick: (Long, Long) ->
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(preset.name, fontSize = 12.sp)
+                Text(stringResource(preset.nameRes), fontSize = 12.sp)
             }
         }
     }

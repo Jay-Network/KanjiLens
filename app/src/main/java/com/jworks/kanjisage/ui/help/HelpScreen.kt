@@ -40,6 +40,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jworks.kanjisage.BuildConfig
+import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.R
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import com.jworks.kanjisage.ui.theme.focusBorder
@@ -73,7 +74,7 @@ fun HelpScreen(
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_arrow_back),
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.help_back),
                 modifier = Modifier
                     .size(24.dp)
                     .focusBorder(CircleShape)
@@ -82,7 +83,7 @@ fun HelpScreen(
             )
             Spacer(modifier = Modifier.width(16.dp))
             Text(
-                text = "Help & About",
+                text = stringResource(R.string.help_title),
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
@@ -113,19 +114,19 @@ fun HelpScreen(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "KanjiSage",
+                        text = stringResource(R.string.help_app_name),
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Version ${BuildConfig.VERSION_NAME}",
+                        text = stringResource(R.string.help_version, BuildConfig.VERSION_NAME),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "by JWorks",
+                        text = stringResource(R.string.help_by_jworks),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -134,51 +135,51 @@ fun HelpScreen(
 
             // User Guide header
             Text(
-                text = "User Guide",
+                text = stringResource(R.string.help_user_guide),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(top = 8.dp)
             )
 
             // Button Grid Guide
-            GuideSection("Camera Buttons", "\u2328") {
-                RowLabel("Top Row")
-                ButtonTip("FULL / FOCUS", "Toggle between full-screen camera and focus mode (camera strip + word list).")
-                ButtonTip("\u7e26 / \u6a2a", "Switch between vertical and horizontal text detection mode.")
-                ButtonTip("\u25b6 / \u23f8", "Freeze or resume the camera scanning.")
+            GuideSection(stringResource(R.string.help_camera_buttons), stringResource(R.string.help_icon_keyboard)) {
+                RowLabel(stringResource(R.string.help_top_row))
+                ButtonTip(stringResource(R.string.help_btn_full_focus), stringResource(R.string.help_btn_full_focus_desc))
+                ButtonTip(stringResource(R.string.help_btn_tate_yoko), stringResource(R.string.help_btn_tate_yoko_desc))
+                ButtonTip(stringResource(R.string.help_btn_play_pause), stringResource(R.string.help_btn_play_pause_desc))
                 Spacer(modifier = Modifier.height(10.dp))
-                RowLabel("Middle Row")
-                ButtonTip("Flash", "Toggle the flashlight on/off.")
-                ButtonTip("Settings", "Adjust furigana size, colors, stroke width, and more.")
-                ButtonTip("Profile", "View your account, sign in/out, and access ecosystem apps.")
+                RowLabel(stringResource(R.string.help_middle_row))
+                ButtonTip(stringResource(R.string.help_btn_flash), stringResource(R.string.help_btn_flash_desc))
+                ButtonTip(stringResource(R.string.help_btn_settings), stringResource(R.string.help_btn_settings_desc))
+                ButtonTip(stringResource(R.string.help_btn_profile), stringResource(R.string.help_btn_profile_desc))
                 Spacer(modifier = Modifier.height(10.dp))
-                RowLabel("Bottom Row")
-                ButtonTip("Bookmarks", "View all your saved words.")
-                ButtonTip("J Coin", "Check your J Coin balance and earn rules.")
-                ButtonTip("Feedback", "Send feedback to the development team.")
+                RowLabel(stringResource(R.string.help_bottom_row))
+                ButtonTip(stringResource(R.string.help_btn_bookmarks), stringResource(R.string.help_btn_bookmarks_desc))
+                ButtonTip(stringResource(R.string.help_btn_jcoin), stringResource(R.string.help_btn_jcoin_desc))
+                ButtonTip(stringResource(R.string.help_btn_feedback), stringResource(R.string.help_btn_feedback_desc))
             }
 
             // Jukugo & Dictionary Guide
-            GuideSection("Word List & Dictionary", "\uD83D\uDCD6") {
-                StepItem(1, "Tap ", "FULL/FOCUS", " to enter focus mode. The screen splits into a camera strip and a word list.")
-                StepItem(2, "The word list shows all detected ", "kanji compounds", " with their readings.")
-                StepItem(3, "Tap any word to open its ", "dictionary definition", " with meanings, part-of-speech tags, and kanji breakdown.")
-                StepItem(4, "Tap the ", "bookmark icon", " (right side of the dictionary header) to save a word.")
-                StepItem(5, "Tap any ", "kanji square", " in the breakdown section to see detailed kanji info (grade, JLPT level, readings, meanings).")
+            GuideSection(stringResource(R.string.help_word_list_title), stringResource(R.string.help_icon_book)) {
+                StepItem(1, stringResource(R.string.help_wl_step1_pre), stringResource(R.string.help_wl_step1_hl), stringResource(R.string.help_wl_step1_suf))
+                StepItem(2, stringResource(R.string.help_wl_step2_pre), stringResource(R.string.help_wl_step2_hl), stringResource(R.string.help_wl_step2_suf))
+                StepItem(3, stringResource(R.string.help_wl_step3_pre), stringResource(R.string.help_wl_step3_hl), stringResource(R.string.help_wl_step3_suf))
+                StepItem(4, stringResource(R.string.help_wl_step4_pre), stringResource(R.string.help_wl_step4_hl), stringResource(R.string.help_wl_step4_suf))
+                StepItem(5, stringResource(R.string.help_wl_step5_pre), stringResource(R.string.help_wl_step5_hl), stringResource(R.string.help_wl_step5_suf))
             }
 
             // Vertical Mode Guide
-            GuideSection("Vertical Text Mode", "\u7e26") {
-                StepItem(1, "Tap ", "\u7e26/\u6a2a", " to switch to vertical mode for manga, signs, and traditional Japanese text.")
-                StepItem(2, "In focus mode: the camera strip moves to the ", "right 40%", " of the screen, and the word list appears on the left 60%.")
-                StepItem(3, "Furigana appears to the ", "right", " of each vertical kanji column.")
+            GuideSection(stringResource(R.string.help_vertical_mode_title), stringResource(R.string.help_icon_vertical)) {
+                StepItem(1, stringResource(R.string.help_vm_step1_pre), stringResource(R.string.help_vm_step1_hl), stringResource(R.string.help_vm_step1_suf))
+                StepItem(2, stringResource(R.string.help_vm_step2_pre), stringResource(R.string.help_vm_step2_hl), stringResource(R.string.help_vm_step2_suf))
+                StepItem(3, stringResource(R.string.help_vm_step3_pre), stringResource(R.string.help_vm_step3_hl), stringResource(R.string.help_vm_step3_suf))
             }
 
             // Scan Challenge Guide
-            GuideSection("Scan Challenge", "\uD83C\uDFAF") {
-                StepItem(1, "An orange ", "\"Find:\"", " badge appears on the camera screen with a target kanji character.")
-                StepItem(2, "Point your camera at text containing that kanji to ", "complete the challenge", ".")
-                StepItem(3, "When found, the badge turns ", "green", " and you earn +10 J Coins. Tap it to get a new challenge.")
+            GuideSection(stringResource(R.string.help_scan_challenge_title), stringResource(R.string.help_icon_target)) {
+                StepItem(1, stringResource(R.string.help_sc_step1_pre), stringResource(R.string.help_sc_step1_hl), stringResource(R.string.help_sc_step1_suf))
+                StepItem(2, stringResource(R.string.help_sc_step2_pre), stringResource(R.string.help_sc_step2_hl), stringResource(R.string.help_sc_step2_suf))
+                StepItem(3, stringResource(R.string.help_sc_step3_pre), stringResource(R.string.help_sc_step3_hl), stringResource(R.string.help_sc_step3_suf))
             }
 
             // Links Card
@@ -189,14 +190,14 @@ fun HelpScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Links",
+                        text = stringResource(R.string.help_links),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(12.dp))
 
                     LinkRow(
-                        label = "Privacy Policy",
+                        label = stringResource(R.string.help_privacy_policy),
                         onClick = {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://jworks-ai.com/apps/kanjisage/privacy"))
                             context.startActivity(intent)
@@ -206,7 +207,7 @@ fun HelpScreen(
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
                     LinkRow(
-                        label = "Rate on Google Play",
+                        label = stringResource(R.string.help_rate_play),
                         onClick = {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.jworks.kanjisage"))
                             context.startActivity(intent)
@@ -216,14 +217,14 @@ fun HelpScreen(
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
                     LinkRow(
-                        label = "Send Feedback",
+                        label = stringResource(R.string.help_send_feedback),
                         onClick = onFeedbackClick
                     )
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
                     LinkRow(
-                        label = "JWorks AI",
+                        label = stringResource(R.string.help_jworks_ai),
                         onClick = {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://jworks-ai.com"))
                             context.startActivity(intent)
@@ -233,7 +234,7 @@ fun HelpScreen(
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
                     LinkRow(
-                        label = "Creator \u2014 Jay",
+                        label = stringResource(R.string.help_creator),
                         onClick = {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://jayismocking.com"))
                             context.startActivity(intent)
@@ -250,15 +251,15 @@ fun HelpScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Credits & Attributions",
+                        text = stringResource(R.string.help_credits),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    CreditItem("ML Kit", "Google ML Kit Japanese Text Recognition")
-                    CreditItem("JMDict", "Japanese-Multilingual Dictionary Project (EDRDG)")
-                    CreditItem("Kuromoji", "Japanese morphological analyzer by Atilika")
+                    CreditItem(stringResource(R.string.help_credit_mlkit), stringResource(R.string.help_credit_mlkit_desc))
+                    CreditItem(stringResource(R.string.help_credit_jmdict), stringResource(R.string.help_credit_jmdict_desc))
+                    CreditItem(stringResource(R.string.help_credit_kuromoji), stringResource(R.string.help_credit_kuromoji_desc))
                 }
             }
 

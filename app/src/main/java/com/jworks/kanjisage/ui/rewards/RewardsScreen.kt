@@ -59,6 +59,7 @@ import com.jworks.kanjisage.data.subscription.SubscriptionManager
 import com.jworks.kanjisage.ui.anim.StreakFlameIcon
 import com.jworks.kanjisage.ui.anim.rememberAnimatedCount
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
+import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.ui.theme.focusBorder
 
 @Composable
@@ -110,7 +111,7 @@ fun RewardsScreen(
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_arrow_back),
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.rewards_back),
                 modifier = Modifier
                     .size(24.dp)
                     .focusBorder(CircleShape)
@@ -134,7 +135,7 @@ fun RewardsScreen(
             }
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "J Coin Rewards",
+                text = stringResource(R.string.rewards_title),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White
@@ -161,6 +162,7 @@ fun RewardsScreen(
                     // Store purchase state
                     var purchaseItem by remember { mutableStateOf<StoreItem?>(null) }
                     var purchaseMessage by remember { mutableStateOf<String?>(null) }
+                    var purchaseSuccess by remember { mutableStateOf(false) }
 
                     BalanceCard(balance = balance)
                     Spacer(modifier = Modifier.height(20.dp))
@@ -169,11 +171,11 @@ fun RewardsScreen(
                     StreakCard(streakDays = streakDays)
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    SectionHeader(title = "Today's Progress")
+                    SectionHeader(title = stringResource(R.string.rewards_today_progress))
                     Spacer(modifier = Modifier.height(12.dp))
 
                     DailyProgressCard(
-                        label = "Daily Coins",
+                        label = stringResource(R.string.rewards_daily_coins),
                         current = dailyEarned,
                         max = JCoinEarnRules.DAILY_CAP,
                         color = KanjiSageColors.CoinAccent,
@@ -181,7 +183,7 @@ fun RewardsScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     DailyProgressCard(
-                        label = "Scan Milestone",
+                        label = stringResource(R.string.rewards_scan_milestone),
                         current = scansToday.coerceAtMost(10),
                         max = 10,
                         color = KanjiSageColors.PrimaryAction,
@@ -196,7 +198,7 @@ fun RewardsScreen(
                         else -> 1000
                     }
                     DailyProgressCard(
-                        label = "Total Scans",
+                        label = stringResource(R.string.rewards_total_scans),
                         current = totalScans.coerceAtMost(nextScanMilestone),
                         max = nextScanMilestone,
                         color = KanjiSageColors.AccentTeal,
@@ -209,7 +211,7 @@ fun RewardsScreen(
                         else -> 1000
                     }
                     DailyProgressCard(
-                        label = "Words Saved",
+                        label = stringResource(R.string.rewards_words_saved),
                         current = totalWordsSaved.coerceAtMost(nextWordMilestone),
                         max = nextWordMilestone,
                         color = KanjiSageColors.CoinGradientEnd,
@@ -218,38 +220,38 @@ fun RewardsScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    SectionHeader(title = "How to Earn")
+                    SectionHeader(title = stringResource(R.string.rewards_how_to_earn))
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    EarnRuleCard("\uD83D\uDCF8", "Scan your first text today", "+5", "Daily")
-                    EarnRuleCard("\uD83D\uDD0D", "Look up a word", "+1", "Up to 5/day")
-                    EarnRuleCard("\u2B50", "Save a word to favorites", "+2", "Up to 10/day")
-                    EarnRuleCard("\uD83C\uDFAF", "Complete a Scan Challenge", "+10", "Up to 3/day")
-                    EarnRuleCard("\uD83D\uDCC8", "Scan 10 texts in one day", "+10", "Daily")
-                    EarnRuleCard("\uD83D\uDD25", "Keep a 7-day streak", "+50", "Weekly")
-                    EarnRuleCard("\uD83C\uDFC6", "Reach a 30-day streak", "+100", "One-time")
-                    EarnRuleCard("\uD83D\uDC8E", "Reach a 90-day streak", "+300", "One-time")
-                    EarnRuleCard("\uD83D\uDCE4", "Share a scan result", "+5", "Up to 2/day")
+                    EarnRuleCard("\uD83D\uDCF8", stringResource(R.string.rewards_earn_first_scan), "+5", stringResource(R.string.rewards_freq_daily))
+                    EarnRuleCard("\uD83D\uDD0D", stringResource(R.string.rewards_earn_lookup), "+1", stringResource(R.string.rewards_freq_5day))
+                    EarnRuleCard("\u2B50", stringResource(R.string.rewards_earn_save), "+2", stringResource(R.string.rewards_freq_10day))
+                    EarnRuleCard("\uD83C\uDFAF", stringResource(R.string.rewards_earn_challenge), "+10", stringResource(R.string.rewards_freq_3day))
+                    EarnRuleCard("\uD83D\uDCC8", stringResource(R.string.rewards_earn_10_scans), "+10", stringResource(R.string.rewards_freq_daily))
+                    EarnRuleCard("\uD83D\uDD25", stringResource(R.string.rewards_earn_7day_streak), "+50", stringResource(R.string.rewards_freq_weekly))
+                    EarnRuleCard("\uD83C\uDFC6", stringResource(R.string.rewards_earn_30day_streak), "+100", stringResource(R.string.rewards_freq_onetime))
+                    EarnRuleCard("\uD83D\uDC8E", stringResource(R.string.rewards_earn_90day_streak), "+300", stringResource(R.string.rewards_freq_onetime))
+                    EarnRuleCard("\uD83D\uDCE4", stringResource(R.string.rewards_earn_share), "+5", stringResource(R.string.rewards_freq_2day))
                     // Cumulative milestones
-                    EarnRuleCard("\uD83D\uDCCA", "Scan 100 texts total", "+25", "One-time")
-                    EarnRuleCard("\uD83D\uDCCA", "Scan 500 texts total", "+100", "One-time")
-                    EarnRuleCard("\uD83D\uDCCA", "Scan 1,000 texts total", "+500", "One-time")
-                    EarnRuleCard("\uD83D\uDCDA", "Save 100 words total", "+25", "One-time")
-                    EarnRuleCard("\uD83D\uDCDA", "Save 500 words total", "+100", "One-time")
-                    EarnRuleCard("\uD83D\uDCDA", "Save 1,000 words total", "+500", "One-time")
+                    EarnRuleCard("\uD83D\uDCCA", stringResource(R.string.rewards_earn_100_scans), "+25", stringResource(R.string.rewards_freq_onetime))
+                    EarnRuleCard("\uD83D\uDCCA", stringResource(R.string.rewards_earn_500_scans), "+100", stringResource(R.string.rewards_freq_onetime))
+                    EarnRuleCard("\uD83D\uDCCA", stringResource(R.string.rewards_earn_1000_scans), "+500", stringResource(R.string.rewards_freq_onetime))
+                    EarnRuleCard("\uD83D\uDCDA", stringResource(R.string.rewards_earn_100_words), "+25", stringResource(R.string.rewards_freq_onetime))
+                    EarnRuleCard("\uD83D\uDCDA", stringResource(R.string.rewards_earn_500_words), "+100", stringResource(R.string.rewards_freq_onetime))
+                    EarnRuleCard("\uD83D\uDCDA", stringResource(R.string.rewards_earn_1000_words), "+500", stringResource(R.string.rewards_freq_onetime))
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    SectionHeader(title = "Redeem Coins")
+                    SectionHeader(title = stringResource(R.string.rewards_redeem_title))
                     Spacer(modifier = Modifier.height(12.dp))
 
                     val storeItems = remember { listOf(
-                        StoreItem("\uD83C\uDF19", "Dark Theme", 200, "theme_dark", "Unlock dark OLED theme"),
-                        StoreItem("\uD83C\uDF38", "Sakura Theme", 200, "theme_sakura", "Unlock cherry blossom theme"),
-                        StoreItem("\uD83D\uDCE5", "Scan History Export", 150, "scan_export", "Export scan history as CSV"),
-                        StoreItem("\uD83D\uDD0D", "Advanced OCR Mode", 100, "advanced_ocr_trial", "24-hour enhanced OCR access"),
-                        StoreItem("\u2B50", "Premium 1-Day Pass", 50, "premium_1day", "24-hour premium access"),
-                        StoreItem("\uD83D\uDC8E", "Premium 3-Day Pass", 100, "premium_3day", "72-hour premium access")
+                        StoreItem("🌙", stringResource(R.string.rewards_store_dark_theme), 200, "theme_dark", stringResource(R.string.rewards_store_dark_desc)),
+                        StoreItem("🌸", stringResource(R.string.rewards_store_sakura_theme), 200, "theme_sakura", stringResource(R.string.rewards_store_sakura_desc)),
+                        StoreItem("📥", stringResource(R.string.rewards_store_scan_export), 150, "scan_export", stringResource(R.string.rewards_store_scan_desc)),
+                        StoreItem("🔍", stringResource(R.string.rewards_store_adv_ocr), 100, "advanced_ocr_trial", stringResource(R.string.rewards_store_adv_ocr_desc)),
+                        StoreItem("⭐", stringResource(R.string.rewards_store_1day_pass), 50, "premium_1day", stringResource(R.string.rewards_store_1day_desc)),
+                        StoreItem("💎", stringResource(R.string.rewards_store_3day_pass), 100, "premium_3day", stringResource(R.string.rewards_store_3day_desc))
                     ) }
 
                     storeItems.forEach { item ->
@@ -270,8 +272,8 @@ fun RewardsScreen(
                     purchaseItem?.let { item ->
                         AlertDialog(
                             onDismissRequest = { purchaseItem = null },
-                            title = { Text("Confirm Purchase", fontWeight = FontWeight.Bold) },
-                            text = { Text("Spend ${item.cost} J Coins on ${item.title}?") },
+                            title = { Text(stringResource(R.string.rewards_confirm_title), fontWeight = FontWeight.Bold) },
+                            text = { Text(stringResource(R.string.rewards_confirm_msg, item.cost, item.title)) },
                             confirmButton = {
                                 TextButton(onClick = {
                                     val buying = item
@@ -279,26 +281,27 @@ fun RewardsScreen(
                                     scope.launch {
                                         val token = authRepository.getAccessToken()
                                         if (token == null) {
-                                            purchaseMessage = "Sign in required"
+                                            purchaseMessage = context.getString(R.string.rewards_sign_in_required)
                                             return@launch
                                         }
                                         jCoinClient.spend(token, buying.sourceType, buying.cost, buying.title)
                                             .onSuccess { resp ->
                                                 balance = balance.copy(balance = resp.newBalance.toInt())
-                                                purchaseMessage = "Purchased ${buying.title}!"
+                                                purchaseSuccess = true
+                                                purchaseMessage = context.getString(R.string.rewards_purchased, buying.title)
                                                 // Refresh full balance
                                                 jCoinClient.getBalance(token).onSuccess { balance = it }
                                             }
                                             .onFailure { e ->
                                                 val msg = e.message ?: ""
                                                 purchaseMessage = if (msg.contains("INSUFFICIENT_BALANCE"))
-                                                    "Not enough J Coins" else "Purchase failed"
+                                                    context.getString(R.string.rewards_insufficient) else context.getString(R.string.rewards_failed)
                                             }
                                     }
-                                }) { Text("Buy", color = KanjiSageColors.PrimaryAction) }
+                                }) { Text(stringResource(R.string.rewards_buy), color = KanjiSageColors.PrimaryAction) }
                             },
                             dismissButton = {
-                                TextButton(onClick = { purchaseItem = null }) { Text("Cancel") }
+                                TextButton(onClick = { purchaseItem = null }) { Text(stringResource(R.string.rewards_cancel)) }
                             }
                         )
                     }
@@ -314,7 +317,7 @@ fun RewardsScreen(
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(10.dp))
                                 .background(
-                                    if (msg.startsWith("Purchased")) KanjiSageColors.SuccessGreen.copy(alpha = 0.2f)
+                                    if (purchaseSuccess) KanjiSageColors.SuccessGreen.copy(alpha = 0.2f)
                                     else Color.Red.copy(alpha = 0.2f)
                                 )
                                 .padding(12.dp),
@@ -322,7 +325,7 @@ fun RewardsScreen(
                         ) {
                             Text(
                                 text = msg,
-                                color = if (msg.startsWith("Purchased")) KanjiSageColors.SuccessGreen else KanjiSageColors.ErrorLight,
+                                color = if (purchaseSuccess) KanjiSageColors.SuccessGreen else KanjiSageColors.ErrorLight,
                                 fontWeight = FontWeight.SemiBold,
                                 fontSize = 14.sp
                             )
@@ -380,14 +383,14 @@ private fun SignedOutCard() {
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Start Earning J Coins!",
+                text = stringResource(R.string.rewards_start_earning),
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Sign in to earn coins every time you scan, save words, and keep streaks going. Redeem them for real rewards!",
+                text = stringResource(R.string.rewards_signed_out_desc),
                 color = Color.White.copy(alpha = 0.7f),
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center,
@@ -429,7 +432,7 @@ private fun PremiumRequiredCard(onUpgradeClick: () -> Unit) {
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Unlock J Coins with Premium",
+                text = stringResource(R.string.rewards_unlock_premium),
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
@@ -437,7 +440,7 @@ private fun PremiumRequiredCard(onUpgradeClick: () -> Unit) {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Premium members earn J Coins every scan, lookup, and streak. Redeem for tutoring sessions and app credits!",
+                text = stringResource(R.string.rewards_premium_desc),
                 color = Color.White.copy(alpha = 0.7f),
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center,
@@ -453,7 +456,7 @@ private fun PremiumRequiredCard(onUpgradeClick: () -> Unit) {
                 modifier = Modifier.height(48.dp)
             ) {
                 Text(
-                    text = "Upgrade to Premium",
+                    text = stringResource(R.string.rewards_upgrade),
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
@@ -480,7 +483,7 @@ private fun BalanceCard(balance: JCoinBalance) {
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = "Your J Coins",
+                text = stringResource(R.string.rewards_your_coins),
                 color = Color.White.copy(alpha = 0.8f),
                 fontSize = 14.sp
             )
@@ -518,7 +521,7 @@ private fun BalanceCard(balance: JCoinBalance) {
             }
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = "Lifetime earned: ${balance.lifetimeEarned}",
+                text = stringResource(R.string.rewards_lifetime, balance.lifetimeEarned),
                 color = Color.White.copy(alpha = 0.5f),
                 fontSize = 12.sp
             )
@@ -559,12 +562,12 @@ private fun StreakCard(streakDays: Int) {
                 }
                 Column {
                     Text(
-                        text = "Current Streak",
+                        text = stringResource(R.string.rewards_current_streak),
                         color = Color.White.copy(alpha = 0.7f),
                         fontSize = 13.sp
                     )
                     Text(
-                        text = "$streakDays day${if (streakDays != 1) "s" else ""}",
+                        text = if (streakDays != 1) stringResource(R.string.rewards_days_plural, streakDays) else stringResource(R.string.rewards_days_singular, streakDays),
                         color = if (streakDays > 0) KanjiSageColors.StreakFlameLight else Color.White,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold
@@ -587,13 +590,13 @@ private fun StreakCard(streakDays: Int) {
                 }
             } else if (streakDays > 0) {
                 Text(
-                    text = "${7 - streakDays} more for +50 J",
+                    text = stringResource(R.string.rewards_streak_remaining, 7 - streakDays),
                     color = Color.White.copy(alpha = 0.5f),
                     fontSize = 13.sp
                 )
             } else {
                 Text(
-                    text = "Scan today to start!",
+                    text = stringResource(R.string.rewards_scan_to_start),
                     color = KanjiSageColors.PrimaryAction.copy(alpha = 0.8f),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Medium

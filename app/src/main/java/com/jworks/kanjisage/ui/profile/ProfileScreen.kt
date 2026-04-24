@@ -55,6 +55,7 @@ import com.jworks.kanjisage.data.jcoin.JCoinClient
 import com.jworks.kanjisage.data.jcoin.JCoinEarnRules
 import com.jworks.kanjisage.data.subscription.SubscriptionManager
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
+import androidx.compose.ui.res.stringResource
 
 @Composable
 fun ProfileScreen(
@@ -91,7 +92,7 @@ fun ProfileScreen(
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_arrow_back),
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.profile_back),
                 modifier = Modifier
                     .size(24.dp)
                     .focusBorder(CircleShape)
@@ -100,7 +101,7 @@ fun ProfileScreen(
             )
             Spacer(modifier = Modifier.width(16.dp))
             Text(
-                text = "Profile",
+                text = stringResource(R.string.profile_title),
                 color = Color.White,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
@@ -139,7 +140,7 @@ fun ProfileScreen(
                     ) {
                         val initial = when {
                             handle != null -> handle.first().uppercase()
-                            isAnonymous -> "G"
+                            isAnonymous -> stringResource(R.string.profile_guest_initial)
                             authState is AuthState.SignedIn ->
                                 (authState as AuthState.SignedIn).user.email?.firstOrNull()?.uppercase() ?: "?"
                             else -> "?"
@@ -158,8 +159,8 @@ fun ProfileScreen(
                         // Primary display: handle > email > Guest
                         val displayTitle = when {
                             handle != null -> handle
-                            !isAnonymous -> (authState as? AuthState.SignedIn)?.user?.email ?: "Linked Account"
-                            else -> "Guest"
+                            !isAnonymous -> (authState as? AuthState.SignedIn)?.user?.email ?: stringResource(R.string.profile_linked_account)
+                            else -> stringResource(R.string.profile_guest)
                         }
                         Text(
                             text = displayTitle,
@@ -170,8 +171,8 @@ fun ProfileScreen(
                         val subtitle = when {
                             handle != null && !isAnonymous ->
                                 (authState as? AuthState.SignedIn)?.user?.email ?: ""
-                            handle != null -> "Tap to change display name"
-                            isAnonymous -> "No account linked"
+                            handle != null -> stringResource(R.string.profile_change_name)
+                            isAnonymous -> stringResource(R.string.profile_no_account)
                             else -> ""
                         }
                         if (subtitle.isNotEmpty()) {
@@ -184,7 +185,7 @@ fun ProfileScreen(
                         Spacer(modifier = Modifier.height(4.dp))
                         // Subscription badge
                         val badgeColor = if (isPremium) KanjiSageColors.Primary else KanjiSageColors.DisabledGrey
-                        val badgeText = if (isPremium) "Premium" else "Free"
+                        val badgeText = if (isPremium) stringResource(R.string.profile_premium) else stringResource(R.string.profile_free)
                         Text(
                             text = badgeText,
                             color = badgeColor,
@@ -208,12 +209,12 @@ fun ProfileScreen(
             ) {
                 Column {
                     Text(
-                        text = if (currentHandle != null) "Change display name" else "Set display name",
+                        text = if (currentHandle != null) stringResource(R.string.profile_change_name) else stringResource(R.string.profile_set_name),
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold
                     )
                     Text(
-                        text = currentHandle ?: "Choose how you appear to others",
+                        text = currentHandle ?: stringResource(R.string.profile_choose_name),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -233,20 +234,20 @@ fun ProfileScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "App Stats",
+                        text = stringResource(R.string.profile_app_stats),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(12.dp))
 
                     val remaining = subscriptionManager.getRemainingScans(context)
-                    val remainingText = if (isPremium) "Unlimited" else "$remaining / ${SubscriptionManager.FREE_SCAN_LIMIT}"
+                    val remainingText = if (isPremium) stringResource(R.string.profile_unlimited) else stringResource(R.string.profile_remaining_format, remaining, SubscriptionManager.FREE_SCAN_LIMIT)
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text("Remaining Scans", style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.profile_remaining_scans), style = MaterialTheme.typography.bodyMedium)
                         Text(remainingText, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                     }
                 }
@@ -260,7 +261,7 @@ fun ProfileScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Connected Apps",
+                        text = stringResource(R.string.profile_connected_apps),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -268,8 +269,8 @@ fun ProfileScreen(
 
                     // KanjiJourney
                     EcosystemAppRow(
-                        name = "KanjiJourney",
-                        description = "Learn kanji through quests",
+                        name = stringResource(R.string.profile_app_kanjijourney),
+                        description = stringResource(R.string.profile_app_kanjijourney_desc),
                         onClick = {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=com.jworks.kanjijourney"))
                             context.startActivity(intent)
@@ -280,8 +281,8 @@ fun ProfileScreen(
 
                     // TutoringJay
                     EcosystemAppRow(
-                        name = "TutoringJay",
-                        description = "STEM tutoring with Jay",
+                        name = stringResource(R.string.profile_app_tutoringjay),
+                        description = stringResource(R.string.profile_app_tutoringjay_desc),
                         onClick = {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://tutoringjay.com"))
                             context.startActivity(intent)
@@ -292,8 +293,8 @@ fun ProfileScreen(
 
                     // J Coin
                     EcosystemAppRow(
-                        name = "J Coin",
-                        description = "Earn rewards across JWorks apps",
+                        name = stringResource(R.string.profile_app_jcoin),
+                        description = stringResource(R.string.profile_app_jcoin_desc),
                         onClick = onRewardsClick
                     )
 
@@ -301,8 +302,8 @@ fun ProfileScreen(
 
                     // Discord Community
                     EcosystemAppRow(
-                        name = "Discord Community",
-                        description = "Join 100+ Japanese learners",
+                        name = stringResource(R.string.profile_app_discord),
+                        description = stringResource(R.string.profile_app_discord_desc),
                         onClick = {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://discord.gg/bwHQA6GC"))
                             context.startActivity(intent)
@@ -313,8 +314,8 @@ fun ProfileScreen(
 
                     // JWorks AI
                     EcosystemAppRow(
-                        name = "JWorks AI",
-                        description = "AI-powered tools by JWorks",
+                        name = stringResource(R.string.profile_app_jworks),
+                        description = stringResource(R.string.profile_app_jworks_desc),
                         onClick = {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://jworks-ai.com"))
                             context.startActivity(intent)
@@ -325,8 +326,8 @@ fun ProfileScreen(
 
                     // Creator
                     EcosystemAppRow(
-                        name = "Creator",
-                        description = "Made by Jay",
+                        name = stringResource(R.string.profile_app_creator),
+                        description = stringResource(R.string.profile_app_creator_desc),
                         onClick = {
                             val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://jayismocking.com"))
                             context.startActivity(intent)
@@ -344,7 +345,7 @@ fun ProfileScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = "Developer Tools",
+                            text = stringResource(R.string.profile_dev_tools),
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
                             color = KanjiSageColors.WarningDarkText
@@ -358,12 +359,12 @@ fun ProfileScreen(
                         ) {
                             Column {
                                 Text(
-                                    text = if (premiumOverride) "Simulating Premium" else "Simulating Free",
+                                    text = if (premiumOverride) stringResource(R.string.profile_sim_premium) else stringResource(R.string.profile_sim_free),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Medium
                                 )
                                 Text(
-                                    text = "Override subscription status for testing",
+                                    text = stringResource(R.string.profile_override_desc),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -379,7 +380,7 @@ fun ProfileScreen(
 
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Current: ${if (premiumOverride) "Force premium" else "Force free"}",
+                            text = if (premiumOverride) stringResource(R.string.profile_current_premium) else stringResource(R.string.profile_current_free),
                             style = MaterialTheme.typography.bodySmall,
                             color = KanjiSageColors.DangerText
                         )
@@ -400,7 +401,7 @@ fun ProfileScreen(
                                 ),
                                 modifier = Modifier.weight(1f)
                             ) {
-                                Text("Premium", fontSize = 12.sp)
+                                Text(stringResource(R.string.profile_premium), fontSize = 12.sp)
                             }
                             Button(
                                 onClick = {
@@ -412,7 +413,7 @@ fun ProfileScreen(
                                 ),
                                 modifier = Modifier.weight(1f)
                             ) {
-                                Text("Free", fontSize = 12.sp)
+                                Text(stringResource(R.string.profile_free), fontSize = 12.sp)
                             }
                         }
                     }
@@ -429,14 +430,14 @@ fun ProfileScreen(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = "Sign In / Link Account",
+                        text = stringResource(R.string.profile_sign_in_link),
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(vertical = 4.dp)
                     )
                 }
                 Text(
-                    text = "Sync across devices, earn J Coins, and back up your data",
+                    text = stringResource(R.string.profile_sign_in_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 4.dp)
@@ -449,7 +450,7 @@ fun ProfileScreen(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = "Sign Out",
+                        text = stringResource(R.string.profile_sign_out),
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(vertical = 4.dp)

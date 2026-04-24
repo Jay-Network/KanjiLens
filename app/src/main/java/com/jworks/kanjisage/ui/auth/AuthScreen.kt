@@ -42,6 +42,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jworks.kanjisage.data.auth.AuthRepository
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
+import androidx.compose.ui.res.stringResource
+import com.jworks.kanjisage.R
 import com.jworks.kanjisage.data.auth.AuthState
 import kotlinx.coroutines.launch
 
@@ -94,7 +96,7 @@ fun AuthScreen(
                 .padding(16.dp)
         ) {
             Text(
-                text = "\u2190 Back",
+                text = stringResource(R.string.auth_back),
                 color = Color.White.copy(alpha = 0.7f),
                 fontSize = 16.sp
             )
@@ -109,7 +111,7 @@ fun AuthScreen(
         ) {
             // Title
             Text(
-                text = "Link Account",
+                text = stringResource(R.string.auth_title),
                 fontSize = 28.sp,
                 color = Color.White,
                 fontWeight = FontWeight.Bold
@@ -118,7 +120,7 @@ fun AuthScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "Link a Google account to sync your data\nacross devices and earn J Coins",
+                text = stringResource(R.string.auth_subtitle),
                 color = Color.White.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center,
                 fontSize = 15.sp,
@@ -129,7 +131,7 @@ fun AuthScreen(
 
             // Privacy note
             Text(
-                text = "Only your email address is collected.\nYour name and photo are not stored.",
+                text = stringResource(R.string.auth_privacy_note),
                 color = KanjiSageColors.PrimaryAction.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center,
                 fontSize = 13.sp,
@@ -168,14 +170,14 @@ fun AuthScreen(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "G",
+                            text = stringResource(R.string.auth_google_letter),
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             color = KanjiSageColors.GoogleBlue
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
-                            text = "Continue with Google",
+                            text = stringResource(R.string.auth_continue_google),
                             color = KanjiSageColors.DarkGreyText,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Medium
@@ -203,16 +205,16 @@ fun AuthScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "Why link an account?",
+                    text = stringResource(R.string.auth_why_link),
                     color = Color.White.copy(alpha = 0.7f),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                BenefitItem("Earn J Coins with every scan")
-                BenefitItem("Sync bookmarks across devices")
-                BenefitItem("Recover your data if you switch phones")
-                BenefitItem("Connect with KanjiJourney")
+                BenefitItem(stringResource(R.string.auth_benefit_coins))
+                BenefitItem(stringResource(R.string.auth_benefit_sync))
+                BenefitItem(stringResource(R.string.auth_benefit_recover))
+                BenefitItem(stringResource(R.string.auth_benefit_journey))
             }
         }
     }
