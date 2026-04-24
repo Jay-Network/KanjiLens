@@ -58,6 +58,7 @@ fun KanjiDetailView(
     isBookmarked: Boolean,
     onBackClick: () -> Unit,
     onBookmarkToggle: () -> Unit,
+    onKanjiClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -179,6 +180,43 @@ fun KanjiDetailView(
                                 fontSize = 15.sp,
                                 color = DarkText
                             )
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+
+                    // Kyujitai / Shinjitai variant section
+                    if (kanjiInfo.hasVariant) {
+                        val isTraditional = kanjiInfo.isKyujitai
+                        val title = if (isTraditional)
+                            stringResource(R.string.kanji_modern_form)
+                        else
+                            stringResource(R.string.kanji_traditional_form)
+                        val variants = if (isTraditional)
+                            listOfNotNull(kanjiInfo.shinjitaiVariant)
+                        else
+                            kanjiInfo.kyujitaiVariants
+
+                        SectionCard(title = title) {
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                variants.forEach { variant ->
+                                    AssistChip(
+                                        onClick = { onKanjiClick(variant) },
+                                        label = {
+                                            Text(
+                                                text = variant,
+                                                fontSize = 20.sp,
+                                                color = DarkText,
+                                                style = androidx.compose.ui.text.TextStyle(
+                                                    localeList = LocaleList("ja")
+                                                )
+                                            )
+                                        }
+                                    )
+                                }
+                            }
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                     }

@@ -550,6 +550,7 @@ private fun CameraContent(
                             viewModel.toggleKanjiBookmark(kanjiStr)
                             viewModel.refreshAllBookmarkedKanji()
                         },
+                        onKanjiClick = { selectedKanji = it },
                         modifier = Modifier.fillMaxSize()
                     )
                 } else if (selectedJukugo != null) {
@@ -684,6 +685,7 @@ private fun CameraContent(
                                     viewModel.toggleKanjiBookmark(kanjiStr)
                                     viewModel.refreshAllBookmarkedKanji()
                                 },
+                                onKanjiClick = { selectedKanji = it },
                                 modifier = Modifier.fillMaxSize()
                             )
                         } else if (selectedJukugo != null) {

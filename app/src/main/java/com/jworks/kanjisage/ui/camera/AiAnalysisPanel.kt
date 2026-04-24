@@ -1,6 +1,8 @@
 package com.jworks.kanjisage.ui.camera
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.res.stringResource
+import com.jworks.kanjisage.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column

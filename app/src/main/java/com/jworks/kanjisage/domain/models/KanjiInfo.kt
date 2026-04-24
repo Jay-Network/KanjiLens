@@ -24,4 +24,16 @@ data class KanjiInfo(
                 else -> "JLPT N$it"
             }
         }
+
+    val kyujitaiVariants: List<String>
+        get() = KyujitaiDictionary.getKyujitai(literal)
+
+    val shinjitaiVariant: String?
+        get() = KyujitaiDictionary.getShinjitai(literal)
+
+    val isKyujitai: Boolean
+        get() = shinjitaiVariant != null
+
+    val hasVariant: Boolean
+        get() = kyujitaiVariants.isNotEmpty() || isKyujitai
 }

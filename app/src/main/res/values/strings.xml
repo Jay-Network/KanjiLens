@@ -341,7 +341,6 @@
     <string name="camera_allow_access">Allow Camera Access</string>
     <string name="camera_share_prefix">KanjiSage detected:\n%s</string>
     <string name="camera_analysis_failed">Analysis failed: %s</string>
-    <string name="camera_permission_rationale">KanjiSage uses your camera to detect Japanese text in real time. No photos are saved or uploaded.</string>
     <string name="camera_permission_request">To read Japanese text around you, KanjiSage needs access to your camera.</string>
 
     <!-- Bookmarks screen -->
@@ -383,6 +382,8 @@
     <string name="kanji_meanings">Meanings</string>
     <string name="kanji_onyomi">On\'yomi (Chinese readings)</string>
     <string name="kanji_kunyomi">Kun\'yomi (Japanese readings)</string>
+    <string name="kanji_traditional_form">Traditional Form (旧字体)</string>
+    <string name="kanji_modern_form">Modern Form (新字体)</string>
     <string name="kanji_practice">Practice</string>
     <string name="kanji_practice_writing">Practice writing %s in KanjiJourney</string>
     <string name="kanji_ai_handwriting">AI checks your handwriting</string>

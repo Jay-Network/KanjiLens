@@ -245,13 +245,25 @@ fun RewardsScreen(
                     SectionHeader(title = stringResource(R.string.rewards_redeem_title))
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    val storeItems = remember { listOf(
-                        StoreItem("🌙", stringResource(R.string.rewards_store_dark_theme), 200, "theme_dark", stringResource(R.string.rewards_store_dark_desc)),
-                        StoreItem("🌸", stringResource(R.string.rewards_store_sakura_theme), 200, "theme_sakura", stringResource(R.string.rewards_store_sakura_desc)),
-                        StoreItem("📥", stringResource(R.string.rewards_store_scan_export), 150, "scan_export", stringResource(R.string.rewards_store_scan_desc)),
-                        StoreItem("🔍", stringResource(R.string.rewards_store_adv_ocr), 100, "advanced_ocr_trial", stringResource(R.string.rewards_store_adv_ocr_desc)),
-                        StoreItem("⭐", stringResource(R.string.rewards_store_1day_pass), 50, "premium_1day", stringResource(R.string.rewards_store_1day_desc)),
-                        StoreItem("💎", stringResource(R.string.rewards_store_3day_pass), 100, "premium_3day", stringResource(R.string.rewards_store_3day_desc))
+                    val darkTheme = stringResource(R.string.rewards_store_dark_theme)
+                    val darkDesc = stringResource(R.string.rewards_store_dark_desc)
+                    val sakuraTheme = stringResource(R.string.rewards_store_sakura_theme)
+                    val sakuraDesc = stringResource(R.string.rewards_store_sakura_desc)
+                    val scanExport = stringResource(R.string.rewards_store_scan_export)
+                    val scanDesc = stringResource(R.string.rewards_store_scan_desc)
+                    val advOcr = stringResource(R.string.rewards_store_adv_ocr)
+                    val advOcrDesc = stringResource(R.string.rewards_store_adv_ocr_desc)
+                    val oneDayPass = stringResource(R.string.rewards_store_1day_pass)
+                    val oneDayDesc = stringResource(R.string.rewards_store_1day_desc)
+                    val threeDayPass = stringResource(R.string.rewards_store_3day_pass)
+                    val threeDayDesc = stringResource(R.string.rewards_store_3day_desc)
+                    val storeItems = remember(darkTheme) { listOf(
+                        StoreItem("🌙", darkTheme, 200, "theme_dark", darkDesc),
+                        StoreItem("🌸", sakuraTheme, 200, "theme_sakura", sakuraDesc),
+                        StoreItem("📥", scanExport, 150, "scan_export", scanDesc),
+                        StoreItem("🔍", advOcr, 100, "advanced_ocr_trial", advOcrDesc),
+                        StoreItem("⭐", oneDayPass, 50, "premium_1day", oneDayDesc),
+                        StoreItem("💎", threeDayPass, 100, "premium_3day", threeDayDesc)
                     ) }
 
                     storeItems.forEach { item ->
