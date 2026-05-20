@@ -24,6 +24,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -56,7 +57,7 @@ fun ScanTimerPill(
     scanTimerSeconds: Int,
     modifier: Modifier = Modifier
 ) {
-    val timerColor = if (scanTimerSeconds <= 10) KanjiSageColors.TimerWarning else Color.White
+    val timerColor = if (scanTimerSeconds <= 10) KanjiSageColors.TimerWarning else MaterialTheme.colorScheme.onSurface
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
@@ -97,25 +98,25 @@ fun ScanChallengePill(
                 if (challenge.isCompleted) {
                     Text(
                         text = stringResource(R.string.scan_challenge_found, challenge.targetKanji),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
                 } else {
                     Text(
                         text = stringResource(R.string.scan_challenge_find),
-                        color = Color.White.copy(alpha = 0.8f),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                         fontSize = 13.sp
                     )
                     Text(
                         text = challenge.targetKanji,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
                         text = " (${challenge.reading})",
-                        color = Color.White.copy(alpha = 0.7f),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         fontSize = 12.sp
                     )
                 }
@@ -123,7 +124,7 @@ fun ScanChallengePill(
             if (challenge.isCompleted) {
                 Text(
                     text = stringResource(R.string.scan_challenge_promo),
-                    color = Color.White.copy(alpha = 0.7f),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     fontSize = 12.sp
                 )
             }
@@ -225,14 +226,14 @@ fun ScanExpiredOverlay(
         ) {
             Text(
                 text = stringResource(R.string.scan_expired_title),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold
             )
 
             Text(
                 text = stringResource(R.string.scan_expired_desc),
-                color = Color.White.copy(alpha = 0.7f),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 fontSize = 14.sp
             )
 
@@ -247,7 +248,7 @@ fun ScanExpiredOverlay(
                     text = stringResource(R.string.scan_expired_new),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                 )
             }
@@ -264,7 +265,7 @@ fun ScanExpiredOverlay(
             TextButton(onClick = onBackToCamera) {
                 Text(
                     text = stringResource(R.string.scan_expired_review),
-                    color = Color.White.copy(alpha = 0.6f),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     fontSize = 13.sp
                 )
             }

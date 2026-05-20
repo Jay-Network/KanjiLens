@@ -27,6 +27,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -123,7 +124,7 @@ fun DictionaryDetailView(
                     .size(24.dp)
                     .focusBorder(CircleShape)
                     .clickable { onBackClick() },
-                tint = Color.White
+                tint = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.width(12.dp))
 
@@ -132,14 +133,14 @@ fun DictionaryDetailView(
                     text = displayWord,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 if (displayReading.isNotEmpty()) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = displayReading,
                         fontSize = 16.sp,
-                        color = Color.White.copy(alpha = 0.85f)
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
                     )
                 }
                 if (result?.isCommon == true) {
@@ -153,7 +154,7 @@ fun DictionaryDetailView(
                         Text(
                             text = stringResource(R.string.dict_common),
                             fontSize = 12.sp,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -170,14 +171,14 @@ fun DictionaryDetailView(
                         .focusBorder(CircleShape)
                         .clickable { onWordBookmarkToggle() }
                         .padding(2.dp),
-                    tint = if (isWordBookmarked) KanjiSageColors.CoinGold else Color.White
+                    tint = if (isWordBookmarked) KanjiSageColors.CoinGold else MaterialTheme.colorScheme.onSurface
                 )
             } else {
                 Text(
                     text = stringResource(R.string.dict_title),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -432,19 +433,19 @@ private fun KanjiJourneyPracticeButton(kanjiList: List<Char>) {
             Text(
                 text = stringResource(R.string.dict_send_to_kj, displayKanji),
                 fontSize = 14.sp,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold
             )
             Text(
                 text = stringResource(R.string.dict_kj_flashcards),
                 fontSize = 12.sp,
-                color = Color.White.copy(alpha = 0.8f)
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
             )
         }
         Text(
             text = ">",
             fontSize = 20.sp,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold
         )
     }

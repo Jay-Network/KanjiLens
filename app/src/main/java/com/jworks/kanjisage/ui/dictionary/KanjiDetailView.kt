@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -75,7 +76,7 @@ fun KanjiDetailView(
             Text(
                 text = "\u2190",
                 fontSize = 24.sp,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.focusBorder().clickable { onBackClick() }
             )
             Spacer(modifier = Modifier.width(12.dp))
@@ -83,14 +84,14 @@ fun KanjiDetailView(
                 text = kanjiInfo?.literal ?: kanji,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
             )
             // Star bookmark — same as KanjiJourney (★/☆)
             Text(
                 text = if (isBookmarked) "\u2605" else "\u2606",
                 fontSize = 24.sp,
-                color = if (isBookmarked) BookmarkGold else Color.White,
+                color = if (isBookmarked) BookmarkGold else MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier
                     .focusBorder()
                     .clickable { onBookmarkToggle() }
@@ -242,13 +243,13 @@ fun KanjiDetailView(
                             Text(
                                 text = stringResource(R.string.kanji_practice_writing, kanji),
                                 fontSize = 13.sp,
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
                                 text = stringResource(R.string.kanji_ai_handwriting),
                                 fontSize = 12.sp,
-                                color = Color.White.copy(alpha = 0.8f)
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                             )
                         }
                     }

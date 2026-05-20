@@ -27,6 +27,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -116,7 +117,7 @@ fun RewardsScreen(
                     .size(24.dp)
                     .focusBorder(CircleShape)
                     .clickable { onBackClick() },
-                tint = Color.White
+                tint = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.width(16.dp))
             // Coin icon in header
@@ -138,7 +139,7 @@ fun RewardsScreen(
                 text = stringResource(R.string.rewards_title),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
 
@@ -353,7 +354,7 @@ fun RewardsScreen(
 private fun SectionHeader(title: String) {
     Text(
         text = title,
-        color = Color.White,
+        color = MaterialTheme.colorScheme.onSurface,
         fontSize = 18.sp,
         fontWeight = FontWeight.Bold
     )
@@ -396,14 +397,14 @@ private fun SignedOutCard() {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = stringResource(R.string.rewards_start_earning),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = stringResource(R.string.rewards_signed_out_desc),
-                color = Color.White.copy(alpha = 0.7f),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center,
                 lineHeight = 20.sp
@@ -445,7 +446,7 @@ private fun PremiumRequiredCard(onUpgradeClick: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = stringResource(R.string.rewards_unlock_premium),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
@@ -453,7 +454,7 @@ private fun PremiumRequiredCard(onUpgradeClick: () -> Unit) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = stringResource(R.string.rewards_premium_desc),
-                color = Color.White.copy(alpha = 0.7f),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center,
                 lineHeight = 20.sp
@@ -469,7 +470,7 @@ private fun PremiumRequiredCard(onUpgradeClick: () -> Unit) {
             ) {
                 Text(
                     text = stringResource(R.string.rewards_upgrade),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     modifier = Modifier.padding(horizontal = 16.dp)
@@ -496,7 +497,7 @@ private fun BalanceCard(balance: JCoinBalance) {
         ) {
             Text(
                 text = stringResource(R.string.rewards_your_coins),
-                color = Color.White.copy(alpha = 0.8f),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                 fontSize = 14.sp
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -526,7 +527,7 @@ private fun BalanceCard(balance: JCoinBalance) {
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
                     text = "$animatedBalance",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 42.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -534,7 +535,7 @@ private fun BalanceCard(balance: JCoinBalance) {
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = stringResource(R.string.rewards_lifetime, balance.lifetimeEarned),
-                color = Color.White.copy(alpha = 0.5f),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 fontSize = 12.sp
             )
         }
@@ -575,12 +576,12 @@ private fun StreakCard(streakDays: Int) {
                 Column {
                     Text(
                         text = stringResource(R.string.rewards_current_streak),
-                        color = Color.White.copy(alpha = 0.7f),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         fontSize = 13.sp
                     )
                     Text(
                         text = if (streakDays != 1) stringResource(R.string.rewards_days_plural, streakDays) else stringResource(R.string.rewards_days_singular, streakDays),
-                        color = if (streakDays > 0) KanjiSageColors.StreakFlameLight else Color.White,
+                        color = if (streakDays > 0) KanjiSageColors.StreakFlameLight else MaterialTheme.colorScheme.onSurface,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -603,7 +604,7 @@ private fun StreakCard(streakDays: Int) {
             } else if (streakDays > 0) {
                 Text(
                     text = stringResource(R.string.rewards_streak_remaining, 7 - streakDays),
-                    color = Color.White.copy(alpha = 0.5f),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     fontSize = 13.sp
                 )
             } else {
@@ -646,7 +647,7 @@ private fun DailyProgressCard(
                     }
                     Text(
                         text = label,
-                        color = Color.White.copy(alpha = 0.8f),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                         fontSize = 14.sp
                     )
                 }
@@ -697,7 +698,7 @@ private fun EarnRuleCard(emoji: String, action: String, reward: String, frequenc
         Spacer(modifier = Modifier.width(10.dp))
         Text(
             text = action,
-            color = Color.White.copy(alpha = 0.85f),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
             fontSize = 14.sp,
             modifier = Modifier.weight(1f)
         )
@@ -718,7 +719,7 @@ private fun EarnRuleCard(emoji: String, action: String, reward: String, frequenc
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = frequency,
-            color = Color.White.copy(alpha = 0.4f),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
             fontSize = 12.sp
         )
     }
@@ -767,13 +768,13 @@ private fun RedemptionCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    color = if (enabled) Color.White else Color.White.copy(alpha = 0.5f),
+                    color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = description,
-                    color = Color.White.copy(alpha = if (enabled) 0.65f else 0.3f),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 0.65f else 0.3f),
                     fontSize = 13.sp
                 )
             }
@@ -788,7 +789,7 @@ private fun RedemptionCard(
             ) {
                 Text(
                     text = cost,
-                    color = if (enabled) KanjiSageColors.CoinGold else Color.White.copy(alpha = 0.3f),
+                    color = if (enabled) KanjiSageColors.CoinGold else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )

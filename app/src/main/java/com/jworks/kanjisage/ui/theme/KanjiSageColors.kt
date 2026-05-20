@@ -121,6 +121,15 @@ object KanjiSageColors {
     val KJBookmarkGold = Color(0xFFFFD700)
     val KJDarkText = Color(0xFF1C1B1F)
 
+    // Glass morphism
+    val GlassSurface = Color.White.copy(alpha = 0.08f)
+    val GlassSurfaceMedium = Color.White.copy(alpha = 0.12f)
+    val GlassBorder = Color.White.copy(alpha = 0.15f)
+    val GlassOverlay = Color.Black.copy(alpha = 0.4f)
+    val OnGlass = Color.White.copy(alpha = 0.92f)
+    val OnGlassVariant = Color.White.copy(alpha = 0.7f)
+    val GlassHighlight = Color.White.copy(alpha = 0.25f)
+
     // Gradient brushes
     val CoinBalanceGradient = Brush.horizontalGradient(
         colors = listOf(Color(0xFF0D3B66), Color(0xFF1565C0))

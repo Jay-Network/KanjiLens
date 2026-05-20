@@ -97,12 +97,12 @@ fun ProfileScreen(
                     .size(24.dp)
                     .focusBorder(CircleShape)
                     .clickable { onBackClick() },
-                tint = Color.White
+                tint = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = stringResource(R.string.profile_title),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -147,7 +147,7 @@ fun ProfileScreen(
                         }
                         Text(
                             text = initial,
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontSize = 24.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -431,7 +431,7 @@ fun ProfileScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.profile_sign_in_link),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(vertical = 4.dp)
                     )
@@ -451,7 +451,7 @@ fun ProfileScreen(
                 ) {
                     Text(
                         text = stringResource(R.string.profile_sign_out),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(vertical = 4.dp)
                     )

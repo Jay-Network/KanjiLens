@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -151,7 +152,7 @@ fun SettingsButtonContent() {
     Icon(
         painter = painterResource(id = R.drawable.ic_settings),
         contentDescription = stringResource(R.string.btn_settings),
-        tint = Color.White,
+        tint = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.size(CameraDimens.ICON_SIZE)
     )
 }
@@ -163,7 +164,7 @@ fun FlashButtonContent(isFlashOn: Boolean) {
             id = if (isFlashOn) R.drawable.ic_flashlight_on else R.drawable.ic_flashlight_off
         ),
         contentDescription = if (isFlashOn) "Flash On" else "Flash Off",
-        tint = if (isFlashOn) Color.Yellow else Color.White,
+        tint = if (isFlashOn) Color(0xFFFFEB3B) else MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.size(CameraDimens.ICON_SIZE)
     )
 }
@@ -172,7 +173,7 @@ fun FlashButtonContent(isFlashOn: Boolean) {
 fun ModeButtonContent(isFullMode: Boolean) {
     Text(
         if (isFullMode) "FULL" else "FOCUS",
-        color = Color.White,
+        color = MaterialTheme.colorScheme.onSurface,
         fontSize = 12.sp
     )
 }
@@ -181,7 +182,7 @@ fun ModeButtonContent(isFullMode: Boolean) {
 fun VerticalModeButtonContent(isVerticalMode: Boolean) {
     Text(
         if (isVerticalMode) "\u2B07" else "\u27A1",  // ⬇ or ➡
-        color = if (isVerticalMode) Color.Yellow else Color.White,
+        color = if (isVerticalMode) Color(0xFFFFEB3B) else MaterialTheme.colorScheme.onSurface,
         fontSize = 16.sp
     )
 }
@@ -190,7 +191,7 @@ fun VerticalModeButtonContent(isVerticalMode: Boolean) {
 fun PauseButtonContent(isPaused: Boolean) {
     Text(
         if (isPaused) "▶" else "⏸",
-        color = if (isPaused) Color.Yellow else Color.White,
+        color = if (isPaused) Color(0xFFFFEB3B) else MaterialTheme.colorScheme.onSurface,
         fontSize = 14.sp
     )
 }
@@ -200,7 +201,7 @@ fun ProfileButtonContent() {
     Icon(
         painter = painterResource(id = R.drawable.ic_person),
         contentDescription = stringResource(R.string.btn_profile),
-        tint = Color.White,
+        tint = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.size(CameraDimens.ICON_SIZE)
     )
 }
@@ -241,7 +242,7 @@ fun FeedbackButtonContent() {
     Icon(
         painter = painterResource(id = R.drawable.ic_email),
         contentDescription = stringResource(R.string.btn_feedback),
-        tint = Color.White,
+        tint = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.size(CameraDimens.ICON_SIZE)
     )
 }
@@ -251,7 +252,7 @@ fun BookmarkButtonContent() {
     Icon(
         painter = painterResource(id = R.drawable.ic_bookmark_filled),
         contentDescription = stringResource(R.string.btn_bookmarks),
-        tint = Color.White,
+        tint = MaterialTheme.colorScheme.onSurface,
         modifier = Modifier.size(CameraDimens.ICON_SIZE)
     )
 }

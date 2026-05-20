@@ -874,7 +874,7 @@ private fun CameraContent(
         // Version label (bottom-left)
         Text(
             text = "v${com.jworks.kanjisage.BuildConfig.VERSION_NAME}",
-            color = Color.White.copy(alpha = 0.5f),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
             fontSize = 12.sp,
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -909,7 +909,7 @@ private fun CameraContent(
                 Text(
                     text = displayBalance,
                     fontSize = 12.sp,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -1070,13 +1070,13 @@ private fun DetectedJukugoList(
                     .size(24.dp)
                     .focusBorder(CircleShape)
                     .clickable { onBackToCamera() },
-                tint = Color.White
+                tint = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = stringResource(R.string.camera_detected_words, totalCount),
                 style = MaterialTheme.typography.titleMedium,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f)
             )
@@ -1088,7 +1088,7 @@ private fun DetectedJukugoList(
                         .size(22.dp)
                         .focusBorder(CircleShape)
                         .clickable { onShare() },
-                    tint = Color.White.copy(alpha = 0.8f)
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
             }
@@ -1103,7 +1103,7 @@ private fun DetectedJukugoList(
                 ) {
                     Text(
                         text = stringResource(R.string.camera_ai_analyze),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -1275,7 +1275,7 @@ private fun DebugStatsHud(stats: OCRStats, modifier: Modifier = Modifier) {
         )
         Text(
             text = "Lines: ${stats.linesDetected} | #${stats.framesProcessed}",
-            color = Color.White.copy(alpha = 0.7f),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             fontSize = 12.sp
         )
     }

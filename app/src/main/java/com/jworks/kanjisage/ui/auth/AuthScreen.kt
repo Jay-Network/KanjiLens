@@ -97,7 +97,7 @@ fun AuthScreen(
         ) {
             Text(
                 text = stringResource(R.string.auth_back),
-                color = Color.White.copy(alpha = 0.7f),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 fontSize = 16.sp
             )
         }
@@ -113,7 +113,7 @@ fun AuthScreen(
             Text(
                 text = stringResource(R.string.auth_title),
                 fontSize = 28.sp,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold
             )
 
@@ -121,7 +121,7 @@ fun AuthScreen(
 
             Text(
                 text = stringResource(R.string.auth_subtitle),
-                color = Color.White.copy(alpha = 0.8f),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center,
                 fontSize = 15.sp,
                 lineHeight = 22.sp
@@ -206,7 +206,7 @@ fun AuthScreen(
             ) {
                 Text(
                     text = stringResource(R.string.auth_why_link),
-                    color = Color.White.copy(alpha = 0.7f),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -235,7 +235,7 @@ private fun BenefitItem(text: String) {
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = text,
-            color = Color.White.copy(alpha = 0.6f),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             fontSize = 13.sp
         )
     }

@@ -22,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.R
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -111,13 +112,13 @@ fun KanjiJourneyPromoBanner(
                         } else {
                             stringResource(R.string.promo_kj_master_generic)
                         },
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
                         text = stringResource(R.string.promo_kj_tagline),
-                        color = Color.White.copy(alpha = 0.8f),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                         fontSize = 12.sp
                     )
                 }
@@ -129,7 +130,7 @@ fun KanjiJourneyPromoBanner(
                 ) {
                     Text(
                         text = "\u2715",
-                        color = Color.White.copy(alpha = 0.7f),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         fontSize = 18.sp
                     )
                 }

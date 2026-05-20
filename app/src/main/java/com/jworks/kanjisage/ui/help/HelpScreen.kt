@@ -79,12 +79,12 @@ fun HelpScreen(
                     .size(24.dp)
                     .focusBorder(CircleShape)
                     .clickable { onBackClick() },
-                tint = Color.White
+                tint = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.width(16.dp))
             Text(
                 text = stringResource(R.string.help_title),
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -361,7 +361,7 @@ private fun StepItem(number: Int, prefix: String, highlight: String, suffix: Str
         ) {
             Text(
                 text = "$number",
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold
             )

@@ -20,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -88,7 +89,7 @@ fun PaywallScreen(
                 text = stringResource(R.string.paywall_title),
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -163,7 +164,7 @@ fun PaywallScreen(
                     text = stringResource(R.string.paywall_subscribe),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -171,7 +172,7 @@ fun PaywallScreen(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = stringResource(R.string.paywall_loading),
-                    color = Color.White.copy(alpha = 0.5f),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     fontSize = 13.sp
                 )
             }
@@ -182,7 +183,7 @@ fun PaywallScreen(
             TextButton(onClick = onDismiss) {
                 Text(
                     text = if (remainingScans > 0) stringResource(R.string.paywall_keep_free) else stringResource(R.string.paywall_not_now),
-                    color = Color.White.copy(alpha = 0.6f),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     fontSize = 14.sp
                 )
             }
@@ -191,7 +192,7 @@ fun PaywallScreen(
 
             Text(
                 text = stringResource(R.string.paywall_cancel_note),
-                color = Color.White.copy(alpha = 0.4f),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                 fontSize = 12.sp,
                 textAlign = TextAlign.Center
             )
@@ -215,7 +216,7 @@ fun PaywallScreen(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = stringResource(R.string.paywall_bundle_desc),
-                        color = Color.White.copy(alpha = 0.7f),
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                         fontSize = 13.sp
                     )
                 }
@@ -240,13 +241,13 @@ private fun FeatureRow(title: String, description: String) {
         Column {
             Text(
                 text = title,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Medium
             )
             Text(
                 text = description,
-                color = Color.White.copy(alpha = 0.6f),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                 fontSize = 13.sp
             )
         }
@@ -262,7 +263,7 @@ private fun PlanCard(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val borderColor = if (isSelected) KanjiSageColors.PrimaryAction else Color.White.copy(alpha = 0.2f)
+    val borderColor = if (isSelected) KanjiSageColors.PrimaryAction else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
     val bgColor = if (isSelected) KanjiSageColors.ActiveCard else Color.Transparent
 
     Box(
@@ -283,7 +284,7 @@ private fun PlanCard(
             Column {
                 Text(
                     text = title,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -299,13 +300,13 @@ private fun PlanCard(
             Row(verticalAlignment = Alignment.Bottom) {
                 Text(
                     text = price,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = period,
-                    color = Color.White.copy(alpha = 0.6f),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                     fontSize = 14.sp
                 )
             }

@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -113,7 +114,7 @@ fun OnboardingScreen(
             ) {
                 Text(
                     text = stringResource(R.string.onboarding_skip),
-                    color = Color.White.copy(alpha = 0.5f),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     fontSize = 15.sp
                 )
             }
@@ -172,7 +173,7 @@ fun OnboardingScreen(
                             .clip(RoundedCornerShape(4.dp))
                             .background(
                                 if (isSelected) pages[pagerState.currentPage].accentColor
-                                else Color.White.copy(alpha = 0.25f)
+                                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
                             )
                     )
                 }
@@ -200,7 +201,7 @@ fun OnboardingScreen(
             ) {
                 Text(
                     text = if (isLastPage) stringResource(R.string.onboarding_start_scanning) else stringResource(R.string.onboarding_next),
-                    color = if (isLastPage) Color.White else KanjiSageColors.AbyssBg,
+                    color = if (isLastPage) MaterialTheme.colorScheme.onSurface else KanjiSageColors.AbyssBg,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -256,7 +257,7 @@ private fun OnboardingPageContent(
                         text = "J",
                         fontSize = 40.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -274,7 +275,7 @@ private fun OnboardingPageContent(
         Text(
             text = stringResource(page.titleRes),
             fontSize = 28.sp,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
         )
@@ -295,7 +296,7 @@ private fun OnboardingPageContent(
         Text(
             text = stringResource(page.descriptionRes),
             fontSize = 16.sp,
-            color = Color.White.copy(alpha = 0.75f),
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
             textAlign = TextAlign.Center,
             lineHeight = 24.sp
         )
