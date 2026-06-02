@@ -21,8 +21,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -52,7 +50,9 @@ import androidx.compose.ui.unit.sp
 import com.jworks.kanjisage.R
 import com.jworks.kanjisage.domain.models.BookmarkEntry
 import com.jworks.kanjisage.domain.repository.BookmarkRepository
+import com.jworks.kanjisage.ui.theme.GlassCard
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
+import com.jworks.kanjisage.ui.theme.glassSurface
 import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
 
@@ -269,8 +269,7 @@ private fun WordBookmarkRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(KanjiSageColors.CardBg)
+            .glassSurface(shape = RoundedCornerShape(12.dp))
             .focusBorder(RoundedCornerShape(12.dp))
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -319,8 +318,7 @@ private fun KanjiBookmarkRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(KanjiSageColors.CardBg)
+            .glassSurface(shape = RoundedCornerShape(12.dp))
             .focusBorder(RoundedCornerShape(12.dp))
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -370,13 +368,14 @@ private fun KanjiBookmarkRow(
 
 @Composable
 private fun KanjiJourneyPromoCard(onClick: () -> Unit) {
-    Card(
+    GlassCard(
         modifier = Modifier
             .fillMaxWidth()
             .focusBorder(RoundedCornerShape(12.dp))
             .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = KanjiSageColors.PromoCardBg)
+        fillColor = KanjiSageColors.PromoCardBg,
+        contentPadding = 0.dp
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(

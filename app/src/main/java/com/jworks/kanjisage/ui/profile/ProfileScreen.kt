@@ -54,6 +54,7 @@ import com.jworks.kanjisage.ui.auth.HandlePromptDialog
 import com.jworks.kanjisage.data.jcoin.JCoinClient
 import com.jworks.kanjisage.data.jcoin.JCoinEarnRules
 import com.jworks.kanjisage.data.subscription.SubscriptionManager
+import com.jworks.kanjisage.ui.theme.GlassCard
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import androidx.compose.ui.res.stringResource
 
@@ -116,10 +117,10 @@ fun ProfileScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // User Info Card
-            Card(
+            GlassCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                contentPadding = 0.dp
             ) {
                 Row(
                     modifier = Modifier
@@ -227,10 +228,10 @@ fun ProfileScreen(
             }
 
             // App Stats Card
-            Card(
+            GlassCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                contentPadding = 0.dp
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
@@ -254,10 +255,10 @@ fun ProfileScreen(
             }
 
             // Connected Apps (Ecosystem)
-            Card(
+            GlassCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                contentPadding = 0.dp
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(

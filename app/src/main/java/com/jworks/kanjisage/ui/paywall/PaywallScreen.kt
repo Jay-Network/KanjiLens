@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jworks.kanjisage.data.billing.BillingManager
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
+import com.jworks.kanjisage.ui.theme.glassSurface
 import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.R
 import com.jworks.kanjisage.ui.theme.focusBorder
@@ -264,14 +265,17 @@ private fun PlanCard(
     onClick: () -> Unit
 ) {
     val borderColor = if (isSelected) KanjiSageColors.PrimaryAction else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
-    val bgColor = if (isSelected) KanjiSageColors.ActiveCard else Color.Transparent
+    val bgColor = if (isSelected) KanjiSageColors.GlassSurfaceMedium else KanjiSageColors.GlassSurface
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(bgColor)
-            .border(2.dp, borderColor, RoundedCornerShape(12.dp))
+            .glassSurface(
+                shape = RoundedCornerShape(12.dp),
+                fillColor = bgColor,
+                borderColor = borderColor,
+                borderWidth = 2.dp
+            )
             .focusBorder(RoundedCornerShape(12.dp))
             .clickable { onClick() }
             .padding(16.dp)

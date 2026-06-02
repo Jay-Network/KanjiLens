@@ -20,8 +20,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -42,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import com.jworks.kanjisage.BuildConfig
 import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.R
+import com.jworks.kanjisage.ui.theme.GlassCard
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import com.jworks.kanjisage.ui.theme.focusBorder
 
@@ -98,10 +97,10 @@ fun HelpScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // About Card
-            Card(
+            GlassCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                contentPadding = 0.dp
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
@@ -183,10 +182,10 @@ fun HelpScreen(
             }
 
             // Links Card
-            Card(
+            GlassCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                contentPadding = 0.dp
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
@@ -244,10 +243,10 @@ fun HelpScreen(
             }
 
             // Credits Card
-            Card(
+            GlassCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                contentPadding = 0.dp
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
@@ -270,10 +269,10 @@ fun HelpScreen(
 
 @Composable
 private fun GuideSection(title: String, icon: String = "", content: @Composable () -> Unit) {
-    Card(
+    GlassCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        contentPadding = 0.dp
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

@@ -6,6 +6,13 @@ Single source of truth for version: `VERSION` file at repo root.
 
 ---
 
+## v1.7.3 (2026-06-02)
+
+### Changed
+- Migrated Material3 Card components to GlassCard on 4 screens (ProfileScreen, HelpScreen, BookmarksScreen, PaywallScreen)
+- Bookmark rows now use glassSurface() modifier instead of solid CardBg background
+- PaywallScreen PlanCard uses Glass surface tokens (GlassSurfaceMedium/GlassSurface) instead of solid ActiveCard/Transparent
+
 ## v1.7.2 (2026-04-15)
 
 ### Added
