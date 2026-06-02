@@ -48,6 +48,7 @@ import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.R
 import com.jworks.kanjisage.ui.theme.focusBorder
+import com.jworks.kanjisage.ui.theme.KanjiSageTypography
 
 /**
  * Scan timer pill displayed for free-tier users during an active scan.
@@ -67,7 +68,7 @@ fun ScanTimerPill(
         Text(
             text = "${scanTimerSeconds / 60}:${String.format("%02d", scanTimerSeconds % 60)}",
             color = timerColor,
-            fontSize = 16.sp,
+            fontSize = KanjiSageTypography.Body,
             fontWeight = FontWeight.Bold
         )
     }
@@ -99,25 +100,25 @@ fun ScanChallengePill(
                     Text(
                         text = stringResource(R.string.scan_challenge_found, challenge.targetKanji),
                         color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 14.sp,
+                        fontSize = KanjiSageTypography.BodySmall,
                         fontWeight = FontWeight.Bold
                     )
                 } else {
                     Text(
                         text = stringResource(R.string.scan_challenge_find),
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                        fontSize = 13.sp
+                        fontSize = KanjiSageTypography.Label
                     )
                     Text(
                         text = challenge.targetKanji,
                         color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 22.sp,
+                        fontSize = KanjiSageTypography.Title,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
                         text = " (${challenge.reading})",
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                        fontSize = 12.sp
+                        fontSize = KanjiSageTypography.LabelSmall
                     )
                 }
             }
@@ -125,7 +126,7 @@ fun ScanChallengePill(
                 Text(
                     text = stringResource(R.string.scan_challenge_promo),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    fontSize = 12.sp
+                    fontSize = KanjiSageTypography.LabelSmall
                 )
             }
         }
@@ -189,7 +190,7 @@ fun CoinRewardToast(
                 Text(
                     text = "J",
                     color = KanjiSageColors.CoinLetterBrown,
-                    fontSize = 14.sp,
+                    fontSize = KanjiSageTypography.BodySmall,
                     fontWeight = FontWeight.ExtraBold
                 )
             }
@@ -197,7 +198,7 @@ fun CoinRewardToast(
             Text(
                 text = message,
                 color = KanjiSageColors.CoinGold,
-                fontSize = 17.sp,
+                fontSize = KanjiSageTypography.BodyAccent,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -227,14 +228,14 @@ fun ScanExpiredOverlay(
             Text(
                 text = stringResource(R.string.scan_expired_title),
                 color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 22.sp,
+                fontSize = KanjiSageTypography.Title,
                 fontWeight = FontWeight.Bold
             )
 
             Text(
                 text = stringResource(R.string.scan_expired_desc),
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                fontSize = 14.sp
+                fontSize = KanjiSageTypography.BodySmall
             )
 
             Button(
@@ -246,7 +247,7 @@ fun ScanExpiredOverlay(
             ) {
                 Text(
                     text = stringResource(R.string.scan_expired_new),
-                    fontSize = 16.sp,
+                    fontSize = KanjiSageTypography.Body,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
@@ -257,7 +258,7 @@ fun ScanExpiredOverlay(
                 Text(
                     text = stringResource(R.string.scan_expired_premium),
                     color = KanjiSageColors.PrimaryAction,
-                    fontSize = 14.sp,
+                    fontSize = KanjiSageTypography.BodySmall,
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -266,7 +267,7 @@ fun ScanExpiredOverlay(
                 Text(
                     text = stringResource(R.string.scan_expired_review),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    fontSize = 13.sp
+                    fontSize = KanjiSageTypography.Label
                 )
             }
         }

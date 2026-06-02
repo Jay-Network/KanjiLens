@@ -28,6 +28,7 @@ import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.ui.anim.CoinPulseGlow
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import kotlin.math.roundToInt
+import com.jworks.kanjisage.ui.theme.KanjiSageTypography
 
 /**
  * Data class holding all floating button offsets for the 3x3 grid.
@@ -174,7 +175,7 @@ fun ModeButtonContent(isFullMode: Boolean) {
     Text(
         if (isFullMode) "FULL" else "FOCUS",
         color = MaterialTheme.colorScheme.onSurface,
-        fontSize = 12.sp
+        fontSize = KanjiSageTypography.LabelSmall
     )
 }
 
@@ -183,7 +184,7 @@ fun VerticalModeButtonContent(isVerticalMode: Boolean) {
     Text(
         if (isVerticalMode) "\u2B07" else "\u27A1",  // ⬇ or ➡
         color = if (isVerticalMode) Color(0xFFFFEB3B) else MaterialTheme.colorScheme.onSurface,
-        fontSize = 16.sp
+        fontSize = KanjiSageTypography.Body
     )
 }
 
@@ -192,7 +193,7 @@ fun PauseButtonContent(isPaused: Boolean) {
     Text(
         if (isPaused) "▶" else "⏸",
         color = if (isPaused) Color(0xFFFFEB3B) else MaterialTheme.colorScheme.onSurface,
-        fontSize = 14.sp
+        fontSize = KanjiSageTypography.BodySmall
     )
 }
 
@@ -230,7 +231,7 @@ fun JCoinButtonContent() {
             Text(
                 text = "J",
                 color = KanjiSageColors.CoinLetterBrown,
-                fontSize = 16.sp,
+                fontSize = KanjiSageTypography.Body,
                 fontWeight = FontWeight.ExtraBold
             )
         }

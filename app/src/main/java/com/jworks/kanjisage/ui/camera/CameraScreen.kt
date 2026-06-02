@@ -93,6 +93,7 @@ import kotlinx.coroutines.launch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import com.jworks.kanjisage.ui.theme.KanjiSageTypography
 
 // Data class for jukugo with reading
 private data class JukugoEntry(val text: String, val reading: String)
@@ -875,7 +876,7 @@ private fun CameraContent(
         Text(
             text = "v${com.jworks.kanjisage.BuildConfig.VERSION_NAME}",
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-            fontSize = 12.sp,
+            fontSize = KanjiSageTypography.LabelSmall,
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(start = leftMarginDp, bottom = CameraDimens.VERSION_LABEL_BOTTOM_PADDING)
@@ -908,7 +909,7 @@ private fun CameraContent(
                 val displayBalance = if (jCoinBalance >= 1000) "${jCoinBalance / 1000}K" else "$jCoinBalance"
                 Text(
                     text = displayBalance,
-                    fontSize = 12.sp,
+                    fontSize = KanjiSageTypography.LabelSmall,
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
@@ -1158,13 +1159,13 @@ private fun DetectedJukugoList(
                             ) {
                                 Text(
                                     text = entry.text,
-                                    fontSize = 22.sp,
+                                    fontSize = KanjiSageTypography.Title,
                                     fontWeight = if (isBookmarked) FontWeight.ExtraBold else FontWeight.Medium,
                                     color = if (isBookmarked) KanjiSageColors.BookmarkedKanjiHighlight else KanjiSageColors.JukugoText
                                 )
                                 Text(
                                     text = entry.reading,
-                                    fontSize = 12.sp,
+                                    fontSize = KanjiSageTypography.LabelSmall,
                                     color = KanjiSageColors.JukugoSecondary
                                 )
                             }
@@ -1212,18 +1213,18 @@ private fun DetectedJukugoList(
                                             }
                                         }
                                     },
-                                    fontSize = 18.sp,
+                                    fontSize = KanjiSageTypography.BodyLarge,
                                     color = KanjiSageColors.JukugoText,
                                     fontWeight = FontWeight.Medium
                                 )
                                 Text(
                                     text = " - ",
-                                    fontSize = 14.sp,
+                                    fontSize = KanjiSageTypography.BodySmall,
                                     color = KanjiSageColors.JukugoSecondary
                                 )
                                 Text(
                                     text = entry.reading,
-                                    fontSize = 14.sp,
+                                    fontSize = KanjiSageTypography.BodySmall,
                                     color = KanjiSageColors.JukugoSecondary,
                                     fontWeight = FontWeight.Normal
                                 )
@@ -1271,12 +1272,12 @@ private fun DebugStatsHud(stats: OCRStats, modifier: Modifier = Modifier) {
                 stats.avgFrameMs < 400 -> KanjiSageColors.HudMedium
                 else -> KanjiSageColors.HudSlow
             },
-            fontSize = 12.sp
+            fontSize = KanjiSageTypography.LabelSmall
         )
         Text(
             text = "Lines: ${stats.linesDetected} | #${stats.framesProcessed}",
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            fontSize = 12.sp
+            fontSize = KanjiSageTypography.LabelSmall
         )
     }
 }

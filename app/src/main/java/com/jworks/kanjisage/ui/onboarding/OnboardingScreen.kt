@@ -43,6 +43,7 @@ import com.jworks.kanjisage.R
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
+import com.jworks.kanjisage.ui.theme.KanjiSageTypography
 
 private data class OnboardingPage(
     val symbol: String,
@@ -115,7 +116,7 @@ fun OnboardingScreen(
                 Text(
                     text = stringResource(R.string.onboarding_skip),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                    fontSize = 15.sp
+                    fontSize = KanjiSageTypography.BodyMedium
                 )
             }
         }
@@ -202,7 +203,7 @@ fun OnboardingScreen(
                 Text(
                     text = if (isLastPage) stringResource(R.string.onboarding_start_scanning) else stringResource(R.string.onboarding_next),
                     color = if (isLastPage) MaterialTheme.colorScheme.onSurface else KanjiSageColors.AbyssBg,
-                    fontSize = 18.sp,
+                    fontSize = KanjiSageTypography.BodyLarge,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -255,7 +256,7 @@ private fun OnboardingPageContent(
                 ) {
                     Text(
                         text = "J",
-                        fontSize = 40.sp,
+                        fontSize = KanjiSageTypography.HeadlineMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onSurface,
                         textAlign = TextAlign.Center
@@ -264,7 +265,7 @@ private fun OnboardingPageContent(
             } else {
                 Text(
                     text = page.symbol,
-                    fontSize = 64.sp,
+                    fontSize = KanjiSageTypography.DisplayLarge,
                     textAlign = TextAlign.Center
                 )
             }
@@ -274,7 +275,7 @@ private fun OnboardingPageContent(
 
         Text(
             text = stringResource(page.titleRes),
-            fontSize = 28.sp,
+            fontSize = KanjiSageTypography.TitleLarge,
             color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center
@@ -285,7 +286,7 @@ private fun OnboardingPageContent(
         // Subtitle with accent color
         Text(
             text = stringResource(page.subtitleRes),
-            fontSize = 15.sp,
+            fontSize = KanjiSageTypography.BodyMedium,
             color = page.accentColor,
             fontWeight = FontWeight.Medium,
             textAlign = TextAlign.Center
@@ -295,7 +296,7 @@ private fun OnboardingPageContent(
 
         Text(
             text = stringResource(page.descriptionRes),
-            fontSize = 16.sp,
+            fontSize = KanjiSageTypography.Body,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
             textAlign = TextAlign.Center,
             lineHeight = 24.sp

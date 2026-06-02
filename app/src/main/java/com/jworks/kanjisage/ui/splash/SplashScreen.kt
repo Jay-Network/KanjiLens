@@ -37,6 +37,7 @@ import com.jworks.kanjisage.R
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import com.jworks.kanjisage.ui.theme.KanjiSageTypography
 
 private val SplashBg = Color.Black
 private val TealAccent = KanjiSageColors.AccentTeal
@@ -120,7 +121,7 @@ fun SplashScreen(
             Text(
                 text = "KanjiSage",
                 color = TealAccent,
-                fontSize = 32.sp,
+                fontSize = KanjiSageTypography.HeadlineSmall,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp,
                 modifier = Modifier.alpha(titleAlpha.value)
@@ -132,7 +133,7 @@ fun SplashScreen(
             Text(
                 text = "by JWorks",
                 color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 16.sp,
+                fontSize = KanjiSageTypography.Body,
                 fontWeight = FontWeight.Medium,
                 letterSpacing = 0.5.sp,
                 modifier = Modifier.alpha(subtitleAlpha.value)

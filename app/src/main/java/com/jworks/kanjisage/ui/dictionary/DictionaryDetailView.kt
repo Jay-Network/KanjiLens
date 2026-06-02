@@ -43,6 +43,7 @@ import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.ui.theme.focusBorder
 import com.jworks.kanjisage.domain.models.DictionaryResult
+import com.jworks.kanjisage.ui.theme.KanjiSageTypography
 
 // POS abbreviation → display label
 private val POS_LABELS = mapOf(
@@ -131,7 +132,7 @@ fun DictionaryDetailView(
             if (displayWord.isNotEmpty()) {
                 Text(
                     text = displayWord,
-                    fontSize = 22.sp,
+                    fontSize = KanjiSageTypography.Title,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -139,7 +140,7 @@ fun DictionaryDetailView(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = displayReading,
-                        fontSize = 16.sp,
+                        fontSize = KanjiSageTypography.Body,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f)
                     )
                 }
@@ -153,7 +154,7 @@ fun DictionaryDetailView(
                     ) {
                         Text(
                             text = stringResource(R.string.dict_common),
-                            fontSize = 12.sp,
+                            fontSize = KanjiSageTypography.LabelSmall,
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.Medium
                         )
@@ -176,7 +177,7 @@ fun DictionaryDetailView(
             } else {
                 Text(
                     text = stringResource(R.string.dict_title),
-                    fontSize = 18.sp,
+                    fontSize = KanjiSageTypography.BodyLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -204,7 +205,7 @@ fun DictionaryDetailView(
             ) {
                 Text(
                     text = stringResource(R.string.dict_no_definition),
-                    fontSize = 16.sp,
+                    fontSize = KanjiSageTypography.Body,
                     color = KanjiSageColors.JukugoSecondary
                 )
 
@@ -216,7 +217,7 @@ fun DictionaryDetailView(
                     Spacer(modifier = Modifier.height(20.dp))
                     Text(
                         text = stringResource(R.string.dict_kanji_section),
-                        fontSize = 13.sp,
+                        fontSize = KanjiSageTypography.Label,
                         fontWeight = FontWeight.SemiBold,
                         color = KanjiSageColors.JukugoSecondary,
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -239,7 +240,7 @@ fun DictionaryDetailView(
                             ) {
                                 Text(
                                     text = kanjiStr,
-                                    fontSize = 26.sp,
+                                    fontSize = KanjiSageTypography.TitleAccent,
                                     color = if (isSaved) KanjiSageColors.BookmarkedKanjiHighlight else KanjiSageColors.JukugoText,
                                     fontWeight = if (isSaved) FontWeight.Bold else FontWeight.Medium
                                 )
@@ -259,7 +260,7 @@ fun DictionaryDetailView(
                 val context = LocalContext.current
                 Text(
                     text = stringResource(R.string.dict_search_jisho),
-                    fontSize = 13.sp,
+                    fontSize = KanjiSageTypography.Label,
                     color = KanjiSageColors.LinkBlue,
                     fontStyle = FontStyle.Italic,
                     modifier = Modifier
@@ -306,7 +307,7 @@ fun DictionaryDetailView(
                                 ) {
                                     Text(
                                         text = POS_LABELS[pos] ?: pos,
-                                        fontSize = 12.sp,
+                                        fontSize = KanjiSageTypography.LabelSmall,
                                         color = KanjiSageColors.JukugoText,
                                         fontWeight = FontWeight.Medium
                                     )
@@ -324,7 +325,7 @@ fun DictionaryDetailView(
                             }
                             append(sense.glosses.joinToString("; "))
                         },
-                        fontSize = 15.sp,
+                        fontSize = KanjiSageTypography.BodyMedium,
                         color = KanjiSageColors.JukugoText,
                         modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
                     )
@@ -339,7 +340,7 @@ fun DictionaryDetailView(
                     Spacer(modifier = Modifier.height(20.dp))
                     Text(
                         text = stringResource(R.string.dict_kanji_section),
-                        fontSize = 13.sp,
+                        fontSize = KanjiSageTypography.Label,
                         fontWeight = FontWeight.SemiBold,
                         color = KanjiSageColors.JukugoSecondary,
                         modifier = Modifier.padding(bottom = 8.dp)
@@ -362,7 +363,7 @@ fun DictionaryDetailView(
                             ) {
                                 Text(
                                     text = kanjiStr,
-                                    fontSize = 26.sp,
+                                    fontSize = KanjiSageTypography.TitleAccent,
                                     color = if (isSaved) KanjiSageColors.BookmarkedKanjiHighlight else KanjiSageColors.JukugoText,
                                     fontWeight = if (isSaved) FontWeight.Bold else FontWeight.Medium
                                 )
@@ -382,7 +383,7 @@ fun DictionaryDetailView(
                 val context = LocalContext.current
                 Text(
                     text = stringResource(R.string.dict_more_jisho),
-                    fontSize = 13.sp,
+                    fontSize = KanjiSageTypography.Label,
                     color = KanjiSageColors.LinkBlue,
                     fontStyle = FontStyle.Italic,
                     modifier = Modifier
@@ -432,19 +433,19 @@ private fun KanjiJourneyPracticeButton(kanjiList: List<Char>) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = stringResource(R.string.dict_send_to_kj, displayKanji),
-                fontSize = 14.sp,
+                fontSize = KanjiSageTypography.BodySmall,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold
             )
             Text(
                 text = stringResource(R.string.dict_kj_flashcards),
-                fontSize = 12.sp,
+                fontSize = KanjiSageTypography.LabelSmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
             )
         }
         Text(
             text = ">",
-            fontSize = 20.sp,
+            fontSize = KanjiSageTypography.TitleSmall,
             color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold
         )

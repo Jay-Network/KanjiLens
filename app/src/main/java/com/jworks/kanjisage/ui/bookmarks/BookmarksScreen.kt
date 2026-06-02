@@ -55,6 +55,7 @@ import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import com.jworks.kanjisage.ui.theme.glassSurface
 import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
+import com.jworks.kanjisage.ui.theme.KanjiSageTypography
 
 private val TanAccent = KanjiSageColors.PanelBorder
 private val CreamText = KanjiSageColors.PanelBackground
@@ -115,7 +116,7 @@ fun BookmarksScreen(
             Text(
                 text = stringResource(R.string.bookmarks_title, totalCount),
                 color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 20.sp,
+                fontSize = KanjiSageTypography.TitleSmall,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -173,7 +174,7 @@ fun BookmarksScreen(
                     // Large illustrative emoji
                     Text(
                         text = if (selectedTab == 0) "\uD83D\uDCDA" else "\u2728",
-                        fontSize = 56.sp
+                        fontSize = KanjiSageTypography.DisplayMedium
                     )
                     Spacer(modifier = Modifier.height(20.dp))
                     Text(
@@ -182,7 +183,7 @@ fun BookmarksScreen(
                             else R.string.bookmarks_kanji_awaits
                         ),
                         color = CreamText,
-                        fontSize = 20.sp,
+                        fontSize = KanjiSageTypography.TitleSmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
@@ -192,7 +193,7 @@ fun BookmarksScreen(
                             else R.string.bookmarks_kanji_hint
                         ),
                         color = MutedText,
-                        fontSize = 14.sp,
+                        fontSize = KanjiSageTypography.BodySmall,
                         lineHeight = 22.sp
                     )
                     Spacer(modifier = Modifier.height(20.dp))
@@ -202,7 +203,7 @@ fun BookmarksScreen(
                             else R.string.bookmarks_kanji_tip
                         ),
                         color = BookmarkGold.copy(alpha = 0.7f),
-                        fontSize = 13.sp,
+                        fontSize = KanjiSageTypography.Label,
                         fontStyle = FontStyle.Italic
                     )
                 }
@@ -279,21 +280,21 @@ private fun WordBookmarkRow(
             Text(
                 text = entry.word,
                 color = CreamText,
-                fontSize = 18.sp,
+                fontSize = KanjiSageTypography.BodyLarge,
                 fontWeight = FontWeight.Bold
             )
             if (entry.reading.isNotEmpty()) {
                 Text(
                     text = entry.reading,
                     color = TanAccent,
-                    fontSize = 14.sp,
+                    fontSize = KanjiSageTypography.BodySmall,
                     modifier = Modifier.padding(top = 2.dp)
                 )
             }
             Text(
                 text = formatRelativeTime(LocalContext.current, entry.bookmarkedAt),
                 color = MutedText,
-                fontSize = 12.sp,
+                fontSize = KanjiSageTypography.LabelSmall,
                 modifier = Modifier.padding(top = 2.dp)
             )
         }
@@ -335,7 +336,7 @@ private fun KanjiBookmarkRow(
             Text(
                 text = entry.word,
                 color = BookmarkGold,
-                fontSize = 28.sp,
+                fontSize = KanjiSageTypography.TitleLarge,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -344,13 +345,13 @@ private fun KanjiBookmarkRow(
             Text(
                 text = entry.word,
                 color = CreamText,
-                fontSize = 16.sp,
+                fontSize = KanjiSageTypography.Body,
                 fontWeight = FontWeight.Medium
             )
             Text(
                 text = formatRelativeTime(LocalContext.current, entry.bookmarkedAt),
                 color = MutedText,
-                fontSize = 12.sp,
+                fontSize = KanjiSageTypography.LabelSmall,
                 modifier = Modifier.padding(top = 2.dp)
             )
         }
@@ -381,20 +382,20 @@ private fun KanjiJourneyPromoCard(onClick: () -> Unit) {
             Text(
                 text = stringResource(R.string.bookmarks_practice),
                 color = KanjiSageColors.PromoCardText,
-                fontSize = 16.sp,
+                fontSize = KanjiSageTypography.Body,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = stringResource(R.string.bookmarks_practice_desc),
                 color = KanjiSageColors.PromoCardText.copy(alpha = 0.7f),
-                fontSize = 13.sp
+                fontSize = KanjiSageTypography.Label
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = stringResource(R.string.bookmarks_play_store),
                 color = KanjiSageColors.Primary,
-                fontSize = 13.sp,
+                fontSize = KanjiSageTypography.Label,
                 fontWeight = FontWeight.Medium,
                 fontStyle = FontStyle.Italic
             )

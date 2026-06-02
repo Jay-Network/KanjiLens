@@ -62,6 +62,7 @@ import com.jworks.kanjisage.ui.anim.rememberAnimatedCount
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.ui.theme.focusBorder
+import com.jworks.kanjisage.ui.theme.KanjiSageTypography
 
 @Composable
 fun RewardsScreen(
@@ -132,12 +133,12 @@ fun RewardsScreen(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Text("J", color = KanjiSageColors.CoinLetterBrown, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
+                Text("J", color = KanjiSageColors.CoinLetterBrown, fontSize = KanjiSageTypography.LabelSmall, fontWeight = FontWeight.ExtraBold)
             }
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = stringResource(R.string.rewards_title),
-                fontSize = 20.sp,
+                fontSize = KanjiSageTypography.TitleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -340,7 +341,7 @@ fun RewardsScreen(
                                 text = msg,
                                 color = if (purchaseSuccess) KanjiSageColors.SuccessGreen else KanjiSageColors.ErrorLight,
                                 fontWeight = FontWeight.SemiBold,
-                                fontSize = 14.sp
+                                fontSize = KanjiSageTypography.BodySmall
                             )
                         }
                     }
@@ -355,7 +356,7 @@ private fun SectionHeader(title: String) {
     Text(
         text = title,
         color = MaterialTheme.colorScheme.onSurface,
-        fontSize = 18.sp,
+        fontSize = KanjiSageTypography.BodyLarge,
         fontWeight = FontWeight.Bold
     )
 }
@@ -390,7 +391,7 @@ private fun SignedOutCard() {
                 Text(
                     text = "J",
                     color = KanjiSageColors.CoinLetterBrown,
-                    fontSize = 36.sp,
+                    fontSize = KanjiSageTypography.Headline,
                     fontWeight = FontWeight.ExtraBold
                 )
             }
@@ -398,14 +399,14 @@ private fun SignedOutCard() {
             Text(
                 text = stringResource(R.string.rewards_start_earning),
                 color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 20.sp,
+                fontSize = KanjiSageTypography.TitleSmall,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = stringResource(R.string.rewards_signed_out_desc),
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                fontSize = 14.sp,
+                fontSize = KanjiSageTypography.BodySmall,
                 textAlign = TextAlign.Center,
                 lineHeight = 20.sp
             )
@@ -439,7 +440,7 @@ private fun PremiumRequiredCard(onUpgradeClick: () -> Unit) {
                 Text(
                     text = "J",
                     color = KanjiSageColors.CoinAccent.copy(alpha = 0.4f),
-                    fontSize = 36.sp,
+                    fontSize = KanjiSageTypography.Headline,
                     fontWeight = FontWeight.ExtraBold
                 )
             }
@@ -447,7 +448,7 @@ private fun PremiumRequiredCard(onUpgradeClick: () -> Unit) {
             Text(
                 text = stringResource(R.string.rewards_unlock_premium),
                 color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 20.sp,
+                fontSize = KanjiSageTypography.TitleSmall,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
@@ -455,7 +456,7 @@ private fun PremiumRequiredCard(onUpgradeClick: () -> Unit) {
             Text(
                 text = stringResource(R.string.rewards_premium_desc),
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                fontSize = 14.sp,
+                fontSize = KanjiSageTypography.BodySmall,
                 textAlign = TextAlign.Center,
                 lineHeight = 20.sp
             )
@@ -472,7 +473,7 @@ private fun PremiumRequiredCard(onUpgradeClick: () -> Unit) {
                     text = stringResource(R.string.rewards_upgrade),
                     color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
+                    fontSize = KanjiSageTypography.Body,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
@@ -498,7 +499,7 @@ private fun BalanceCard(balance: JCoinBalance) {
             Text(
                 text = stringResource(R.string.rewards_your_coins),
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                fontSize = 14.sp
+                fontSize = KanjiSageTypography.BodySmall
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -520,7 +521,7 @@ private fun BalanceCard(balance: JCoinBalance) {
                     Text(
                         text = "J",
                         color = KanjiSageColors.CoinLetterBrown,
-                        fontSize = 20.sp,
+                        fontSize = KanjiSageTypography.TitleSmall,
                         fontWeight = FontWeight.ExtraBold
                     )
                 }
@@ -528,7 +529,7 @@ private fun BalanceCard(balance: JCoinBalance) {
                 Text(
                     text = "$animatedBalance",
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 42.sp,
+                    fontSize = KanjiSageTypography.HeadlineEmoji,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -536,7 +537,7 @@ private fun BalanceCard(balance: JCoinBalance) {
             Text(
                 text = stringResource(R.string.rewards_lifetime, balance.lifetimeEarned),
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                fontSize = 12.sp
+                fontSize = KanjiSageTypography.LabelSmall
             )
         }
     }
@@ -577,12 +578,12 @@ private fun StreakCard(streakDays: Int) {
                     Text(
                         text = stringResource(R.string.rewards_current_streak),
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                        fontSize = 13.sp
+                        fontSize = KanjiSageTypography.Label
                     )
                     Text(
                         text = if (streakDays != 1) stringResource(R.string.rewards_days_plural, streakDays) else stringResource(R.string.rewards_days_singular, streakDays),
                         color = if (streakDays > 0) KanjiSageColors.StreakFlameLight else MaterialTheme.colorScheme.onSurface,
-                        fontSize = 22.sp,
+                        fontSize = KanjiSageTypography.Title,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -597,7 +598,7 @@ private fun StreakCard(streakDays: Int) {
                     Text(
                         text = "+50 J",
                         color = KanjiSageColors.SuccessGreen,
-                        fontSize = 16.sp,
+                        fontSize = KanjiSageTypography.Body,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -605,13 +606,13 @@ private fun StreakCard(streakDays: Int) {
                 Text(
                     text = stringResource(R.string.rewards_streak_remaining, 7 - streakDays),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                    fontSize = 13.sp
+                    fontSize = KanjiSageTypography.Label
                 )
             } else {
                 Text(
                     text = stringResource(R.string.rewards_scan_to_start),
                     color = KanjiSageColors.PrimaryAction.copy(alpha = 0.8f),
-                    fontSize = 13.sp,
+                    fontSize = KanjiSageTypography.Label,
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -642,19 +643,19 @@ private fun DailyProgressCard(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (emoji.isNotEmpty()) {
-                        Text(text = emoji, fontSize = 16.sp)
+                        Text(text = emoji, fontSize = KanjiSageTypography.Body)
                         Spacer(modifier = Modifier.width(8.dp))
                     }
                     Text(
                         text = label,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                        fontSize = 14.sp
+                        fontSize = KanjiSageTypography.BodySmall
                     )
                 }
                 Text(
                     text = "$current / $max",
                     color = color,
-                    fontSize = 14.sp,
+                    fontSize = KanjiSageTypography.BodySmall,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -694,12 +695,12 @@ private fun EarnRuleCard(emoji: String, action: String, reward: String, frequenc
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(text = emoji, fontSize = 18.sp)
+        Text(text = emoji, fontSize = KanjiSageTypography.BodyLarge)
         Spacer(modifier = Modifier.width(10.dp))
         Text(
             text = action,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.85f),
-            fontSize = 14.sp,
+            fontSize = KanjiSageTypography.BodySmall,
             modifier = Modifier.weight(1f)
         )
         // Coin badge
@@ -712,7 +713,7 @@ private fun EarnRuleCard(emoji: String, action: String, reward: String, frequenc
             Text(
                 text = reward,
                 color = KanjiSageColors.CoinGold,
-                fontSize = 14.sp,
+                fontSize = KanjiSageTypography.BodySmall,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -720,7 +721,7 @@ private fun EarnRuleCard(emoji: String, action: String, reward: String, frequenc
         Text(
             text = frequency,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-            fontSize = 12.sp
+            fontSize = KanjiSageTypography.LabelSmall
         )
     }
 }
@@ -764,18 +765,18 @@ private fun RedemptionCard(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(text = emoji, fontSize = 28.sp, modifier = Modifier.padding(end = 12.dp))
+            Text(text = emoji, fontSize = KanjiSageTypography.TitleLarge, modifier = Modifier.padding(end = 12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
                     color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                    fontSize = 16.sp,
+                    fontSize = KanjiSageTypography.Body,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
                     text = description,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 0.65f else 0.3f),
-                    fontSize = 13.sp
+                    fontSize = KanjiSageTypography.Label
                 )
             }
             Box(
@@ -790,7 +791,7 @@ private fun RedemptionCard(
                 Text(
                     text = cost,
                     color = if (enabled) KanjiSageColors.CoinGold else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
-                    fontSize = 16.sp,
+                    fontSize = KanjiSageTypography.Body,
                     fontWeight = FontWeight.Bold
                 )
             }

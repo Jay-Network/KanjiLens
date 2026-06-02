@@ -46,6 +46,7 @@ import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.R
 import com.jworks.kanjisage.data.auth.AuthState
 import kotlinx.coroutines.launch
+import com.jworks.kanjisage.ui.theme.KanjiSageTypography
 
 @Composable
 fun AuthScreen(
@@ -98,7 +99,7 @@ fun AuthScreen(
             Text(
                 text = stringResource(R.string.auth_back),
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                fontSize = 16.sp
+                fontSize = KanjiSageTypography.Body
             )
         }
 
@@ -112,7 +113,7 @@ fun AuthScreen(
             // Title
             Text(
                 text = stringResource(R.string.auth_title),
-                fontSize = 28.sp,
+                fontSize = KanjiSageTypography.TitleLarge,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold
             )
@@ -123,7 +124,7 @@ fun AuthScreen(
                 text = stringResource(R.string.auth_subtitle),
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center,
-                fontSize = 15.sp,
+                fontSize = KanjiSageTypography.BodyMedium,
                 lineHeight = 22.sp
             )
 
@@ -134,7 +135,7 @@ fun AuthScreen(
                 text = stringResource(R.string.auth_privacy_note),
                 color = KanjiSageColors.PrimaryAction.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center,
-                fontSize = 13.sp,
+                fontSize = KanjiSageTypography.Label,
                 lineHeight = 18.sp
             )
 
@@ -171,7 +172,7 @@ fun AuthScreen(
                     ) {
                         Text(
                             text = stringResource(R.string.auth_google_letter),
-                            fontSize = 20.sp,
+                            fontSize = KanjiSageTypography.TitleSmall,
                             fontWeight = FontWeight.Bold,
                             color = KanjiSageColors.GoogleBlue
                         )
@@ -179,7 +180,7 @@ fun AuthScreen(
                         Text(
                             text = stringResource(R.string.auth_continue_google),
                             color = KanjiSageColors.DarkGreyText,
-                            fontSize = 16.sp,
+                            fontSize = KanjiSageTypography.Body,
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -192,7 +193,7 @@ fun AuthScreen(
                 Text(
                     text = (authState as AuthState.Error).message,
                     color = KanjiSageColors.TimerWarning,
-                    fontSize = 14.sp,
+                    fontSize = KanjiSageTypography.BodySmall,
                     textAlign = TextAlign.Center
                 )
             }
@@ -207,7 +208,7 @@ fun AuthScreen(
                 Text(
                     text = stringResource(R.string.auth_why_link),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    fontSize = 13.sp,
+                    fontSize = KanjiSageTypography.Label,
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -229,14 +230,14 @@ private fun BenefitItem(text: String) {
         Text(
             text = "\u2713",
             color = KanjiSageColors.PrimaryAction,
-            fontSize = 14.sp,
+            fontSize = KanjiSageTypography.BodySmall,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = text,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            fontSize = 13.sp
+            fontSize = KanjiSageTypography.Label
         )
     }
 }

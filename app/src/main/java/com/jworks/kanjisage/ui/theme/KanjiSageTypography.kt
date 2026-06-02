@@ -8,15 +8,19 @@ object KanjiSageTypography {
     val DisplayMedium = 56.sp
 
     val HeadlineLarge = 48.sp
+    val HeadlineEmoji = 42.sp
     val HeadlineMedium = 40.sp
     val Headline = 36.sp
+    val HeadlineSmall = 32.sp
 
     val TitleLarge = 28.sp
+    val TitleAccent = 26.sp
     val TitleMedium = 24.sp
     val Title = 22.sp
     val TitleSmall = 20.sp
 
     val BodyLarge = 18.sp
+    val BodyAccent = 17.sp
     val Body = 16.sp
     val BodyMedium = 15.sp
     val BodySmall = 14.sp

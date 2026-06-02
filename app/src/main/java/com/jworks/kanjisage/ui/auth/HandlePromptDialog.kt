@@ -35,6 +35,7 @@ import androidx.compose.ui.window.Dialog
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.R
+import com.jworks.kanjisage.ui.theme.KanjiSageTypography
 
 @Composable
 fun HandlePromptDialog(
@@ -79,7 +80,7 @@ fun HandlePromptDialog(
         ) {
             Text(
                 text = stringResource(R.string.handle_prompt_title),
-                fontSize = 20.sp,
+                fontSize = KanjiSageTypography.TitleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -88,7 +89,7 @@ fun HandlePromptDialog(
 
             Text(
                 text = stringResource(R.string.handle_prompt_subtitle),
-                fontSize = 14.sp,
+                fontSize = KanjiSageTypography.BodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 lineHeight = 20.sp

@@ -40,6 +40,7 @@ import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.R
 import com.jworks.kanjisage.ui.theme.focusBorder
+import com.jworks.kanjisage.ui.theme.KanjiSageTypography
 
 // Match KanjiJourney theme colors exactly for visual consistency
 private val OrangeBar = KanjiSageColors.AccentOrange
@@ -75,14 +76,14 @@ fun KanjiDetailView(
         ) {
             Text(
                 text = "\u2190",
-                fontSize = 24.sp,
+                fontSize = KanjiSageTypography.TitleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.focusBorder().clickable { onBackClick() }
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = kanjiInfo?.literal ?: kanji,
-                fontSize = 20.sp,
+                fontSize = KanjiSageTypography.TitleSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
@@ -90,7 +91,7 @@ fun KanjiDetailView(
             // Star bookmark — same as KanjiJourney (★/☆)
             Text(
                 text = if (isBookmarked) "\u2605" else "\u2606",
-                fontSize = 24.sp,
+                fontSize = KanjiSageTypography.TitleMedium,
                 color = if (isBookmarked) BookmarkGold else MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier
                     .focusBorder()
@@ -119,7 +120,7 @@ fun KanjiDetailView(
                 // Large kanji display — scaled down in vertical mode to save space
                 Text(
                     text = kanji,
-                    fontSize = 80.sp,
+                    fontSize = KanjiSageTypography.DisplayKanji,
                     color = DarkText,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(vertical = 16.dp),
@@ -154,7 +155,7 @@ fun KanjiDetailView(
                         SectionCard(title = stringResource(R.string.kanji_meanings)) {
                             Text(
                                 text = kanjiInfo.meanings.joinToString(", "),
-                                fontSize = 15.sp,
+                                fontSize = KanjiSageTypography.BodyMedium,
                                 color = DarkText
                             )
                         }
@@ -166,7 +167,7 @@ fun KanjiDetailView(
                         SectionCard(title = stringResource(R.string.kanji_onyomi)) {
                             Text(
                                 text = kanjiInfo.onReadings.joinToString("   "),
-                                fontSize = 15.sp,
+                                fontSize = KanjiSageTypography.BodyMedium,
                                 color = DarkText
                             )
                         }
@@ -178,7 +179,7 @@ fun KanjiDetailView(
                         SectionCard(title = stringResource(R.string.kanji_kunyomi)) {
                             Text(
                                 text = kanjiInfo.kunReadings.joinToString("   "),
-                                fontSize = 15.sp,
+                                fontSize = KanjiSageTypography.BodyMedium,
                                 color = DarkText
                             )
                         }
@@ -208,7 +209,7 @@ fun KanjiDetailView(
                                         label = {
                                             Text(
                                                 text = variant,
-                                                fontSize = 20.sp,
+                                                fontSize = KanjiSageTypography.TitleSmall,
                                                 color = DarkText,
                                                 style = androidx.compose.ui.text.TextStyle(
                                                     localeList = LocaleList("ja")
@@ -242,13 +243,13 @@ fun KanjiDetailView(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 text = stringResource(R.string.kanji_practice_writing, kanji),
-                                fontSize = 13.sp,
+                                fontSize = KanjiSageTypography.Label,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
                                 text = stringResource(R.string.kanji_ai_handwriting),
-                                fontSize = 12.sp,
+                                fontSize = KanjiSageTypography.LabelSmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                             )
                         }
@@ -260,7 +261,7 @@ fun KanjiDetailView(
                 // Jisho.org link
                 Text(
                     text = stringResource(R.string.kanji_more_jisho),
-                    fontSize = 13.sp,
+                    fontSize = KanjiSageTypography.Label,
                     color = KanjiSageColors.LinkBlue,
                     modifier = Modifier.focusBorder().clickable {
                         val intent = Intent(
@@ -287,7 +288,7 @@ private fun SectionCard(
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = title,
-                fontSize = 14.sp,
+                fontSize = KanjiSageTypography.BodySmall,
                 fontWeight = FontWeight.Bold,
                 color = OrangePrimary
             )

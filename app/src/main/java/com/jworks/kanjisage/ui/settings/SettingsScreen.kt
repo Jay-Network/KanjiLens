@@ -51,6 +51,7 @@ import com.jworks.kanjisage.data.auth.AuthRepository
 import com.jworks.kanjisage.data.auth.AuthState
 import com.jworks.kanjisage.domain.models.AppSettings
 import kotlin.math.roundToInt
+import com.jworks.kanjisage.ui.theme.KanjiSageTypography
 
 private data class ColorPresetDef(
     val nameRes: Int,
@@ -330,7 +331,7 @@ private fun SliderSetting(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(label, style = MaterialTheme.typography.bodyMedium)
-            Text(valueLabel, style = MaterialTheme.typography.bodySmall, fontSize = 13.sp)
+            Text(valueLabel, style = MaterialTheme.typography.bodySmall, fontSize = KanjiSageTypography.Label)
         }
         Slider(
             value = value,
@@ -490,7 +491,7 @@ private fun TokenUsageCard(settings: AppSettings, onReset: () -> Unit) {
             text = stringResource(R.string.settings_token_pricing),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 12.sp
+            fontSize = KanjiSageTypography.LabelSmall
         )
     }
 }
@@ -530,7 +531,7 @@ private fun ColorPresetRow(settings: AppSettings, onPresetClick: (Long, Long) ->
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(stringResource(preset.nameRes), fontSize = 12.sp)
+                Text(stringResource(preset.nameRes), fontSize = KanjiSageTypography.LabelSmall)
             }
         }
     }

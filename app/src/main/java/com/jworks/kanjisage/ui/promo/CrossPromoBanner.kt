@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import com.jworks.kanjisage.ui.theme.focusBorder
 import kotlinx.coroutines.delay
+import com.jworks.kanjisage.ui.theme.KanjiSageTypography
 
 /**
  * Cross-promotion banner for KanjiJourney, shown periodically in KanjiSage.
@@ -113,13 +114,13 @@ fun KanjiJourneyPromoBanner(
                             stringResource(R.string.promo_kj_master_generic)
                         },
                         color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 14.sp,
+                        fontSize = KanjiSageTypography.BodySmall,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
                         text = stringResource(R.string.promo_kj_tagline),
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                        fontSize = 12.sp
+                        fontSize = KanjiSageTypography.LabelSmall
                     )
                 }
                 TextButton(
@@ -131,7 +132,7 @@ fun KanjiJourneyPromoBanner(
                     Text(
                         text = "\u2715",
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                        fontSize = 18.sp
+                        fontSize = KanjiSageTypography.BodyLarge
                     )
                 }
             }

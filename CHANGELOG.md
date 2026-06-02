@@ -6,6 +6,13 @@ Single source of truth for version: `VERSION` file at repo root.
 
 ---
 
+## v1.7.4 (2026-06-02)
+
+### Changed
+- Migrated all 154 hardcoded fontSize = N.sp to KanjiSageTypography tokens across 16 screens
+- Added 4 new typography tokens: HeadlineEmoji (42sp), HeadlineSmall (32sp), TitleAccent (26sp), BodyAccent (17sp)
+- Zero hardcoded font sizes remaining in production code
+
 ## v1.7.3 (2026-06-02)
 
 ### Changed

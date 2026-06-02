@@ -43,6 +43,7 @@ import com.jworks.kanjisage.R
 import com.jworks.kanjisage.ui.theme.GlassCard
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import com.jworks.kanjisage.ui.theme.focusBorder
+import com.jworks.kanjisage.ui.theme.KanjiSageTypography
 
 private val AccentBlue = KanjiSageColors.PrimaryAction
 private val AccentTeal = KanjiSageColors.AccentTeal
@@ -84,7 +85,7 @@ fun HelpScreen(
             Text(
                 text = stringResource(R.string.help_title),
                 color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 20.sp,
+                fontSize = KanjiSageTypography.TitleSmall,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -108,13 +109,13 @@ fun HelpScreen(
                 ) {
                     Text(
                         text = "\u6F22\u5B57",  // 漢字
-                        fontSize = 48.sp,
+                        fontSize = KanjiSageTypography.HeadlineLarge,
                         color = KanjiSageColors.PrimaryAction,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
                         text = stringResource(R.string.help_app_name),
-                        fontSize = 24.sp,
+                        fontSize = KanjiSageTypography.TitleMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(4.dp))
@@ -279,7 +280,7 @@ private fun GuideSection(title: String, icon: String = "", content: @Composable 
                 if (icon.isNotEmpty()) {
                     Text(
                         text = icon,
-                        fontSize = 18.sp,
+                        fontSize = KanjiSageTypography.BodyLarge,
                         modifier = Modifier.padding(end = 8.dp)
                     )
                 }
@@ -305,7 +306,7 @@ private fun RowLabel(label: String) {
     ) {
         Text(
             text = label,
-            fontSize = 12.sp,
+            fontSize = KanjiSageTypography.LabelSmall,
             fontWeight = FontWeight.Bold,
             color = AccentBlue
         )
@@ -329,7 +330,7 @@ private fun ButtonTip(buttonName: String, description: String) {
         ) {
             Text(
                 text = buttonName,
-                fontSize = 12.sp,
+                fontSize = KanjiSageTypography.LabelSmall,
                 fontWeight = FontWeight.Bold,
                 color = AccentBlue
             )
@@ -361,7 +362,7 @@ private fun StepItem(number: Int, prefix: String, highlight: String, suffix: Str
             Text(
                 text = "$number",
                 color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 12.sp,
+                fontSize = KanjiSageTypography.LabelSmall,
                 fontWeight = FontWeight.Bold
             )
         }

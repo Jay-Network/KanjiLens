@@ -44,6 +44,7 @@ import com.jworks.kanjisage.ui.theme.glassSurface
 import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.R
 import com.jworks.kanjisage.ui.theme.focusBorder
+import com.jworks.kanjisage.ui.theme.KanjiSageTypography
 
 @Composable
 fun PaywallScreen(
@@ -88,7 +89,7 @@ fun PaywallScreen(
 
             Text(
                 text = stringResource(R.string.paywall_title),
-                fontSize = 28.sp,
+                fontSize = KanjiSageTypography.TitleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -98,13 +99,13 @@ fun PaywallScreen(
             if (remainingScans > 0) {
                 Text(
                     text = if (remainingScans != 1) stringResource(R.string.paywall_scans_left_plural, remainingScans) else stringResource(R.string.paywall_scans_left_singular, remainingScans),
-                    fontSize = 14.sp,
+                    fontSize = KanjiSageTypography.BodySmall,
                     color = KanjiSageColors.CoinAccent
                 )
             } else {
                 Text(
                     text = stringResource(R.string.paywall_scans_used),
-                    fontSize = 14.sp,
+                    fontSize = KanjiSageTypography.BodySmall,
                     color = KanjiSageColors.TimerWarning
                 )
             }
@@ -163,7 +164,7 @@ fun PaywallScreen(
             ) {
                 Text(
                     text = stringResource(R.string.paywall_subscribe),
-                    fontSize = 18.sp,
+                    fontSize = KanjiSageTypography.BodyLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -174,7 +175,7 @@ fun PaywallScreen(
                 Text(
                     text = stringResource(R.string.paywall_loading),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                    fontSize = 13.sp
+                    fontSize = KanjiSageTypography.Label
                 )
             }
 
@@ -185,7 +186,7 @@ fun PaywallScreen(
                 Text(
                     text = if (remainingScans > 0) stringResource(R.string.paywall_keep_free) else stringResource(R.string.paywall_not_now),
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    fontSize = 14.sp
+                    fontSize = KanjiSageTypography.BodySmall
                 )
             }
 
@@ -194,7 +195,7 @@ fun PaywallScreen(
             Text(
                 text = stringResource(R.string.paywall_cancel_note),
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                fontSize = 12.sp,
+                fontSize = KanjiSageTypography.LabelSmall,
                 textAlign = TextAlign.Center
             )
 
@@ -212,13 +213,13 @@ fun PaywallScreen(
                         text = stringResource(R.string.paywall_bundle_title),
                         color = KanjiSageColors.CoinAccent,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
+                        fontSize = KanjiSageTypography.Body
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = stringResource(R.string.paywall_bundle_desc),
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                        fontSize = 13.sp
+                        fontSize = KanjiSageTypography.Label
                     )
                 }
             }
@@ -235,7 +236,7 @@ private fun FeatureRow(title: String, description: String) {
         Text(
             text = "\u2713",
             color = KanjiSageColors.PrimaryAction,
-            fontSize = 18.sp,
+            fontSize = KanjiSageTypography.BodyLarge,
             fontWeight = FontWeight.Bold
         )
         Spacer(modifier = Modifier.width(12.dp))
@@ -243,13 +244,13 @@ private fun FeatureRow(title: String, description: String) {
             Text(
                 text = title,
                 color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 16.sp,
+                fontSize = KanjiSageTypography.Body,
                 fontWeight = FontWeight.Medium
             )
             Text(
                 text = description,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                fontSize = 13.sp
+                fontSize = KanjiSageTypography.Label
             )
         }
     }
@@ -289,14 +290,14 @@ private fun PlanCard(
                 Text(
                     text = title,
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 18.sp,
+                    fontSize = KanjiSageTypography.BodyLarge,
                     fontWeight = FontWeight.Bold
                 )
                 if (savings != null) {
                     Text(
                         text = savings,
                         color = KanjiSageColors.Primary,
-                        fontSize = 13.sp,
+                        fontSize = KanjiSageTypography.Label,
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -305,13 +306,13 @@ private fun PlanCard(
                 Text(
                     text = price,
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontSize = 24.sp,
+                    fontSize = KanjiSageTypography.TitleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = period,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    fontSize = 14.sp
+                    fontSize = KanjiSageTypography.BodySmall
                 )
             }
         }

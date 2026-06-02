@@ -57,6 +57,7 @@ import com.jworks.kanjisage.data.subscription.SubscriptionManager
 import com.jworks.kanjisage.ui.theme.GlassCard
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import androidx.compose.ui.res.stringResource
+import com.jworks.kanjisage.ui.theme.KanjiSageTypography
 
 @Composable
 fun ProfileScreen(
@@ -104,7 +105,7 @@ fun ProfileScreen(
             Text(
                 text = stringResource(R.string.profile_title),
                 color = MaterialTheme.colorScheme.onSurface,
-                fontSize = 20.sp,
+                fontSize = KanjiSageTypography.TitleSmall,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -149,7 +150,7 @@ fun ProfileScreen(
                         Text(
                             text = initial,
                             color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = 24.sp,
+                            fontSize = KanjiSageTypography.TitleMedium,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -190,7 +191,7 @@ fun ProfileScreen(
                         Text(
                             text = badgeText,
                             color = badgeColor,
-                            fontSize = 12.sp,
+                            fontSize = KanjiSageTypography.LabelSmall,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
@@ -402,7 +403,7 @@ fun ProfileScreen(
                                 ),
                                 modifier = Modifier.weight(1f)
                             ) {
-                                Text(stringResource(R.string.profile_premium), fontSize = 12.sp)
+                                Text(stringResource(R.string.profile_premium), fontSize = KanjiSageTypography.LabelSmall)
                             }
                             Button(
                                 onClick = {
@@ -414,7 +415,7 @@ fun ProfileScreen(
                                 ),
                                 modifier = Modifier.weight(1f)
                             ) {
-                                Text(stringResource(R.string.profile_free), fontSize = 12.sp)
+                                Text(stringResource(R.string.profile_free), fontSize = KanjiSageTypography.LabelSmall)
                             }
                         }
                     }
