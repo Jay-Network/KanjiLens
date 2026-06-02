@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -41,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.R
 import com.jworks.kanjisage.ui.theme.focusBorder
 import com.jworks.kanjisage.ui.theme.KanjiSageTypography
+import com.jworks.kanjisage.ui.theme.KanjiSageShapes
 
 // Match KanjiJourney theme colors exactly for visual consistency
 private val OrangeBar = KanjiSageColors.AccentOrange
@@ -237,7 +237,7 @@ fun KanjiDetailView(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp),
-                        shape = RoundedCornerShape(10.dp),
+                        shape = KanjiSageShapes.MediumCard,
                         colors = ButtonDefaults.buttonColors(containerColor = GreenPractice)
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {

@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -29,6 +28,7 @@ import com.jworks.kanjisage.ui.anim.CoinPulseGlow
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import kotlin.math.roundToInt
 import com.jworks.kanjisage.ui.theme.KanjiSageTypography
+import com.jworks.kanjisage.ui.theme.KanjiSageShapes
 
 /**
  * Data class holding all floating button offsets for the 3x3 grid.
@@ -101,7 +101,7 @@ fun DraggableFloatingButton(
         modifier = Modifier
             .offset { IntOffset(offset.x.roundToInt(), offset.y.roundToInt()) }
             .size(CameraDimens.BUTTON_SIZE)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(KanjiSageShapes.Medium)
             .background(bgColor)
             .pointerInput(Unit) {
                 awaitPointerEventScope {

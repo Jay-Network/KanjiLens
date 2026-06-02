@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -41,6 +40,7 @@ import com.jworks.kanjisage.domain.models.FeedbackCategory
 import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.R
 import com.jworks.kanjisage.domain.models.FeedbackWithHistory
+import com.jworks.kanjisage.ui.theme.KanjiSageShapes
 
 @Composable
 fun FeedbackDialog(
@@ -67,7 +67,7 @@ fun FeedbackDialog(
                 .fillMaxHeight(0.85f)
                 .background(
                     color = MaterialTheme.colorScheme.surface,
-                    shape = RoundedCornerShape(16.dp)
+                    shape = KanjiSageShapes.Large
                 )
                 .padding(16.dp)
         ) {
@@ -219,7 +219,7 @@ private fun FeedbackHistoryItem(item: FeedbackWithHistory) {
             .border(
                 width = 1.dp,
                 color = MaterialTheme.colorScheme.outlineVariant,
-                shape = RoundedCornerShape(8.dp)
+                shape = KanjiSageShapes.Medium
             )
             .padding(12.dp)
     ) {

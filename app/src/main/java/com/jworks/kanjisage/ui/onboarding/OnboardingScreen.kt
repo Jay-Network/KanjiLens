@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +43,7 @@ import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
 import com.jworks.kanjisage.ui.theme.KanjiSageTypography
+import com.jworks.kanjisage.ui.theme.KanjiSageShapes
 
 private data class OnboardingPage(
     val symbol: String,
@@ -171,7 +171,7 @@ fun OnboardingScreen(
                         modifier = Modifier
                             .height(8.dp)
                             .width(indicatorWidth.dp)
-                            .clip(RoundedCornerShape(4.dp))
+                            .clip(KanjiSageShapes.Small)
                             .background(
                                 if (isSelected) pages[pagerState.currentPage].accentColor
                                 else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
@@ -198,7 +198,7 @@ fun OnboardingScreen(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = pages[pagerState.currentPage].accentColor
                 ),
-                shape = RoundedCornerShape(28.dp)
+                shape = KanjiSageShapes.Pill
             ) {
                 Text(
                     text = if (isLastPage) stringResource(R.string.onboarding_start_scanning) else stringResource(R.string.onboarding_next),

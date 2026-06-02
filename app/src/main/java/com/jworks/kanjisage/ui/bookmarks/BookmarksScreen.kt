@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -56,6 +55,7 @@ import com.jworks.kanjisage.ui.theme.glassSurface
 import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
 import com.jworks.kanjisage.ui.theme.KanjiSageTypography
+import com.jworks.kanjisage.ui.theme.KanjiSageShapes
 
 private val TanAccent = KanjiSageColors.PanelBorder
 private val CreamText = KanjiSageColors.PanelBackground
@@ -270,8 +270,8 @@ private fun WordBookmarkRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .glassSurface(shape = RoundedCornerShape(12.dp))
-            .focusBorder(RoundedCornerShape(12.dp))
+            .glassSurface(shape = KanjiSageShapes.Card)
+            .focusBorder(KanjiSageShapes.Card)
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -319,8 +319,8 @@ private fun KanjiBookmarkRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .glassSurface(shape = RoundedCornerShape(12.dp))
-            .focusBorder(RoundedCornerShape(12.dp))
+            .glassSurface(shape = KanjiSageShapes.Card)
+            .focusBorder(KanjiSageShapes.Card)
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -329,7 +329,7 @@ private fun KanjiBookmarkRow(
         Box(
             modifier = Modifier
                 .size(48.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(KanjiSageShapes.Medium)
                 .background(KanjiSageColors.CardBgLight),
             contentAlignment = Alignment.Center
         ) {
@@ -372,9 +372,9 @@ private fun KanjiJourneyPromoCard(onClick: () -> Unit) {
     GlassCard(
         modifier = Modifier
             .fillMaxWidth()
-            .focusBorder(RoundedCornerShape(12.dp))
+            .focusBorder(KanjiSageShapes.Card)
             .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
+        shape = KanjiSageShapes.Card,
         fillColor = KanjiSageColors.PromoCardBg,
         contentPadding = 0.dp
     ) {

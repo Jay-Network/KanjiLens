@@ -6,6 +6,13 @@ Single source of truth for version: `VERSION` file at repo root.
 
 ---
 
+## v1.7.5 (2026-06-02)
+
+### Changed
+- Migrated all 83 hardcoded RoundedCornerShape values to KanjiSageShapes tokens across 19 files
+- Added 4 new shape tokens: XSmall (2dp), MediumCard (10dp), CardLarge (14dp), ExtraLarge (24dp)
+- Zero hardcoded shape values remaining in production code
+
 ## v1.7.4 (2026-06-02)
 
 ### Changed

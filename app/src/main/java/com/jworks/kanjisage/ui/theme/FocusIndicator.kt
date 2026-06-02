@@ -2,7 +2,6 @@ package com.jworks.kanjisage.ui.theme
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -14,6 +13,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.jworks.kanjisage.ui.theme.KanjiSageShapes
 
 /**
  * Adds a visible focus border to any interactive element for WCAG compliance.
@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
  * Place BEFORE .clickable {} in the modifier chain so the border wraps the element.
  */
 fun Modifier.focusBorder(
-    shape: Shape = RoundedCornerShape(8.dp),
+    shape: Shape = KanjiSageShapes.Medium,
     borderWidth: Dp = 2.dp
 ): Modifier = composed {
     var isFocused by remember { mutableStateOf(false) }

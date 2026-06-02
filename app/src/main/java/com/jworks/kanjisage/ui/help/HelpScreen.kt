@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -44,6 +43,7 @@ import com.jworks.kanjisage.ui.theme.GlassCard
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import com.jworks.kanjisage.ui.theme.focusBorder
 import com.jworks.kanjisage.ui.theme.KanjiSageTypography
+import com.jworks.kanjisage.ui.theme.KanjiSageShapes
 
 private val AccentBlue = KanjiSageColors.PrimaryAction
 private val AccentTeal = KanjiSageColors.AccentTeal
@@ -100,7 +100,7 @@ fun HelpScreen(
             // About Card
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = KanjiSageShapes.Card,
                 contentPadding = 0.dp
             ) {
                 Column(
@@ -185,7 +185,7 @@ fun HelpScreen(
             // Links Card
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = KanjiSageShapes.Card,
                 contentPadding = 0.dp
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -246,7 +246,7 @@ fun HelpScreen(
             // Credits Card
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = KanjiSageShapes.Card,
                 contentPadding = 0.dp
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -272,7 +272,7 @@ fun HelpScreen(
 private fun GuideSection(title: String, icon: String = "", content: @Composable () -> Unit) {
     GlassCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
+        shape = KanjiSageShapes.Card,
         contentPadding = 0.dp
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -300,7 +300,7 @@ private fun GuideSection(title: String, icon: String = "", content: @Composable 
 private fun RowLabel(label: String) {
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(4.dp))
+            .clip(KanjiSageShapes.Small)
             .background(RowLabelBg)
             .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
@@ -324,7 +324,7 @@ private fun ButtonTip(buttonName: String, description: String) {
     ) {
         Box(
             modifier = Modifier
-                .clip(RoundedCornerShape(4.dp))
+                .clip(KanjiSageShapes.Small)
                 .background(BadgeBg)
                 .padding(horizontal = 6.dp, vertical = 2.dp)
         ) {

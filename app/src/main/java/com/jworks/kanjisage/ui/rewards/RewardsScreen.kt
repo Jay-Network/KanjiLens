@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -63,6 +62,7 @@ import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.ui.theme.focusBorder
 import com.jworks.kanjisage.ui.theme.KanjiSageTypography
+import com.jworks.kanjisage.ui.theme.KanjiSageShapes
 
 @Composable
 fun RewardsScreen(
@@ -329,7 +329,7 @@ fun RewardsScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(10.dp))
+                                .clip(KanjiSageShapes.MediumCard)
                                 .background(
                                     if (purchaseSuccess) KanjiSageColors.SuccessGreen.copy(alpha = 0.2f)
                                     else Color.Red.copy(alpha = 0.2f)
@@ -366,7 +366,7 @@ private fun SignedOutCard() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(KanjiSageShapes.Large)
             .background(
                 Brush.verticalGradient(
                     colors = listOf(KanjiSageColors.CardBg, KanjiSageColors.CardBgDark)
@@ -419,7 +419,7 @@ private fun PremiumRequiredCard(onUpgradeClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(KanjiSageShapes.Large)
             .background(
                 Brush.verticalGradient(
                     colors = listOf(KanjiSageColors.CardBg, KanjiSageColors.CardBgDark)
@@ -466,7 +466,7 @@ private fun PremiumRequiredCard(onUpgradeClick: () -> Unit) {
                 colors = ButtonDefaults.buttonColors(
                     containerColor = KanjiSageColors.PrimaryAction
                 ),
-                shape = RoundedCornerShape(24.dp),
+                shape = KanjiSageShapes.ExtraLarge,
                 modifier = Modifier.height(48.dp)
             ) {
                 Text(
@@ -488,7 +488,7 @@ private fun BalanceCard(balance: JCoinBalance) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(KanjiSageShapes.Panel)
             .background(KanjiSageColors.CoinBalanceGradient)
             .padding(28.dp)
     ) {
@@ -548,7 +548,7 @@ private fun StreakCard(streakDays: Int) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(KanjiSageShapes.Large)
             .background(
                 if (streakDays > 0)
                     Brush.horizontalGradient(
@@ -591,7 +591,7 @@ private fun StreakCard(streakDays: Int) {
             if (streakDays >= 7) {
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(KanjiSageShapes.Card)
                         .background(KanjiSageColors.SuccessGreen.copy(alpha = 0.2f))
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
@@ -631,7 +631,7 @@ private fun DailyProgressCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(KanjiSageShapes.Card)
             .background(KanjiSageColors.CardBg)
             .padding(16.dp)
     ) {
@@ -676,7 +676,7 @@ private fun DailyProgressCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp)),
+                    .clip(KanjiSageShapes.Small),
                 color = color,
                 trackColor = KanjiSageColors.CardBgLight
             )
@@ -690,7 +690,7 @@ private fun EarnRuleCard(emoji: String, action: String, reward: String, frequenc
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 5.dp)
-            .clip(RoundedCornerShape(10.dp))
+            .clip(KanjiSageShapes.MediumCard)
             .background(KanjiSageColors.CardBg.copy(alpha = 0.5f))
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -706,7 +706,7 @@ private fun EarnRuleCard(emoji: String, action: String, reward: String, frequenc
         // Coin badge
         Box(
             modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
+                .clip(KanjiSageShapes.Medium)
                 .background(KanjiSageColors.CoinAccent.copy(alpha = 0.15f))
                 .padding(horizontal = 8.dp, vertical = 3.dp)
         ) {
@@ -746,7 +746,7 @@ private fun RedemptionCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(KanjiSageShapes.CardLarge)
             .background(
                 if (enabled)
                     Brush.horizontalGradient(
@@ -757,7 +757,7 @@ private fun RedemptionCard(
                         colors = listOf(KanjiSageColors.CardBg, KanjiSageColors.CardBg)
                     )
             )
-            .focusBorder(RoundedCornerShape(14.dp))
+            .focusBorder(KanjiSageShapes.CardLarge)
             .clickable(enabled = enabled) { onClick() }
             .padding(16.dp)
     ) {
@@ -781,7 +781,7 @@ private fun RedemptionCard(
             }
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(KanjiSageShapes.MediumCard)
                     .background(
                         if (enabled) KanjiSageColors.CoinAccent.copy(alpha = 0.2f)
                         else Color.Transparent

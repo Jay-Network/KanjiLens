@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -58,6 +57,7 @@ import com.jworks.kanjisage.ui.theme.GlassCard
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.ui.theme.KanjiSageTypography
+import com.jworks.kanjisage.ui.theme.KanjiSageShapes
 
 @Composable
 fun ProfileScreen(
@@ -120,7 +120,7 @@ fun ProfileScreen(
             // User Info Card
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = KanjiSageShapes.Card,
                 contentPadding = 0.dp
             ) {
                 Row(
@@ -231,7 +231,7 @@ fun ProfileScreen(
             // App Stats Card
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = KanjiSageShapes.Card,
                 contentPadding = 0.dp
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -258,7 +258,7 @@ fun ProfileScreen(
             // Connected Apps (Ecosystem)
             GlassCard(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = KanjiSageShapes.Card,
                 contentPadding = 0.dp
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -342,7 +342,7 @@ fun ProfileScreen(
             if (showDeveloperTools) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = KanjiSageShapes.Card,
                     colors = CardDefaults.cardColors(containerColor = KanjiSageColors.WarningLightBg)
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -429,7 +429,7 @@ fun ProfileScreen(
                     onClick = onLinkAccountClick,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = KanjiSageColors.LinkBlue),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = KanjiSageShapes.Card
                 ) {
                     Text(
                         text = stringResource(R.string.profile_sign_in_link),
@@ -449,7 +449,7 @@ fun ProfileScreen(
                     onClick = onSignOut,
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = KanjiSageColors.DangerButton),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = KanjiSageShapes.Card
                 ) {
                     Text(
                         text = stringResource(R.string.profile_sign_out),

@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -36,6 +35,7 @@ import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.R
 import com.jworks.kanjisage.ui.theme.KanjiSageTypography
+import com.jworks.kanjisage.ui.theme.KanjiSageShapes
 
 @Composable
 fun HandlePromptDialog(
@@ -73,7 +73,7 @@ fun HandlePromptDialog(
                 .fillMaxWidth()
                 .background(
                     MaterialTheme.colorScheme.surface,
-                    RoundedCornerShape(16.dp)
+                    KanjiSageShapes.Large
                 )
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -113,7 +113,7 @@ fun HandlePromptDialog(
                     if (validate()) onSave(handle.trim())
                 }),
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
+                shape = KanjiSageShapes.Card
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -135,7 +135,7 @@ fun HandlePromptDialog(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = KanjiSageColors.LinkBlue
                     ),
-                    shape = RoundedCornerShape(12.dp)
+                    shape = KanjiSageShapes.Card
                 ) {
                     Text("Save")
                 }

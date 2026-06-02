@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -49,6 +48,7 @@ import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.R
 import com.jworks.kanjisage.ui.theme.focusBorder
 import com.jworks.kanjisage.ui.theme.KanjiSageTypography
+import com.jworks.kanjisage.ui.theme.KanjiSageShapes
 
 /**
  * Scan timer pill displayed for free-tier users during an active scan.
@@ -61,7 +61,7 @@ fun ScanTimerPill(
     val timerColor = if (scanTimerSeconds <= 10) KanjiSageColors.TimerWarning else MaterialTheme.colorScheme.onSurface
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(KanjiSageShapes.Large)
             .background(Color.Black.copy(alpha = 0.6f))
             .padding(horizontal = 16.dp, vertical = 6.dp)
     ) {
@@ -85,12 +85,12 @@ fun ScanChallengePill(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(KanjiSageShapes.Large)
             .background(
                 if (challenge.isCompleted) KanjiSageColors.ChallengeComplete.copy(alpha = 0.85f)
                 else KanjiSageColors.ChallengeActive.copy(alpha = 0.85f)
             )
-            .focusBorder(RoundedCornerShape(16.dp))
+            .focusBorder(KanjiSageShapes.Large)
             .clickable { if (challenge.isCompleted) onNextChallenge() }
             .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
@@ -160,7 +160,7 @@ fun CoinRewardToast(
         Row(
             modifier = Modifier
                 .scale(scale.value)
-                .clip(RoundedCornerShape(24.dp))
+                .clip(KanjiSageShapes.ExtraLarge)
                 .background(
                     Brush.horizontalGradient(
                         colors = listOf(
@@ -243,7 +243,7 @@ fun ScanExpiredOverlay(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = KanjiSageColors.PrimaryAction
                 ),
-                shape = RoundedCornerShape(24.dp)
+                shape = KanjiSageShapes.ExtraLarge
             ) {
                 Text(
                     text = stringResource(R.string.scan_expired_new),

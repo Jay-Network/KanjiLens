@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -52,6 +51,7 @@ import com.jworks.kanjisage.data.auth.AuthState
 import com.jworks.kanjisage.domain.models.AppSettings
 import kotlin.math.roundToInt
 import com.jworks.kanjisage.ui.theme.KanjiSageTypography
+import com.jworks.kanjisage.ui.theme.KanjiSageShapes
 
 private data class ColorPresetDef(
     val nameRes: Int,
@@ -237,7 +237,7 @@ fun SettingsScreen(
                     context.startActivity(intent)
                 },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp)
+                shape = KanjiSageShapes.Medium
             ) {
                 Text(stringResource(R.string.settings_manage_subscription))
             }
@@ -250,7 +250,7 @@ fun SettingsScreen(
                 androidx.compose.material3.OutlinedButton(
                     onClick = onLinkAccountClick,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = KanjiSageShapes.Medium
                 ) {
                     Text(stringResource(R.string.settings_sign_in_link))
                 }
@@ -278,7 +278,7 @@ fun SettingsScreen(
                         contentColor = MaterialTheme.colorScheme.error
                     ),
                     border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = KanjiSageShapes.Medium
                 ) {
                     Text(stringResource(R.string.settings_sign_out), color = MaterialTheme.colorScheme.error)
                 }
@@ -399,7 +399,7 @@ private fun GeminiApiKeySection(viewModel: SettingsViewModel) {
                 },
                 enabled = keyInput.trim() != currentKey && !keyError,
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(8.dp)
+                shape = KanjiSageShapes.Medium
             ) {
                 Text(stringResource(R.string.settings_save))
             }
@@ -410,7 +410,7 @@ private fun GeminiApiKeySection(viewModel: SettingsViewModel) {
                         viewModel.setGeminiApiKey("")
                     },
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = KanjiSageShapes.Medium,
                     colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
                         contentColor = MaterialTheme.colorScheme.error
                     ),
@@ -480,7 +480,7 @@ private fun TokenUsageCard(settings: AppSettings, onReset: () -> Unit) {
             androidx.compose.material3.OutlinedButton(
                 onClick = onReset,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp)
+                shape = KanjiSageShapes.Medium
             ) {
                 Text(stringResource(R.string.settings_reset_token_counters))
             }
@@ -507,12 +507,12 @@ private fun ColorPresetRow(settings: AppSettings, onPresetClick: (Long, Long) ->
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(KanjiSageShapes.Medium)
                     .then(
-                        if (isSelected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(8.dp))
+                        if (isSelected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, KanjiSageShapes.Medium)
                         else Modifier
                     )
-                    .focusBorder(RoundedCornerShape(8.dp))
+                    .focusBorder(KanjiSageShapes.Medium)
                     .clickable { onPresetClick(preset.kanjiColor, preset.kanaColor) }
                     .padding(8.dp)
             ) {

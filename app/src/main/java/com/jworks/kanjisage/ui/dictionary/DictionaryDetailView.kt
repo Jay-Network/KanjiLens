@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -44,6 +43,7 @@ import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.ui.theme.focusBorder
 import com.jworks.kanjisage.domain.models.DictionaryResult
 import com.jworks.kanjisage.ui.theme.KanjiSageTypography
+import com.jworks.kanjisage.ui.theme.KanjiSageShapes
 
 // POS abbreviation → display label
 private val POS_LABELS = mapOf(
@@ -148,7 +148,7 @@ fun DictionaryDetailView(
                     Spacer(modifier = Modifier.width(8.dp))
                     Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
+                            .clip(KanjiSageShapes.Small)
                             .background(KanjiSageColors.Primary)
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
@@ -232,9 +232,9 @@ fun DictionaryDetailView(
                             Box(
                                 modifier = Modifier
                                     .size(48.dp)
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(KanjiSageShapes.Medium)
                                     .background(if (isSaved) KanjiSageColors.WarningLightBg else KanjiSageColors.PanelItemBackground)
-                                    .focusBorder(RoundedCornerShape(8.dp))
+                                    .focusBorder(KanjiSageShapes.Medium)
                                     .clickable { onKanjiClick(kanjiStr) },
                                 contentAlignment = Alignment.Center
                             ) {
@@ -301,7 +301,7 @@ fun DictionaryDetailView(
                             sense.partOfSpeech.forEach { pos ->
                                 Box(
                                     modifier = Modifier
-                                        .clip(RoundedCornerShape(4.dp))
+                                        .clip(KanjiSageShapes.Small)
                                         .background(KanjiSageColors.PosTagBg)
                                         .padding(horizontal = 8.dp, vertical = 3.dp)
                                 ) {
@@ -355,9 +355,9 @@ fun DictionaryDetailView(
                             Box(
                                 modifier = Modifier
                                     .size(48.dp)
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(KanjiSageShapes.Medium)
                                     .background(if (isSaved) KanjiSageColors.WarningLightBg else KanjiSageColors.PanelItemBackground)
-                                    .focusBorder(RoundedCornerShape(8.dp))
+                                    .focusBorder(KanjiSageShapes.Medium)
                                     .clickable { onKanjiClick(kanjiStr) },
                                 contentAlignment = Alignment.Center
                             ) {
@@ -409,9 +409,9 @@ private fun KanjiJourneyPracticeButton(kanjiList: List<Char>) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(10.dp))
+            .clip(KanjiSageShapes.MediumCard)
             .background(KanjiSageColors.Primary)
-            .focusBorder(RoundedCornerShape(10.dp))
+            .focusBorder(KanjiSageShapes.MediumCard)
             .clickable {
                 val deepLink = Intent(
                     Intent.ACTION_VIEW,

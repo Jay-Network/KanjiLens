@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -47,6 +46,7 @@ import com.jworks.kanjisage.R
 import com.jworks.kanjisage.data.auth.AuthState
 import kotlinx.coroutines.launch
 import com.jworks.kanjisage.ui.theme.KanjiSageTypography
+import com.jworks.kanjisage.ui.theme.KanjiSageShapes
 
 @Composable
 fun AuthScreen(
@@ -157,7 +157,7 @@ fun AuthScreen(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.White
                 ),
-                shape = RoundedCornerShape(28.dp),
+                shape = KanjiSageShapes.Pill,
                 enabled = authState !is AuthState.Loading
             ) {
                 if (authState is AuthState.Loading) {

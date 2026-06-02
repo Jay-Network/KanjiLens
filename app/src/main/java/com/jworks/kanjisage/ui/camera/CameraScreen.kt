@@ -36,7 +36,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Button
@@ -94,6 +93,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import com.jworks.kanjisage.ui.theme.KanjiSageTypography
+import com.jworks.kanjisage.ui.theme.KanjiSageShapes
 
 // Data class for jukugo with reading
 private data class JukugoEntry(val text: String, val reading: String)
@@ -915,7 +915,7 @@ private fun CameraContent(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .offset(x = 6.dp, y = (-6).dp)
-                        .background(KanjiSageColors.PrimaryAction, RoundedCornerShape(8.dp))
+                        .background(KanjiSageColors.PrimaryAction, KanjiSageShapes.Medium)
                         .padding(horizontal = 4.dp, vertical = 2.dp)
                 )
             }
@@ -1096,9 +1096,9 @@ private fun DetectedJukugoList(
             if (isAiAvailable && totalCount > 0) {
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(16.dp))
+                        .clip(KanjiSageShapes.Large)
                         .background(KanjiSageColors.ChallengePurple.copy(alpha = 0.9f))
-                        .focusBorder(RoundedCornerShape(16.dp))
+                        .focusBorder(KanjiSageShapes.Large)
                         .clickable { onAiAnalyze() }
                         .padding(horizontal = 10.dp, vertical = 5.dp)
                 ) {
@@ -1150,9 +1150,9 @@ private fun DetectedJukugoList(
                             val isBookmarked = entry.text in bookmarkedKanji
                             Column(
                                 modifier = Modifier
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(KanjiSageShapes.Medium)
                                     .background(KanjiSageColors.PanelItemBackground)
-                                    .focusBorder(RoundedCornerShape(8.dp))
+                                    .focusBorder(KanjiSageShapes.Medium)
                                     .clickable { onKanjiClick(entry) }
                                     .padding(horizontal = 12.dp, vertical = 8.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
@@ -1191,9 +1191,9 @@ private fun DetectedJukugoList(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(KanjiSageShapes.Medium)
                                     .background(KanjiSageColors.PanelItemBackground)
-                                    .focusBorder(RoundedCornerShape(8.dp))
+                                    .focusBorder(KanjiSageShapes.Medium)
                                     .clickable { onJukugoClick(entry) }
                                     .padding(horizontal = 16.dp, vertical = 14.dp),
                                 horizontalArrangement = Arrangement.Start,
@@ -1261,7 +1261,7 @@ private fun DetectedJukugoList(
 private fun DebugStatsHud(stats: OCRStats, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(KanjiSageShapes.Medium)
             .background(Color.Black.copy(alpha = 0.6f))
             .padding(8.dp)
     ) {

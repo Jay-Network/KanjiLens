@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.R
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -43,6 +42,7 @@ import com.jworks.kanjisage.ui.theme.KanjiSageColors
 import com.jworks.kanjisage.ui.theme.focusBorder
 import kotlinx.coroutines.delay
 import com.jworks.kanjisage.ui.theme.KanjiSageTypography
+import com.jworks.kanjisage.ui.theme.KanjiSageShapes
 
 /**
  * Cross-promotion banner for KanjiJourney, shown periodically in KanjiSage.
@@ -78,9 +78,9 @@ fun KanjiJourneyPromoBanner(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(KanjiSageShapes.Card)
                 .background(KanjiSageColors.AccentOrange.copy(alpha = 0.95f))
-                .focusBorder(RoundedCornerShape(12.dp))
+                .focusBorder(KanjiSageShapes.Card)
                 .clickable {
                     // Deep link kanji to KanjiJourney, fall back to Play Store
                     val deepLink = if (currentKanji != null) {

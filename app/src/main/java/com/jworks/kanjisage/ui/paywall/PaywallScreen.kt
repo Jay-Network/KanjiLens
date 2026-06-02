@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -45,6 +44,7 @@ import androidx.compose.ui.res.stringResource
 import com.jworks.kanjisage.R
 import com.jworks.kanjisage.ui.theme.focusBorder
 import com.jworks.kanjisage.ui.theme.KanjiSageTypography
+import com.jworks.kanjisage.ui.theme.KanjiSageShapes
 
 @Composable
 fun PaywallScreen(
@@ -159,7 +159,7 @@ fun PaywallScreen(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = KanjiSageColors.PrimaryAction
                 ),
-                shape = RoundedCornerShape(28.dp),
+                shape = KanjiSageShapes.Pill,
                 enabled = productDetails.isNotEmpty()
             ) {
                 Text(
@@ -204,7 +204,7 @@ fun PaywallScreen(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(KanjiSageShapes.Card)
                     .background(KanjiSageColors.ActiveCard)
                     .padding(16.dp)
             ) {
@@ -272,12 +272,12 @@ private fun PlanCard(
         modifier = Modifier
             .fillMaxWidth()
             .glassSurface(
-                shape = RoundedCornerShape(12.dp),
+                shape = KanjiSageShapes.Card,
                 fillColor = bgColor,
                 borderColor = borderColor,
                 borderWidth = 2.dp
             )
-            .focusBorder(RoundedCornerShape(12.dp))
+            .focusBorder(KanjiSageShapes.Card)
             .clickable { onClick() }
             .padding(16.dp)
     ) {

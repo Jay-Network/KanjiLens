@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.jworks.kanjisage.ui.theme.KanjiSageColors
+import com.jworks.kanjisage.ui.theme.KanjiSageShapes
 
 @Composable
 fun DraggablePanel(
@@ -79,7 +80,7 @@ fun DraggablePanel(
                         modifier = Modifier
                             .width(40.dp)
                             .height(4.dp)
-                            .clip(RoundedCornerShape(2.dp))
+                            .clip(KanjiSageShapes.XSmall)
                             .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
                     )
                 }

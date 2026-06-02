@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -46,6 +45,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.jworks.kanjisage.domain.ai.AiResponse
 import com.jworks.kanjisage.domain.ai.ScopeLevel
+import com.jworks.kanjisage.ui.theme.KanjiSageShapes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -254,7 +254,7 @@ private fun ScopeBadge(scopeLevel: ScopeLevel) {
 
     Box(
         modifier = Modifier
-            .background(color.copy(alpha = 0.12f), RoundedCornerShape(12.dp))
+            .background(color.copy(alpha = 0.12f), KanjiSageShapes.Card)
             .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
         Text(
@@ -300,7 +300,7 @@ private fun AiSectionCard(section: AiSection) {
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
         ),
-        shape = RoundedCornerShape(12.dp)
+        shape = KanjiSageShapes.Card
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(
