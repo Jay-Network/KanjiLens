@@ -6,6 +6,12 @@ Single source of truth for version: `VERSION` file at repo root.
 
 ---
 
+## v1.7.8 (2026-06-16)
+
+### Changed
+- Applied glassSurface() modifier to DebugStatsHud and ScanTimerPill (adds subtle glass border, replaces plain clip+background)
+- Camera overlay HUD elements now have consistent Glass morphism treatment
+
 ## v1.7.7 (2026-06-16)
 
 ### Changed

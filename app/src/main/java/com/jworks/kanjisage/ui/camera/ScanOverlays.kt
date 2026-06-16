@@ -49,6 +49,7 @@ import com.jworks.kanjisage.R
 import com.jworks.kanjisage.ui.theme.focusBorder
 import com.jworks.kanjisage.ui.theme.KanjiSageTypography
 import com.jworks.kanjisage.ui.theme.KanjiSageShapes
+import com.jworks.kanjisage.ui.theme.glassSurface
 
 /**
  * Scan timer pill displayed for free-tier users during an active scan.
@@ -61,8 +62,10 @@ fun ScanTimerPill(
     val timerColor = if (scanTimerSeconds <= 10) KanjiSageColors.TimerWarning else MaterialTheme.colorScheme.onSurface
     Box(
         modifier = modifier
-            .clip(KanjiSageShapes.Large)
-            .background(KanjiSageColors.GlassScrim)
+            .glassSurface(
+                shape = KanjiSageShapes.Large,
+                fillColor = KanjiSageColors.GlassScrim
+            )
             .padding(horizontal = 16.dp, vertical = 6.dp)
     ) {
         Text(

@@ -94,6 +94,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import com.jworks.kanjisage.ui.theme.KanjiSageTypography
 import com.jworks.kanjisage.ui.theme.KanjiSageShapes
+import com.jworks.kanjisage.ui.theme.glassSurface
 
 // Data class for jukugo with reading
 private data class JukugoEntry(val text: String, val reading: String)
@@ -1261,8 +1262,10 @@ private fun DetectedJukugoList(
 private fun DebugStatsHud(stats: OCRStats, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
-            .clip(KanjiSageShapes.Medium)
-            .background(KanjiSageColors.GlassScrim)
+            .glassSurface(
+                shape = KanjiSageShapes.Medium,
+                fillColor = KanjiSageColors.GlassScrim
+            )
             .padding(8.dp)
     ) {
         Text(
