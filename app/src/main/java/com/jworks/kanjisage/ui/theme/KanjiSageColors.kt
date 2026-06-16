@@ -103,6 +103,7 @@ object KanjiSageColors {
     val CoinGradientEnd = Color(0xFF1565C0)
     val CoinLetterBrown = Color(0xFF5D4037)
     val ErrorLight = Color(0xFFEF5350)
+    val ErrorBgLight = Color.Red.copy(alpha = 0.2f)
     val CardBgDark = Color(0xFF1E1E1E)
     val CardBrownStart = Color(0xFF3E2723)
     val CardBrownEnd = Color(0xFF4E342E)
@@ -120,6 +121,7 @@ object KanjiSageColors {
     val KJCreamBg = Color(0xFFFFF8E1)
     val KJBookmarkGold = Color(0xFFFFD700)
     val KJDarkText = Color(0xFF1C1B1F)
+    val KJSurfaceCard = Color.White
 
     // Glass morphism
     val GlassSurface = Color.White.copy(alpha = 0.08f)
@@ -131,6 +133,10 @@ object KanjiSageColors {
     val OnGlass = Color.White.copy(alpha = 0.92f)
     val OnGlassVariant = Color.White.copy(alpha = 0.7f)
     val GlassHighlight = Color.White.copy(alpha = 0.25f)
+    val ShimmerHighlight = Color.White.copy(alpha = 0.3f)
+
+    // UI hints
+    val HintText = Color.Gray
 
     // Gradient brushes
     val CoinBalanceGradient = Brush.horizontalGradient(

@@ -153,7 +153,7 @@ private class ShimmerNode(var offset: Float) : DrawModifierNode, Modifier.Node()
                 brush = Brush.linearGradient(
                     colors = listOf(
                         Color.Transparent,
-                        Color.White.copy(alpha = 0.3f),
+                        KanjiSageColors.ShimmerHighlight,
                         Color.Transparent
                     ),
                     start = Offset(x - shimmerWidth, 0f),

@@ -155,7 +155,7 @@ fun AuthScreen(
                     .fillMaxWidth()
                     .height(56.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White
+                    containerColor = KanjiSageColors.KJSurfaceCard
                 ),
                 shape = KanjiSageShapes.Pill,
                 enabled = authState !is AuthState.Loading

@@ -45,7 +45,7 @@ import com.jworks.kanjisage.ui.theme.KanjiSageShapes
 // Match KanjiJourney theme colors exactly for visual consistency
 private val OrangeBar = KanjiSageColors.AccentOrange
 private val CreamBg = KanjiSageColors.KJCreamBg
-private val SurfaceCard = Color.White
+private val SurfaceCard = KanjiSageColors.KJSurfaceCard
 private val BookmarkGold = KanjiSageColors.KJBookmarkGold
 private val GreenPractice = KanjiSageColors.Primary
 private val DarkText = KanjiSageColors.KJDarkText

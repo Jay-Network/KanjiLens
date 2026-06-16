@@ -1248,7 +1248,7 @@ private fun DetectedJukugoList(
                 Text(
                     text = stringResource(R.string.camera_tap_hint),
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray,
+                    color = KanjiSageColors.HintText,
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
             }

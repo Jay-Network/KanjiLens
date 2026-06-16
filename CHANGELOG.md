@@ -6,6 +6,13 @@ Single source of truth for version: `VERSION` file at repo root.
 
 ---
 
+## v1.7.7 (2026-06-16)
+
+### Changed
+- Migrated last 5 inline color usages to named tokens: Color.White (3), Color.Gray (1), Color.Red (1)
+- Added 5 new tokens: KJSurfaceCard, ShimmerHighlight, HintText, ErrorBgLight (KanjiSageColors)
+- Zero inline Color.White/Gray/Red/Yellow remaining in production UI code
+
 ## v1.7.6 (2026-06-16)
 
 ### Fixed

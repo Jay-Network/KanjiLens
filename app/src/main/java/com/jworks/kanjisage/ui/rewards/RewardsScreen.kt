@@ -332,7 +332,7 @@ fun RewardsScreen(
                                 .clip(KanjiSageShapes.MediumCard)
                                 .background(
                                     if (purchaseSuccess) KanjiSageColors.SuccessGreen.copy(alpha = 0.2f)
-                                    else Color.Red.copy(alpha = 0.2f)
+                                    else KanjiSageColors.ErrorBgLight
                                 )
                                 .padding(12.dp),
                             contentAlignment = Alignment.Center
