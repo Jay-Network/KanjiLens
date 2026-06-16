@@ -1262,7 +1262,7 @@ private fun DebugStatsHud(stats: OCRStats, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .clip(KanjiSageShapes.Medium)
-            .background(Color.Black.copy(alpha = 0.6f))
+            .background(KanjiSageColors.GlassScrim)
             .padding(8.dp)
     ) {
         Text(

@@ -406,6 +406,7 @@
     <string name="feedback_title">Send Feedback</string>
     <string name="feedback_close">Close</string>
     <string name="feedback_category">Category</string>
+    <string name="feedback_send">Send feedback</string>
     <string name="feedback_previous">Your Previous Feedback</string>
     <string name="feedback_none_yet">No feedback submitted yet</string>
     <string name="feedback_note">Note: %s</string>

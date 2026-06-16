@@ -6,6 +6,16 @@ Single source of truth for version: `VERSION` file at repo root.
 
 ---
 
+## v1.7.6 (2026-06-16)
+
+### Fixed
+- Accessibility: added contentDescription to interactive Send icon in FeedbackDialog (BUG-001)
+
+### Changed
+- Migrated 4 inline Color.Black overlay usages to Glass tokens (GlassScrim, GlassScrimDense, GlassOverlay)
+- Added GlassScrim (0.6f) and GlassScrimDense (0.7f) tokens to KanjiSageColors
+- Camera overlays (DebugStatsHud, ScanTimer, ScanExpiredOverlay, DraggableFloatingButton) now use named tokens
+
 ## v1.7.5 (2026-06-02)
 
 ### Changed

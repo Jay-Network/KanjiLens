@@ -126,6 +126,8 @@ object KanjiSageColors {
     val GlassSurfaceMedium = Color.White.copy(alpha = 0.12f)
     val GlassBorder = Color.White.copy(alpha = 0.15f)
     val GlassOverlay = Color.Black.copy(alpha = 0.4f)
+    val GlassScrim = Color.Black.copy(alpha = 0.6f)
+    val GlassScrimDense = Color.Black.copy(alpha = 0.7f)
     val OnGlass = Color.White.copy(alpha = 0.92f)
     val OnGlassVariant = Color.White.copy(alpha = 0.7f)
     val GlassHighlight = Color.White.copy(alpha = 0.25f)

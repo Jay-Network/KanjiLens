@@ -163,7 +163,7 @@ fun FeedbackDialog(
                         color = MaterialTheme.colorScheme.onPrimary
                     )
                 } else {
-                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null)
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.feedback_send))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Send Feedback")
                 }

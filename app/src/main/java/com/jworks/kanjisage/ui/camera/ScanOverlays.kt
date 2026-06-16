@@ -62,7 +62,7 @@ fun ScanTimerPill(
     Box(
         modifier = modifier
             .clip(KanjiSageShapes.Large)
-            .background(Color.Black.copy(alpha = 0.6f))
+            .background(KanjiSageColors.GlassScrim)
             .padding(horizontal = 16.dp, vertical = 6.dp)
     ) {
         Text(
@@ -218,7 +218,7 @@ fun ScanExpiredOverlay(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.7f)),
+            .background(KanjiSageColors.GlassScrimDense),
         contentAlignment = Alignment.Center
     ) {
         Column(

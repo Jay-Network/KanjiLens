@@ -94,7 +94,7 @@ fun DraggableFloatingButton(
     maxWidth: Float,
     maxHeight: Float,
     btnSize: Float,
-    bgColor: Color = Color.Black.copy(alpha = 0.4f),
+    bgColor: Color = KanjiSageColors.GlassOverlay,
     content: @Composable () -> Unit
 ) {
     Box(
