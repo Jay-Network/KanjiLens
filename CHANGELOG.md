@@ -1,5 +1,10 @@
 # KanjiSage Changelog
 
+## v1.8.2 (2026-05-07)
+- chore: add fleet CODEOWNERS generated from agent-repo-map.json.
+
+---
+
 All notable changes to KanjiSage are documented here.
 Version format: `vMAJOR.MINOR.PATCH` (MAJOR=stage [0=Alpha, 1=Beta, 2=Store], MINOR=feature, PATCH=deploy).
 Single source of truth for version: `VERSION` file at repo root.
